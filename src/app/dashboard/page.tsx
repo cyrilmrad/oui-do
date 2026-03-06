@@ -16,7 +16,8 @@ import {
     Mail,
     HeartHandshake,
     CalendarDays,
-    MapPin
+    MapPin,
+    Copy
 } from 'lucide-react';
 import InvitationPreview, { InvitationData, Theme } from '@/components/InvitationPreview';
 
@@ -209,11 +210,31 @@ export default function DashboardPage() {
         return <div className="min-h-screen w-full flex items-center justify-center bg-stone-50"><p className="text-stone-500 animate-pulse">Loading Dashboard...</p></div>;
     }
 
+    const handleCopyLink = () => {
+        if (typeof window !== 'undefined' && userSlug) {
+            const url = `${window.location.origin}/invite/${userSlug}`;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Invite link copied to clipboard!');
+            }).catch(err => {
+                console.error('Could not copy text: ', err);
+            });
+        }
+    };
+
     const renderOverview = () => (
         <>
-            <div className="mb-10">
-                <h2 className="text-3xl font-serif text-stone-900">Welcome back, {weddingDetails.bride} & {weddingDetails.groom}</h2>
-                <p className="mt-2 text-sm text-stone-500">Here's the latest update on your guest list.</p>
+            <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-3xl font-serif text-stone-900">Welcome back, {weddingDetails.bride} & {weddingDetails.groom}</h2>
+                    <p className="mt-2 text-sm text-stone-500">Here's the latest update on your guest list.</p>
+                </div>
+                <button
+                    onClick={handleCopyLink}
+                    className="flex items-center justify-center gap-2 bg-stone-900 hover:bg-stone-800 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
+                >
+                    <Copy className="w-4 h-4" />
+                    Copy Invite Link
+                </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
@@ -487,8 +508,8 @@ export default function DashboardPage() {
                         <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
                         <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
                     </div>
-                    <div className="text-[10px] font-mono text-stone-400 bg-stone-100 px-2 py-0.5 rounded uppercase tracking-widest">
-                        Live Preview
+                    <div className="text-[10px] font-mono text-stone-400 bg-stone-100 px-3 py-1 rounded">
+                        {typeof window !== 'undefined' ? window.location.origin : ''}/invite/{userSlug || 'slug'}
                     </div>
                 </div>
                 <div className="h-full w-full overflow-y-auto pt-10 pointer-events-auto">
