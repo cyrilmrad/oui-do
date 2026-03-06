@@ -19,6 +19,9 @@ export const invitations = pgTable('invitations', {
     bankAccountNumber: varchar('bank_account_number', { length: 255 }),
     mobileTransferNumber: varchar('mobile_transfer_number', { length: 255 }),
     theme: jsonb('theme'), // Store Theme object here
+    heroLogoUrl: text('hero_logo_url'),
+    showHeroLogo: boolean('show_hero_logo').default(false),
+    customSections: jsonb('custom_sections').default([]),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
 });

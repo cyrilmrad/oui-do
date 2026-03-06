@@ -1,0 +1,3 @@
+# Agent Specific Rules / Instructions
+
+- **GIT PUSH RESTRICTION:** Do not execute `git push` commands or push changes to remote repositories unless the user EXPLICITLY instructs you to do so in the prompt. You are allowed to create branches, make adjustments, and commit locally, but never automatically push the commit upstream unless requested.

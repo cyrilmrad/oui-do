@@ -21,6 +21,8 @@ const defaultData: InvitationData = {
     venue: "",
     location: "",
     message: "We can't wait to celebrate our special day with our favorite people.",
+    showHeroLogo: false,
+    customSections: [],
     theme: THEME_PRESETS.emerald
 };
 
@@ -68,7 +70,7 @@ export default function AdminDashboard() {
                 router.push('/login');
                 return;
             }
-            if (session.user.user_metadata?.role !== 'admin') {
+            if (session.user.app_metadata?.role !== 'admin') {
                 router.push('/login'); // Not authorized as admin
                 return;
             }
@@ -113,6 +115,38 @@ export default function AdminDashboard() {
         } finally {
             setOnboardLoading(false);
         }
+    };
+
+    const handleAddSection = () => {
+        setLiveData(prev => ({
+            ...prev,
+            customSections: [
+                ...(prev.customSections || []),
+                {
+                    id: Math.random().toString(36).substring(7),
+                    backgroundUrl: '',
+                    overlayType: 'text',
+                    textContent: '',
+                    fontFamily: 'font-serif'
+                }
+            ]
+        }));
+    };
+
+    const handleRemoveSection = (index: number) => {
+        setLiveData(prev => {
+            const arr = [...(prev.customSections || [])];
+            arr.splice(index, 1);
+            return { ...prev, customSections: arr };
+        });
+    };
+
+    const handleSectionChange = (index: number, field: string, value: string) => {
+        setLiveData(prev => {
+            const arr = [...(prev.customSections || [])];
+            arr[index] = { ...arr[index], [field]: value };
+            return { ...prev, customSections: arr };
+        });
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -358,14 +392,40 @@ export default function AdminDashboard() {
                             {/* Section: Media & Content */}
                             <div className="space-y-6">
                                 <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2">Media & Content</h2>
-                                <div className="p-4 bg-stone-50 rounded-lg border border-stone-100 space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Video URL (MP4)</label>
-                                        <input type="text" name="heroVideo" value={liveData.heroVideo || ''} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 focus:border-transparent transition-all" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Fallback Image URL</label>
-                                        <input type="text" name="heroImage" value={liveData.heroImage || ''} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 focus:border-transparent transition-all" />
+                                <div className="p-4 bg-stone-50 rounded-lg border border-stone-100 space-y-6">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between border-b border-stone-200 pb-2">
+                                            <label className="text-xs font-semibold text-stone-600 uppercase tracking-wider">Hero Section (Top)</label>
+                                            <label className="flex items-center cursor-pointer gap-2">
+                                                <span className="text-xs text-stone-500 font-medium">Use Logo Graphic</span>
+                                                <div className="relative inline-block w-10 h-5 align-middle select-none transition duration-200 ease-in">
+                                                    <input
+                                                        type="checkbox"
+                                                        name="showHeroLogo"
+                                                        checked={liveData.showHeroLogo || false}
+                                                        onChange={(e) => setLiveData(prev => ({ ...prev, showHeroLogo: e.target.checked }))}
+                                                        className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-stone-300 appearance-none cursor-pointer"
+                                                    />
+                                                    <label className="toggle-label block overflow-hidden h-5 rounded-full bg-stone-300 cursor-pointer"></label>
+                                                </div>
+                                            </label>
+                                        </div>
+
+                                        {liveData.showHeroLogo && (
+                                            <div className="space-y-2 pb-2">
+                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Hero Logo URL (PNG)</label>
+                                                <input type="text" name="heroLogoUrl" value={liveData.heroLogoUrl || ''} onChange={handleInputChange} placeholder="https://.../logo.png" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 transition-all text-sm bg-white" />
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Video URL (MP4)</label>
+                                            <input type="text" name="heroVideo" value={liveData.heroVideo || ''} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 focus:border-transparent transition-all text-sm bg-white" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Fallback Image URL</label>
+                                            <input type="text" name="heroImage" value={liveData.heroImage || ''} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 focus:border-transparent transition-all text-sm bg-white" />
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="space-y-2">
@@ -390,6 +450,98 @@ export default function AdminDashboard() {
                                     <div className="space-y-2">
                                         <input type="text" name="mobileTransferNumber" value={liveData.mobileTransferNumber || ''} onChange={handleInputChange} placeholder="Mobile Transfer Number" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* Section: Custom Blocks Builder */}
+                            <div className="space-y-6 pt-6 border-t border-stone-100">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400">Custom Sections</h2>
+                                    <button
+                                        type="button"
+                                        onClick={handleAddSection}
+                                        className="text-xs font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded transition-colors flex items-center gap-1"
+                                    >
+                                        <Plus className="w-3 h-3" /> Add Section
+                                    </button>
+                                </div>
+
+                                {liveData.customSections?.length === 0 && (
+                                    <p className="text-sm text-stone-400 italic text-center py-4">No custom sections added yet.</p>
+                                )}
+
+                                <div className="space-y-6">
+                                    {liveData.customSections?.map((section, idx) => (
+                                        <div key={section.id} className="p-5 border border-stone-200 rounded-xl bg-white shadow-sm space-y-4 relative group">
+                                            <button
+                                                onClick={() => handleRemoveSection(idx)}
+                                                className="absolute top-4 right-4 text-stone-300 hover:text-red-500 transition-colors"
+                                                title="Remove Section"
+                                            >
+                                                ✕
+                                            </button>
+
+                                            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                                                <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">Block {idx + 1}</span>
+                                                <select
+                                                    value={section.overlayType}
+                                                    onChange={(e) => handleSectionChange(idx, 'overlayType', e.target.value)}
+                                                    className="text-xs font-medium border border-stone-200 rounded px-2 py-1 text-stone-600 focus:outline-none focus:border-emerald-500"
+                                                >
+                                                    <option value="text">Text Overlay Mode</option>
+                                                    <option value="image">Image Overlay Mode</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Background Image URL *</label>
+                                                <input
+                                                    type="text"
+                                                    value={section.backgroundUrl}
+                                                    onChange={(e) => handleSectionChange(idx, 'backgroundUrl', e.target.value)}
+                                                    placeholder="https://.../bg.jpg"
+                                                    className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 transition-all text-sm"
+                                                />
+                                            </div>
+
+                                            {section.overlayType === 'text' ? (
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    <div className="md:col-span-2 space-y-2">
+                                                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Text Content</label>
+                                                        <textarea
+                                                            value={section.textContent || ''}
+                                                            onChange={(e) => handleSectionChange(idx, 'textContent', e.target.value)}
+                                                            rows={2}
+                                                            className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 transition-all text-sm resize-none"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Typography</label>
+                                                        <select
+                                                            value={section.fontFamily || 'font-sans'}
+                                                            onChange={(e) => handleSectionChange(idx, 'fontFamily', e.target.value)}
+                                                            className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 transition-all text-sm"
+                                                        >
+                                                            <option value="font-sans">Modern Sans</option>
+                                                            <option value="font-serif">Elegant Serif</option>
+                                                            <option value="font-script">Signature Script</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Foreground Image URL (PNG Typography)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={section.overlayImageUrl || ''}
+                                                        onChange={(e) => handleSectionChange(idx, 'overlayImageUrl', e.target.value)}
+                                                        placeholder="https://.../text-graphic.png"
+                                                        className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 transition-all text-sm"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
 

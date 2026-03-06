@@ -32,9 +32,9 @@ export async function GET(request: Request) {
 
         // Filter for clients only and map to match mock structure
         const clients = users
-            .filter(user => user.user_metadata?.role === 'client')
+            .filter(user => user.app_metadata?.role === 'client')
             .map(user => {
-                const slug = user.user_metadata?.slug || 'unknown-slug';
+                const slug = user.app_metadata?.slug || 'unknown-slug';
                 const inv = allInvitations.find(i => i.slug === slug);
                 return {
                     id: user.id,

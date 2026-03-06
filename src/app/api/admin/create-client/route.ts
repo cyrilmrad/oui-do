@@ -28,7 +28,7 @@ export async function POST(request: Request) {
         // to confirm the requester is legitimately an admin. For MVP, we'll extract the token.
         // const token = authHeader?.split('Bearer ')[1];
         // const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-        // if (authError || user?.user_metadata?.role !== 'admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        // if (authError || user?.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const body = await request.json();
         const { email, password, slug } = body;
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
             email: email,
             password: password,
             email_confirm: true, // Auto-confirm since an admin is creating them
-            user_metadata: {
+            app_metadata: {
                 role: 'client',
                 slug: slug
             }
