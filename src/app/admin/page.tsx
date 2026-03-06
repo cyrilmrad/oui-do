@@ -292,7 +292,7 @@ export default function AdminDashboard() {
                                 <div className="space-y-2">
                                     <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Assigned Wedding Slug</label>
                                     <input type="text" required value={newClientForm.slug} onChange={e => setNewClientForm({ ...newClientForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })} className="w-full border border-stone-300 rounded p-2.5 text-sm" placeholder="e.g. maya-and-john" />
-                                    <p className="text-xs text-stone-400 mt-1">URL will be: /invite/{newClientForm.slug || '...'}</p>
+                                    <p className="text-xs text-stone-400 mt-1">URL will be: {typeof window !== 'undefined' ? window.location.origin : ''}/invite/{newClientForm.slug || '...'}</p>
                                 </div>
                                 <button type="submit" disabled={onboardLoading} className="w-full bg-stone-900 text-white rounded p-3 text-sm font-medium mt-8 disabled:opacity-50">
                                     {onboardLoading ? 'Provisioning...' : 'Create Account'}
@@ -424,7 +424,7 @@ export default function AdminDashboard() {
                             <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
                         </div>
                         <div className="text-xs font-mono text-stone-400 bg-stone-100 px-3 py-1 rounded-md">
-                            localhost:3000/invite/{liveData.slug || 'slug'}
+                            {typeof window !== 'undefined' ? window.location.origin : ''}/invite/{liveData.slug || 'slug'}
                         </div>
                         <div className="w-12"></div>
                     </div>
