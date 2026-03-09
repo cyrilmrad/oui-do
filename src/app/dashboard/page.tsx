@@ -23,7 +23,7 @@ import {
 import InvitationPreview, { InvitationData, Theme } from '@/components/InvitationPreview';
 
 type RsvpStatus = 'all' | 'attending' | 'declined' | 'pending';
-type DashboardTab = 'overview' | 'messages' | 'settings';
+type DashboardTab = 'overview' | 'guests' | 'messages' | 'settings';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -65,6 +65,79 @@ export default function DashboardPage() {
 
     const [isSaving, setIsSaving] = useState(false);
     const [userSlug, setUserSlug] = useState("");
+
+    // Guests State & Handlers
+    const [isAddingGuest, setIsAddingGuest] = useState(false);
+    const [newGuestData, setNewGuestData] = useState({ firstName: '', lastName: '', pax: 1 });
+
+    const handleAddGuest = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const res = await fetch('/api/guests', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug: userSlug, guests: [newGuestData] })
+            });
+            if (res.ok) {
+                const updatedRes = await fetch(`/api/guests?slug=${userSlug}`);
+                setRsvps(await updatedRes.json());
+                setIsAddingGuest(false);
+                setNewGuestData({ firstName: '', lastName: '', pax: 1 });
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Failed to add guest.");
+        }
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const text = event.target?.result as string;
+            // Parse CSV format expected: firstName,lastName,pax
+            const rows = text.split('\n').filter(row => row.trim() !== '');
+            const guestsToImport = rows.slice(1).map(row => { // Assuming first row is header
+                const cols = row.split(',');
+                return {
+                    firstName: cols[0]?.trim() || '',
+                    lastName: cols[1]?.trim() || '',
+                    pax: parseInt(cols[2]?.trim() || '1', 10)
+                };
+            }).filter(g => g.firstName && g.lastName);
+
+            if (guestsToImport.length > 0) {
+                try {
+                    const res = await fetch('/api/guests', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ slug: userSlug, guests: guestsToImport })
+                    });
+                    if (res.ok) {
+                        const updatedRes = await fetch(`/api/guests?slug=${userSlug}`);
+                        setRsvps(await updatedRes.json());
+                        alert('Guests imported successfully!');
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert("Failed to import CSV.");
+                }
+            } else {
+                alert("No valid guests found in CSV. Please ensure format is: firstName,lastName,pax");
+            }
+        };
+        reader.readAsText(file);
+        // reset input
+        e.target.value = '';
+    };
+
+    const copyGuestLink = (guestId: string) => {
+        const origin = window.location.origin;
+        navigator.clipboard.writeText(`${origin}/invite/${userSlug}?guest=${guestId}`);
+        alert('Personalized link copied to clipboard!');
+    };
 
     // Auth & Data Fetch Check
     useEffect(() => {
@@ -114,7 +187,7 @@ export default function DashboardPage() {
                         }
                     }
 
-                    const rsvpsRes = await fetch(`/api/rsvps?slug=${slug}`);
+                    const rsvpsRes = await fetch(`/api/guests?slug=${slug}`);
                     if (rsvpsRes.ok) {
                         const rsvpsData = await rsvpsRes.json();
                         setRsvps(rsvpsData);
@@ -132,9 +205,9 @@ export default function DashboardPage() {
     // Derived State for Summary Cards
     const summaryStats = useMemo(() => {
         const attendingRsvps = rsvps.filter(r => r.status === 'attending');
-        const totalGuests = attendingRsvps.reduce((sum, rsvp) => sum + (rsvp.guests || 1), 0);
+        const totalGuests = attendingRsvps.reduce((sum, rsvp) => sum + (rsvp.pax || 1), 0);
         const totalInvited = rsvps.reduce((sum, rsvp) => {
-            return sum + (rsvp.status !== 'declined' ? Math.max(rsvp.guests || 1, 1) : 0);
+            return sum + (rsvp.status !== 'declined' ? Math.max(rsvp.pax || 1, 1) : 0);
         }, 0);
 
         return {
@@ -293,6 +366,46 @@ export default function DashboardPage() {
                 </div>
             </div>
 
+
+        </>
+    );
+
+    const renderGuests = () => (
+        <>
+            <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                <div>
+                    <h2 className="text-3xl font-serif text-stone-900">Guest Management</h2>
+                    <p className="mt-2 text-sm text-stone-500">Add guests manually or import from a CSV to generate secure personalized RSVP links.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <label className="cursor-pointer bg-stone-100 text-stone-600 hover:bg-stone-200 uppercase tracking-widest text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center">
+                        <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
+                        Import CSV
+                    </label>
+                    <button onClick={() => setIsAddingGuest(!isAddingGuest)} className="bg-stone-900 text-white hover:bg-stone-800 uppercase tracking-widest text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center gap-2">
+                        <Plus className="w-4 h-4" /> Add Guest
+                    </button>
+                </div>
+            </div>
+
+            {isAddingGuest && (
+                <div className="mb-6 bg-white p-5 rounded-xl border border-stone-200 shadow-sm flex flex-col sm:flex-row gap-4 items-end">
+                    <div className="w-full sm:w-1/3 space-y-2">
+                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">First Name</label>
+                        <input type="text" value={newGuestData.firstName} onChange={e => setNewGuestData({ ...newGuestData, firstName: e.target.value })} className="w-full border border-stone-200 p-2.5 rounded-md text-sm focus:ring-2 focus:ring-stone-500 outline-none" placeholder="John" />
+                    </div>
+                    <div className="w-full sm:w-1/3 space-y-2">
+                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Last Name</label>
+                        <input type="text" value={newGuestData.lastName} onChange={e => setNewGuestData({ ...newGuestData, lastName: e.target.value })} className="w-full border border-stone-200 p-2.5 rounded-md text-sm focus:ring-2 focus:ring-stone-500 outline-none" placeholder="Doe" />
+                    </div>
+                    <div className="w-full sm:w-1/4 space-y-2">
+                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Pax (Guests)</label>
+                        <input type="number" min="1" value={newGuestData.pax} onChange={e => setNewGuestData({ ...newGuestData, pax: parseInt(e.target.value) || 1 })} className="w-full border border-stone-200 p-2.5 rounded-md text-sm focus:ring-2 focus:ring-stone-500 outline-none" />
+                    </div>
+                    <button onClick={handleAddGuest} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-6 rounded-md transition-colors text-sm">Save</button>
+                </div>
+            )}
+
             <div className="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden">
                 <div className="px-6 py-5 border-b border-stone-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <h3 className="text-lg font-serif text-stone-900">Guest List</h3>
@@ -301,31 +414,18 @@ export default function DashboardPage() {
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Search className="h-4 w-4 text-stone-400" />
                             </div>
-                            <input
-                                type="text"
-                                placeholder="Search guests..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="block w-full pl-10 pr-3 py-2 border border-stone-200 rounded-lg text-sm placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-500 focus:border-stone-500 bg-stone-50/50"
-                            />
+                            <input type="text" placeholder="Search guests..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="block w-full pl-10 pr-3 py-2 border border-stone-200 rounded-lg text-sm placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-500 focus:border-stone-500 bg-stone-50/50" />
                         </div>
                         <div className="relative w-full sm:w-auto">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Filter className="h-4 w-4 text-stone-400" />
                             </div>
-                            <select
-                                value={filterStatus}
-                                onChange={(e) => setFilterStatus(e.target.value as RsvpStatus)}
-                                className="block w-full pl-10 pr-10 py-2 border border-stone-200 rounded-lg text-sm text-stone-700 bg-white focus:outline-none focus:ring-1 focus:ring-stone-500 focus:border-stone-500 appearance-none cursor-pointer"
-                            >
+                            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as RsvpStatus)} className="block w-full pl-10 pr-10 py-2 border border-stone-200 rounded-lg text-sm text-stone-700 bg-white focus:outline-none focus:ring-1 focus:ring-stone-500 focus:border-stone-500 appearance-none cursor-pointer">
                                 <option value="all">All Guests</option>
                                 <option value="attending">Attending</option>
                                 <option value="declined">Declined</option>
                                 <option value="pending">Pending</option>
                             </select>
-                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-stone-400">
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -336,7 +436,8 @@ export default function DashboardPage() {
                                 <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider">Guest Name</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider">Status</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider text-center">Party Size</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider">Dietary Needs</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider">Message</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider text-right">Link</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-stone-100">
@@ -348,24 +449,29 @@ export default function DashboardPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(rsvp.status)}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <div className="text-sm text-stone-600 font-serif">{rsvp.guests}</div>
+                                            <div className="text-sm text-stone-600 font-serif">{rsvp.pax}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-stone-500">{rsvp.dietary || "-"}</div>
+                                            <div className="text-sm text-stone-500 truncate max-w-[150px]">{rsvp.message || "-"}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                                            <button onClick={() => copyGuestLink(rsvp.id)} className="text-stone-400 hover:text-stone-700 transition-colors p-2" title="Copy Personalized Link">
+                                                <Copy className="w-4 h-4 inline" />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-12 text-center text-stone-500 text-sm">
-                                        No guests found matching your filters.
+                                    <td colSpan={5} className="px-6 py-12 text-center text-stone-500 text-sm">
+                                        No guests found.
                                     </td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
-                <div className="px-6 py-4 border-t border-stone-100 bg-stone-50/30 flex items-center justify-between">
+                <div className="px-6 py-4 border-t border-stone-100 bg-stone-50/30">
                     <p className="text-xs text-stone-500">Showing {filteredRsvps.length} results</p>
                 </div>
             </div>
@@ -690,6 +796,13 @@ export default function DashboardPage() {
                         Overview
                     </button>
                     <button
+                        onClick={() => setActiveTab('guests')}
+                        className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'guests' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
+                    >
+                        <Users className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'guests' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
+                        Guests
+                    </button>
+                    <button
                         onClick={() => setActiveTab('messages')}
                         className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'messages' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
                     >
@@ -721,6 +834,9 @@ export default function DashboardPage() {
                     <button onClick={() => setActiveTab('overview')} className={`p-2 rounded-md ${activeTab === 'overview' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <LayoutDashboard className="w-5 h-5" />
                     </button>
+                    <button onClick={() => setActiveTab('guests')} className={`p-2 rounded-md ${activeTab === 'guests' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
+                        <Users className="w-5 h-5" />
+                    </button>
                     <button onClick={() => setActiveTab('messages')} className={`p-2 rounded-md ${activeTab === 'messages' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <Mail className="w-5 h-5" />
                     </button>
@@ -734,6 +850,7 @@ export default function DashboardPage() {
             <main className="flex-1 overflow-x-hidden overflow-y-auto bg-stone-50/50 pt-16 md:pt-0">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
                     {activeTab === 'overview' && renderOverview()}
+                    {activeTab === 'guests' && renderGuests()}
                     {activeTab === 'messages' && renderMessages()}
                     {activeTab === 'settings' && renderSettings()}
                 </div>

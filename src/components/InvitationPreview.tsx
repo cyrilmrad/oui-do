@@ -44,16 +44,27 @@ export interface InvitationData {
 
 interface InvitationPreviewProps {
     data: InvitationData;
+    guestData?: {
+        id: string;
+        invitationId: number;
+        firstName: string;
+        lastName: string;
+        pax: number;
+        status: string;
+        message: string | null;
+        createdAt: Date | null;
+        updatedAt: Date | null;
+    } | null;
 }
 
-export default function InvitationPreview({ data }: InvitationPreviewProps) {
+export default function InvitationPreview({ data, guestData }: InvitationPreviewProps) {
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
-        attending: 'yes',
-        guests: '1',
-        message: ''
+        firstName: guestData?.firstName || '',
+        lastName: guestData?.lastName || '',
+        attending: guestData?.status && guestData.status !== 'pending' ? (guestData.status === 'attending' ? 'yes' : 'no') : 'yes',
+        guests: guestData?.pax ? guestData.pax.toString() : '1',
+        message: guestData?.message || ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState('');
@@ -175,7 +186,7 @@ export default function InvitationPreview({ data }: InvitationPreviewProps) {
             const res = await fetch('/api/rsvp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slug: data.slug, ...formData })
+                body: JSON.stringify({ slug: data.slug, guestId: guestData?.id, ...formData })
             });
 
             const result = await res.json();
@@ -601,7 +612,8 @@ export default function InvitationPreview({ data }: InvitationPreviewProps) {
                                                     required
                                                     value={formData.firstName}
                                                     onChange={handleInputChange}
-                                                    className="w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors placeholder:text-stone-300 font-light"
+                                                    readOnly={!!guestData}
+                                                    className={`w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors placeholder:text-stone-300 font-light ${guestData ? 'text-stone-500 cursor-not-allowed border-dashed' : ''}`}
                                                     placeholder="Jane"
                                                 />
                                             </div>
@@ -614,7 +626,8 @@ export default function InvitationPreview({ data }: InvitationPreviewProps) {
                                                     required
                                                     value={formData.lastName}
                                                     onChange={handleInputChange}
-                                                    className="w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors placeholder:text-stone-300 font-light"
+                                                    readOnly={!!guestData}
+                                                    className={`w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors placeholder:text-stone-300 font-light ${guestData ? 'text-stone-500 cursor-not-allowed border-dashed' : ''}`}
                                                     placeholder="Doe"
                                                 />
                                             </div>
@@ -672,10 +685,9 @@ export default function InvitationPreview({ data }: InvitationPreviewProps) {
                                                             onChange={handleInputChange}
                                                             className="w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors appearance-none cursor-pointer font-light"
                                                         >
-                                                            <option value="1">1 Person</option>
-                                                            <option value="2">2 People</option>
-                                                            <option value="3">3 People</option>
-                                                            <option value="4">4 People</option>
+                                                            {Array.from({ length: guestData ? guestData.pax : 4 }, (_, i) => i + 1).map(num => (
+                                                                <option key={num} value={num}>{num} {num === 1 ? 'Person' : 'People'}</option>
+                                                            ))}
                                                         </select>
                                                         <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400">
                                                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

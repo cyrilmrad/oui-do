@@ -47,7 +47,7 @@ This plan outlines the steps to upgrade the e-invitation builder to support Hero
   - Otherwise, fallback to the standard `data.bride & data.groom` text rendering.
 - **Dynamic Sections Render**:
   - Map through `data.customSections` right below the main event details/gifts section.
-  - Render a `min-h-[60vh]` div per section with `bg-[url(backgroundUrl)] bg-cover bg-center`.
+  - Render a `min-h-[60vh]` div per section with inline style background image, `bg-cover`, and `bg-center`.
   - Apply a typical dark overlay (`bg-black/40` or similar).
   - Wrap in `motion.div` for scroll-reveal.
   - If `overlayType === 'text'`, render the block centering `textContent` with the chosen `fontFamily`.

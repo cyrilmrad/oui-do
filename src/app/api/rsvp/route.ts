@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { invitations, rsvps } from '@/db/schema';
+import { invitations, guests as guestsTable } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { slug, firstName, lastName, attending, guests, dietary } = body;
+        // guestId is only present if they use personalized link
+        const { guestId, slug, firstName, lastName, attending, guests, message } = body;
 
         if (!slug || !firstName || !lastName || !attending) {
             return NextResponse.json({ error: 'Missing required RSVP fields' }, { status: 400 });
         }
 
-        // 1. Find the parent invitation by slug
         const invitationResult = await db.select({ id: invitations.id }).from(invitations).where(eq(invitations.slug, slug));
 
         if (invitationResult.length === 0) {
@@ -20,17 +20,25 @@ export async function POST(request: Request) {
         }
 
         const invitationId = invitationResult[0].id;
+        const status = attending === 'yes' ? 'attending' : 'declined';
+        const paxCount = attending === 'yes' ? parseInt(guests, 10) || 1 : 0;
 
-        // 2. Insert the RSVP record
-        await db.insert(rsvps).values({
-            invitationId,
-            firstName,
-            lastName,
-            status: attending === 'yes' ? 'attending' : 'declined',
-            guests: attending === 'yes' ? parseInt(guests, 10) || 1 : 0,
-            dietary: attending === 'yes' ? dietary : '',
-            message: '' // Assuming message is not in RSVP form yet, but could be added later
-        });
+        if (guestId) {
+            // Personalized Link Update
+            await db.update(guestsTable)
+                .set({ status, pax: paxCount, message: message || '', updatedAt: new Date() })
+                .where(eq(guestsTable.id, guestId));
+        } else {
+            // Generic Link Insert
+            await db.insert(guestsTable).values({
+                invitationId,
+                firstName,
+                lastName,
+                status,
+                pax: paxCount,
+                message: message || ''
+            });
+        }
 
         return NextResponse.json({ message: 'RSVP submitted successfully' });
 

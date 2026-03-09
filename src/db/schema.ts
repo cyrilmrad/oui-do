@@ -1,4 +1,4 @@
-import { pgTable, serial, text, varchar, timestamp, boolean, integer, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, varchar, timestamp, boolean, integer, jsonb, uuid } from 'drizzle-orm/pg-core';
 
 export const invitations = pgTable('invitations', {
     id: serial('id').primaryKey(),
@@ -26,14 +26,14 @@ export const invitations = pgTable('invitations', {
     updatedAt: timestamp('updated_at').defaultNow(),
 });
 
-export const rsvps = pgTable('rsvps', {
-    id: serial('id').primaryKey(),
+export const guests = pgTable('guests', {
+    id: uuid('id').defaultRandom().primaryKey(),
     invitationId: integer('invitation_id').references(() => invitations.id).notNull(),
     firstName: varchar('first_name', { length: 255 }).notNull(),
     lastName: varchar('last_name', { length: 255 }).notNull(),
-    status: varchar('status', { length: 50 }).notNull(), // 'attending', 'declined'
-    guests: integer('guests').notNull().default(1),
-    dietary: text('dietary'),
+    pax: integer('pax').notNull().default(1),
+    status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending', 'attending', 'declined'
     message: text('message'),
     createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
 });
