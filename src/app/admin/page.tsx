@@ -450,7 +450,9 @@ export default function AdminDashboard() {
 
                                         {/* Section: Event Details */}
                                         <div className="space-y-6">
-                                            <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2">Event Details</h2>
+                                            <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                                                <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400">Ceremony Details</h2>
+                                            </div>
                                             <div className="grid grid-cols-2 gap-6">
                                                 <div className="space-y-2">
                                                     <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Date</label>
@@ -462,16 +464,32 @@ export default function AdminDashboard() {
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Venue Name</label>
+                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Ceremony Venue Name</label>
                                                 <input type="text" name="venue" value={liveData.venue} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Location</label>
+                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Ceremony Location</label>
                                                 <input type="text" name="location" value={liveData.location} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Google Maps Link</label>
                                                 <input type="text" name="mapLink" value={liveData.mapLink || ''} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
+                                            </div>
+
+                                            <div className="flex items-center justify-between border-b border-stone-100 pb-2 pt-6">
+                                                <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400">Reception Details <span className="text-[10px] lowercase text-stone-400/80 ml-2">(optional override)</span></h2>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Reception Time</label>
+                                                <input type="time" name="receptionTime" value={liveData.receptionTime || ''} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Reception Venue Name</label>
+                                                <input type="text" name="receptionVenue" value={liveData.receptionVenue || ''} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Reception Location</label>
+                                                <input type="text" name="receptionLocation" value={liveData.receptionLocation || ''} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
                                             </div>
                                         </div>
 

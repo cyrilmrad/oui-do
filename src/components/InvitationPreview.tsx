@@ -27,6 +27,9 @@ export interface InvitationData {
     time: string;
     venue: string;
     location: string;
+    receptionTime?: string;
+    receptionVenue?: string;
+    receptionLocation?: string;
     mapLink?: string;
     heroImage?: string;
     heroVideo?: string;
@@ -423,54 +426,117 @@ export default function InvitationPreview({ data, guestData }: InvitationPreview
                             variants={sectionVariants}
                         >
                             <div className="max-w-5xl mx-auto">
-                                <h3 className="text-sm md:text-base font-sans text-center mb-24 tracking-[0.2em] uppercase text-stone-400">
+                                <h3 className="text-sm md:text-base font-sans text-center mb-16 tracking-[0.2em] uppercase text-stone-400">
                                     The Details
                                 </h3>
 
-                                <motion.div
-                                    className="grid grid-cols-1 gap-16 text-center md:grid-cols-3 md:gap-12 md:text-left"
-                                    variants={staggeredContainerVariants}
-                                    initial="hidden"
-                                    whileInView="visible"
-                                    viewport={{ once: true, margin: "-100px" }}
-                                >
-                                    <motion.div variants={itemVariants} className="flex flex-col items-center md:items-start group cursor-default">
-                                        <div className="w-16 h-16 rounded-full bg-stone-50 flex items-center justify-center mb-8 group-hover:bg-stone-100 transition-colors duration-500">
-                                            <Calendar className={`w-6 h-6 ${data.theme.accent}`} strokeWidth={1} />
-                                        </div>
-                                        <h4 className="text-sm font-sans mb-4 uppercase tracking-[0.15em] text-stone-400">Date</h4>
-                                        <p className="text-stone-800 font-serif text-2xl">{formatDate(data.date)}</p>
-                                    </motion.div>
-
-                                    <motion.div variants={itemVariants} className="flex flex-col items-center md:items-start group cursor-default">
-                                        <div className="w-16 h-16 rounded-full bg-stone-50 flex items-center justify-center mb-8 group-hover:bg-stone-100 transition-colors duration-500">
-                                            <Clock className={`w-6 h-6 ${data.theme.accent}`} strokeWidth={1} />
-                                        </div>
-                                        <h4 className="text-sm font-sans mb-4 uppercase tracking-[0.15em] text-stone-400">Time</h4>
-                                        <p className="text-stone-800 font-serif text-2xl">{formatTime(data.time)}</p>
-                                    </motion.div>
-
-                                    <motion.div variants={itemVariants} className="flex flex-col items-center md:items-start group cursor-default">
-                                        <div className="w-16 h-16 rounded-full bg-stone-50 flex items-center justify-center mb-8 group-hover:bg-stone-100 transition-colors duration-500">
-                                            <MapPin className={`w-6 h-6 ${data.theme.accent}`} strokeWidth={1} />
-                                        </div>
-                                        <h4 className="text-sm font-sans mb-4 uppercase tracking-[0.15em] text-stone-400">Location</h4>
-                                        <p className="text-stone-800 font-serif text-2xl mb-2">{data.venue || "Venue"}</p>
-                                        <p className="text-stone-500 font-light text-lg mb-4">{data.location || "Location"}</p>
-
-                                        {data.mapLink && (
-                                            <a
-                                                href={data.mapLink}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className={`inline-flex items-center text-sm uppercase tracking-widest ${data.theme.accent} hover:opacity-70 transition-opacity border-b pb-1`}
-                                                style={{ borderColor: 'currentColor' }}
+                                <div className="space-y-24">
+                                    {/* Ceremony Block (Render if venue or time exists) */}
+                                    {(data.venue || data.time) && (
+                                        <div>
+                                            <h4 className="text-center font-serif text-2xl md:text-3xl text-stone-800 mb-12 font-light">
+                                                Ceremony
+                                            </h4>
+                                            <motion.div
+                                                className="grid grid-cols-1 gap-12 text-center md:grid-cols-3 md:gap-8 md:text-left max-w-4xl mx-auto"
+                                                variants={staggeredContainerVariants}
+                                                initial="hidden"
+                                                whileInView="visible"
+                                                viewport={{ once: true, margin: "-100px" }}
                                             >
-                                                View Map <ExternalLink className="w-3 h-3 ml-2" />
-                                            </a>
-                                        )}
-                                    </motion.div>
-                                </motion.div>
+                                                <motion.div variants={itemVariants} className="flex flex-col items-center md:items-start group cursor-default">
+                                                    <div className="w-16 h-16 rounded-full bg-stone-50 flex items-center justify-center mb-6 group-hover:bg-stone-100 transition-colors duration-500">
+                                                        <Calendar className={`w-6 h-6 ${data.theme.accent}`} strokeWidth={1} />
+                                                    </div>
+                                                    <h5 className="text-xs font-sans mb-3 uppercase tracking-[0.15em] text-stone-400">Date</h5>
+                                                    <p className="text-stone-800 font-serif text-xl">{formatDate(data.date)}</p>
+                                                </motion.div>
+
+                                                <motion.div variants={itemVariants} className="flex flex-col items-center md:items-start group cursor-default">
+                                                    <div className="w-16 h-16 rounded-full bg-stone-50 flex items-center justify-center mb-6 group-hover:bg-stone-100 transition-colors duration-500">
+                                                        <Clock className={`w-6 h-6 ${data.theme.accent}`} strokeWidth={1} />
+                                                    </div>
+                                                    <h5 className="text-xs font-sans mb-3 uppercase tracking-[0.15em] text-stone-400">Time</h5>
+                                                    <p className="text-stone-800 font-serif text-xl">{formatTime(data.time)}</p>
+                                                </motion.div>
+
+                                                <motion.div variants={itemVariants} className="flex flex-col items-center md:items-start group cursor-default">
+                                                    <div className="w-16 h-16 rounded-full bg-stone-50 flex items-center justify-center mb-6 group-hover:bg-stone-100 transition-colors duration-500">
+                                                        <MapPin className={`w-6 h-6 ${data.theme.accent}`} strokeWidth={1} />
+                                                    </div>
+                                                    <h5 className="text-xs font-sans mb-3 uppercase tracking-[0.15em] text-stone-400">Location</h5>
+                                                    <p className="text-stone-800 font-serif text-xl mb-1">{data.venue || "Venue"}</p>
+                                                    <p className="text-stone-500 font-light text-base mb-3">{data.location || "Location"}</p>
+
+                                                    {data.mapLink && (
+                                                        <a
+                                                            href={data.mapLink}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className={`inline-flex items-center text-xs uppercase tracking-widest ${data.theme.accent} hover:opacity-70 transition-opacity border-b pb-1`}
+                                                            style={{ borderColor: 'currentColor' }}
+                                                        >
+                                                            View Map <ExternalLink className="w-3 h-3 ml-2" />
+                                                        </a>
+                                                    )}
+                                                </motion.div>
+                                            </motion.div>
+                                        </div>
+                                    )}
+
+                                    {/* Reception Block (Render if reception venue or time exists) */}
+                                    {(data.receptionVenue || data.receptionTime) && (
+                                        <div>
+                                            <h4 className="text-center font-serif text-2xl md:text-3xl text-stone-800 mb-12 font-light">
+                                                Reception
+                                            </h4>
+                                            <motion.div
+                                                className="grid grid-cols-1 gap-12 text-center md:grid-cols-3 md:gap-8 md:text-left max-w-4xl mx-auto"
+                                                variants={staggeredContainerVariants}
+                                                initial="hidden"
+                                                whileInView="visible"
+                                                viewport={{ once: true, margin: "-100px" }}
+                                            >
+                                                <motion.div variants={itemVariants} className="flex flex-col items-center md:items-start group cursor-default">
+                                                    <div className="w-16 h-16 rounded-full bg-stone-50 flex items-center justify-center mb-6 group-hover:bg-stone-100 transition-colors duration-500">
+                                                        <Calendar className={`w-6 h-6 ${data.theme.accent}`} strokeWidth={1} />
+                                                    </div>
+                                                    <h5 className="text-xs font-sans mb-3 uppercase tracking-[0.15em] text-stone-400">Date</h5>
+                                                    <p className="text-stone-800 font-serif text-xl">{formatDate(data.date)}</p>
+                                                </motion.div>
+
+                                                <motion.div variants={itemVariants} className="flex flex-col items-center md:items-start group cursor-default">
+                                                    <div className="w-16 h-16 rounded-full bg-stone-50 flex items-center justify-center mb-6 group-hover:bg-stone-100 transition-colors duration-500">
+                                                        <Clock className={`w-6 h-6 ${data.theme.accent}`} strokeWidth={1} />
+                                                    </div>
+                                                    <h5 className="text-xs font-sans mb-3 uppercase tracking-[0.15em] text-stone-400">Time</h5>
+                                                    <p className="text-stone-800 font-serif text-xl">{formatTime(data.receptionTime || "")}</p>
+                                                </motion.div>
+
+                                                <motion.div variants={itemVariants} className="flex flex-col items-center md:items-start group cursor-default">
+                                                    <div className="w-16 h-16 rounded-full bg-stone-50 flex items-center justify-center mb-6 group-hover:bg-stone-100 transition-colors duration-500">
+                                                        <MapPin className={`w-6 h-6 ${data.theme.accent}`} strokeWidth={1} />
+                                                    </div>
+                                                    <h5 className="text-xs font-sans mb-3 uppercase tracking-[0.15em] text-stone-400">Location</h5>
+                                                    <p className="text-stone-800 font-serif text-xl mb-1">{data.receptionVenue || "Venue"}</p>
+                                                    <p className="text-stone-500 font-light text-base mb-3">{data.receptionLocation || "Location"}</p>
+
+                                                    {data.mapLink && (
+                                                        <a
+                                                            href={data.mapLink}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className={`inline-flex items-center text-xs uppercase tracking-widest ${data.theme.accent} hover:opacity-70 transition-opacity border-b pb-1`}
+                                                            style={{ borderColor: 'currentColor' }}
+                                                        >
+                                                            View Map <ExternalLink className="w-3 h-3 ml-2" />
+                                                        </a>
+                                                    )}
+                                                </motion.div>
+                                            </motion.div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </motion.section>
 
