@@ -52,6 +52,7 @@ export default async function InvitePage({
         receptionTime: dbData.receptionTime || "",
         receptionVenue: dbData.receptionVenue || "",
         receptionLocation: dbData.receptionLocation || "",
+        detailsBackgroundUrl: dbData.detailsBackgroundUrl || "",
         mapLink: dbData.mapLink || "",
         heroImage: dbData.heroImage || "",
         heroVideo: dbData.heroVideo || "",

@@ -16,6 +16,7 @@ export const invitations = pgTable('invitations', {
     mapLink: text('map_link'),
     heroImage: text('hero_image'),
     heroVideo: text('hero_video'),
+    detailsBackgroundUrl: text('details_background_url'),
     audioUrl: text('audio_url'),
     message: text('message'),
     giftMessage: text('gift_message'),

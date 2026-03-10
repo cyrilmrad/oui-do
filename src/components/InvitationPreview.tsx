@@ -36,6 +36,7 @@ export interface InvitationData {
     audioUrl?: string;
     heroLogoUrl?: string;
     showHeroLogo?: boolean;
+    detailsBackgroundUrl?: string;
     customSections?: CustomSection[];
     message: string;
     giftMessage?: string;
@@ -417,126 +418,108 @@ export default function InvitationPreview({ data, guestData }: InvitationPreview
                             <div className="w-12 h-[1px] bg-stone-300 mx-auto mt-20" />
                         </motion.section>
 
-                        {/* Event Details Section */}
+                        {/* Event Details Section - Refactored to Stacked Elegant Layout */}
                         <motion.section
-                            className="py-32 md:py-40 px-6 md:px-12 bg-white"
+                            className="relative py-32 md:py-48 px-6 md:px-12 flex items-center justify-center min-h-screen overflow-hidden"
                             initial="hidden"
                             whileInView="visible"
                             viewport={{ once: true, margin: "-100px" }}
                             variants={sectionVariants}
                         >
-                            <div className="max-w-5xl mx-auto">
-                                <h3 className="text-sm md:text-base font-sans text-center mb-16 tracking-[0.2em] uppercase text-stone-400">
-                                    The Details
-                                </h3>
-
-                                <div className="space-y-24">
-                                    {/* Ceremony Block (Render if venue or time exists) */}
-                                    {(data.venue || data.time) && (
-                                        <div>
-                                            <h4 className="text-center font-serif text-2xl md:text-3xl text-stone-800 mb-12 font-light">
-                                                Ceremony
-                                            </h4>
-                                            <motion.div
-                                                className="grid grid-cols-1 gap-12 text-center md:grid-cols-3 md:gap-8 md:text-left max-w-4xl mx-auto"
-                                                variants={staggeredContainerVariants}
-                                                initial="hidden"
-                                                whileInView="visible"
-                                                viewport={{ once: true, margin: "-100px" }}
-                                            >
-                                                <motion.div variants={itemVariants} className="flex flex-col items-center md:items-start group cursor-default">
-                                                    <div className="w-16 h-16 rounded-full bg-stone-50 flex items-center justify-center mb-6 group-hover:bg-stone-100 transition-colors duration-500">
-                                                        <Calendar className={`w-6 h-6 ${data.theme.accent}`} strokeWidth={1} />
-                                                    </div>
-                                                    <h5 className="text-xs font-sans mb-3 uppercase tracking-[0.15em] text-stone-400">Date</h5>
-                                                    <p className="text-stone-800 font-serif text-xl">{formatDate(data.date)}</p>
-                                                </motion.div>
-
-                                                <motion.div variants={itemVariants} className="flex flex-col items-center md:items-start group cursor-default">
-                                                    <div className="w-16 h-16 rounded-full bg-stone-50 flex items-center justify-center mb-6 group-hover:bg-stone-100 transition-colors duration-500">
-                                                        <Clock className={`w-6 h-6 ${data.theme.accent}`} strokeWidth={1} />
-                                                    </div>
-                                                    <h5 className="text-xs font-sans mb-3 uppercase tracking-[0.15em] text-stone-400">Time</h5>
-                                                    <p className="text-stone-800 font-serif text-xl">{formatTime(data.time)}</p>
-                                                </motion.div>
-
-                                                <motion.div variants={itemVariants} className="flex flex-col items-center md:items-start group cursor-default">
-                                                    <div className="w-16 h-16 rounded-full bg-stone-50 flex items-center justify-center mb-6 group-hover:bg-stone-100 transition-colors duration-500">
-                                                        <MapPin className={`w-6 h-6 ${data.theme.accent}`} strokeWidth={1} />
-                                                    </div>
-                                                    <h5 className="text-xs font-sans mb-3 uppercase tracking-[0.15em] text-stone-400">Location</h5>
-                                                    <p className="text-stone-800 font-serif text-xl mb-1">{data.venue || "Venue"}</p>
-                                                    <p className="text-stone-500 font-light text-base mb-3">{data.location || "Location"}</p>
-
-                                                    {data.mapLink && (
-                                                        <a
-                                                            href={data.mapLink}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className={`inline-flex items-center text-xs uppercase tracking-widest ${data.theme.accent} hover:opacity-70 transition-opacity border-b pb-1`}
-                                                            style={{ borderColor: 'currentColor' }}
-                                                        >
-                                                            View Map <ExternalLink className="w-3 h-3 ml-2" />
-                                                        </a>
-                                                    )}
-                                                </motion.div>
-                                            </motion.div>
-                                        </div>
-                                    )}
-
-                                    {/* Reception Block (Render if reception venue or time exists) */}
-                                    {(data.receptionVenue || data.receptionTime) && (
-                                        <div>
-                                            <h4 className="text-center font-serif text-2xl md:text-3xl text-stone-800 mb-12 font-light">
-                                                Reception
-                                            </h4>
-                                            <motion.div
-                                                className="grid grid-cols-1 gap-12 text-center md:grid-cols-3 md:gap-8 md:text-left max-w-4xl mx-auto"
-                                                variants={staggeredContainerVariants}
-                                                initial="hidden"
-                                                whileInView="visible"
-                                                viewport={{ once: true, margin: "-100px" }}
-                                            >
-                                                <motion.div variants={itemVariants} className="flex flex-col items-center md:items-start group cursor-default">
-                                                    <div className="w-16 h-16 rounded-full bg-stone-50 flex items-center justify-center mb-6 group-hover:bg-stone-100 transition-colors duration-500">
-                                                        <Calendar className={`w-6 h-6 ${data.theme.accent}`} strokeWidth={1} />
-                                                    </div>
-                                                    <h5 className="text-xs font-sans mb-3 uppercase tracking-[0.15em] text-stone-400">Date</h5>
-                                                    <p className="text-stone-800 font-serif text-xl">{formatDate(data.date)}</p>
-                                                </motion.div>
-
-                                                <motion.div variants={itemVariants} className="flex flex-col items-center md:items-start group cursor-default">
-                                                    <div className="w-16 h-16 rounded-full bg-stone-50 flex items-center justify-center mb-6 group-hover:bg-stone-100 transition-colors duration-500">
-                                                        <Clock className={`w-6 h-6 ${data.theme.accent}`} strokeWidth={1} />
-                                                    </div>
-                                                    <h5 className="text-xs font-sans mb-3 uppercase tracking-[0.15em] text-stone-400">Time</h5>
-                                                    <p className="text-stone-800 font-serif text-xl">{formatTime(data.receptionTime || "")}</p>
-                                                </motion.div>
-
-                                                <motion.div variants={itemVariants} className="flex flex-col items-center md:items-start group cursor-default">
-                                                    <div className="w-16 h-16 rounded-full bg-stone-50 flex items-center justify-center mb-6 group-hover:bg-stone-100 transition-colors duration-500">
-                                                        <MapPin className={`w-6 h-6 ${data.theme.accent}`} strokeWidth={1} />
-                                                    </div>
-                                                    <h5 className="text-xs font-sans mb-3 uppercase tracking-[0.15em] text-stone-400">Location</h5>
-                                                    <p className="text-stone-800 font-serif text-xl mb-1">{data.receptionVenue || "Venue"}</p>
-                                                    <p className="text-stone-500 font-light text-base mb-3">{data.receptionLocation || "Location"}</p>
-
-                                                    {data.mapLink && (
-                                                        <a
-                                                            href={data.mapLink}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className={`inline-flex items-center text-xs uppercase tracking-widest ${data.theme.accent} hover:opacity-70 transition-opacity border-b pb-1`}
-                                                            style={{ borderColor: 'currentColor' }}
-                                                        >
-                                                            View Map <ExternalLink className="w-3 h-3 ml-2" />
-                                                        </a>
-                                                    )}
-                                                </motion.div>
-                                            </motion.div>
-                                        </div>
-                                    )}
+                            {/* Background Image Layer */}
+                            {data.detailsBackgroundUrl ? (
+                                <div
+                                    className="absolute inset-0 z-0 bg-cover bg-center"
+                                    style={{ backgroundImage: `url(${data.detailsBackgroundUrl})` }}
+                                >
+                                    {/* Subtle overlay to ensure text contrast over textures */}
+                                    <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px] mix-blend-overlay z-10" />
                                 </div>
+                            ) : (
+                                <div className="absolute inset-0 z-0 bg-stone-50" />
+                            )}
+
+                            {/* Inner Stationery Frame */}
+                            <div className="relative z-20 w-full max-w-2xl bg-white/40 backdrop-blur-md border border-stone-200 shadow-2xl p-16 md:p-24 rounded-sm flex flex-col items-center text-center">
+
+                                {/* Ceremony Block */}
+                                {(data.venue || data.time) && (
+                                    <motion.div variants={itemVariants} className="flex flex-col items-center w-full">
+                                        <h4 className="text-3xl md:text-5xl font-serif text-stone-800 tracking-[0.2em] uppercase mb-10 font-light drop-shadow-sm">
+                                            Ceremony
+                                        </h4>
+                                        <div className="space-y-4 mb-4">
+                                            {data.venue && (
+                                                <p className="text-lg md:text-xl font-serif text-stone-700 uppercase tracking-widest drop-shadow-sm leading-relaxed">
+                                                    {data.venue}
+                                                </p>
+                                            )}
+                                            {data.location && (
+                                                <p className="text-xs md:text-sm font-sans text-stone-600 uppercase tracking-[0.25em]">
+                                                    {data.location}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="mt-8 space-y-2">
+                                            <p className="text-lg font-serif text-stone-700 tracking-widest">{formatDate(data.date)}</p>
+                                            {data.time && <p className="text-lg font-serif text-stone-700 tracking-[0.2em]">{formatTime(data.time)}</p>}
+                                        </div>
+
+                                        {data.mapLink && (
+                                            <a
+                                                href={data.mapLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={`inline-flex items-center mt-10 text-[10px] uppercase tracking-widest ${data.theme.accent} hover:opacity-70 transition-opacity pb-1 shadow-sm`}
+                                            >
+                                                View Map <ExternalLink className="w-3 h-3 ml-2" />
+                                            </a>
+                                        )}
+                                    </motion.div>
+                                )}
+
+                                {/* Divider (if both parts exist) */}
+                                {(data.venue || data.time) && (data.receptionVenue || data.receptionTime) && (
+                                    <motion.div variants={itemVariants} className="flex justify-center w-full my-16 opacity-40">
+                                        <div className="w-48 h-[1px] bg-gradient-to-r from-transparent via-stone-800 to-transparent" />
+                                    </motion.div>
+                                )}
+
+                                {/* Reception Block */}
+                                {(data.receptionVenue || data.receptionTime) && (
+                                    <motion.div variants={itemVariants} className="flex flex-col items-center w-full">
+                                        <h4 className="text-3xl md:text-5xl font-serif text-stone-800 tracking-[0.2em] uppercase mb-10 font-light drop-shadow-sm">
+                                            Reception
+                                        </h4>
+                                        <div className="space-y-4 mb-4">
+                                            {data.receptionVenue && (
+                                                <p className="text-lg md:text-xl font-serif text-stone-700 uppercase tracking-widest drop-shadow-sm leading-relaxed">
+                                                    {data.receptionVenue}
+                                                </p>
+                                            )}
+                                            {data.receptionLocation && (
+                                                <p className="text-xs md:text-sm font-sans text-stone-600 uppercase tracking-[0.25em]">
+                                                    {data.receptionLocation}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="mt-8 space-y-2">
+                                            <p className="text-lg font-serif text-stone-700 tracking-widest">{formatDate(data.date)}</p>
+                                            {data.receptionTime && <p className="text-lg font-serif text-stone-700 tracking-[0.2em]">{formatTime(data.receptionTime)}</p>}
+                                        </div>
+
+                                        {data.mapLink && (
+                                            <a
+                                                href={data.mapLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={`inline-flex items-center mt-10 text-[10px] uppercase tracking-widest ${data.theme.accent} hover:opacity-70 transition-opacity pb-1 shadow-sm`}
+                                            >
+                                                View Map <ExternalLink className="w-3 h-3 ml-2" />
+                                            </a>
+                                        )}
+                                    </motion.div>
+                                )}
                             </div>
                         </motion.section>
 

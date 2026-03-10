@@ -491,6 +491,15 @@ export default function AdminDashboard() {
                                                 <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Reception Location</label>
                                                 <input type="text" name="receptionLocation" value={liveData.receptionLocation || ''} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
                                             </div>
+
+                                            <div className="flex items-center justify-between border-b border-stone-100 pb-2 pt-6">
+                                                <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400">Styling Options</h2>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Event Details Background Image URL</label>
+                                                <input type="text" name="detailsBackgroundUrl" value={liveData.detailsBackgroundUrl || ''} onChange={handleInputChange} placeholder="https://.../texture.jpg" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
+                                                <p className="text-[10px] text-stone-400">Applies an elegant textured background behind the Ceremony & Reception blocks.</p>
+                                            </div>
                                         </div>
 
                                         {/* Section: Media & Content */}

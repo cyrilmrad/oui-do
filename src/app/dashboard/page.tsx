@@ -177,6 +177,7 @@ export default function DashboardPage() {
                                 receptionTime: dbData.receptionTime || "",
                                 receptionVenue: dbData.receptionVenue || "",
                                 receptionLocation: dbData.receptionLocation || "",
+                                detailsBackgroundUrl: dbData.detailsBackgroundUrl || "",
                                 message: dbData.message || "",
                                 mapLink: dbData.mapLink || "",
                                 heroVideo: dbData.heroVideo || "",
