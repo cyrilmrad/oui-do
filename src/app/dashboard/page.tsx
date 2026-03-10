@@ -18,12 +18,15 @@ import {
     CalendarDays,
     MapPin,
     Copy,
-    Plus
+    Plus,
+    Calculator
 } from 'lucide-react';
 import InvitationPreview, { InvitationData, Theme } from '@/components/InvitationPreview';
+import BudgetTracker from '@/components/BudgetTracker';
+import { getExpensesBySlug } from '@/app/actions/budget';
 
 type RsvpStatus = 'all' | 'attending' | 'declined' | 'pending';
-type DashboardTab = 'overview' | 'guests' | 'messages' | 'settings';
+type DashboardTab = 'overview' | 'guests' | 'messages' | 'budget' | 'settings';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -39,6 +42,7 @@ export default function DashboardPage() {
 
     // Overview State
     const [rsvps, setRsvps] = useState<any[]>([]);
+    const [expenses, setExpenses] = useState<any[]>([]);
     const [filterStatus, setFilterStatus] = useState<RsvpStatus>('all');
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -192,8 +196,11 @@ export default function DashboardPage() {
                         const rsvpsData = await rsvpsRes.json();
                         setRsvps(rsvpsData);
                     }
+
+                    const expData = await getExpensesBySlug(slug);
+                    setExpenses(expData);
                 } catch (e) {
-                    console.error("Failed to load settings or RSVPs", e);
+                    console.error("Failed to load settings or RSVPs or expenses", e);
                 }
             }
 
@@ -321,9 +328,23 @@ export default function DashboardPage() {
 
     const renderOverview = () => (
         <>
-            <div className="mb-10">
-                <h2 className="text-3xl font-serif text-stone-900">Welcome back, {weddingDetails.bride} & {weddingDetails.groom}</h2>
-                <p className="mt-2 text-sm text-stone-500">Here's the latest update on your guest list.</p>
+            <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-3xl font-serif text-stone-900">Welcome back, {weddingDetails.bride} & {weddingDetails.groom}</h2>
+                    <p className="mt-2 text-sm text-stone-500">Here's the latest update on your guest list.</p>
+                </div>
+                {userSlug && (
+                    <button
+                        onClick={() => {
+                            const url = `${window.location.origin}/invite/${userSlug}`;
+                            navigator.clipboard.writeText(url);
+                            alert("General Invitation Link copied!");
+                        }}
+                        className="flex flex-shrink-0 items-center justify-center gap-2 px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-md transition-colors text-sm"
+                    >
+                        <Copy className="w-4 h-4" /> Copy General Link
+                    </button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
@@ -497,6 +518,10 @@ export default function DashboardPage() {
                 ))}
             </div>
         </>
+    );
+
+    const renderBudget = () => (
+        <BudgetTracker slug={userSlug} initialExpenses={expenses} />
     );
 
     const renderSettings = () => (
@@ -811,6 +836,13 @@ export default function DashboardPage() {
                         <span className="ml-auto bg-stone-200 text-stone-600 py-0.5 px-2 rounded-full text-xs font-semibold">{guestMessages.length}</span>
                     </button>
                     <button
+                        onClick={() => setActiveTab('budget')}
+                        className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'budget' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
+                    >
+                        <Calculator className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'budget' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
+                        Budget
+                    </button>
+                    <button
                         onClick={() => setActiveTab('settings')}
                         className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'settings' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
                     >
@@ -840,6 +872,9 @@ export default function DashboardPage() {
                     <button onClick={() => setActiveTab('messages')} className={`p-2 rounded-md ${activeTab === 'messages' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <Mail className="w-5 h-5" />
                     </button>
+                    <button onClick={() => setActiveTab('budget')} className={`p-2 rounded-md ${activeTab === 'budget' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
+                        <Calculator className="w-5 h-5" />
+                    </button>
                     <button onClick={() => setActiveTab('settings')} className={`p-2 rounded-md ${activeTab === 'settings' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <Settings className="w-5 h-5" />
                     </button>
@@ -852,6 +887,7 @@ export default function DashboardPage() {
                     {activeTab === 'overview' && renderOverview()}
                     {activeTab === 'guests' && renderGuests()}
                     {activeTab === 'messages' && renderMessages()}
+                    {activeTab === 'budget' && renderBudget()}
                     {activeTab === 'settings' && renderSettings()}
                 </div>
             </main>

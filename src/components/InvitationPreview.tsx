@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, MapPin, Music, VolumeX, Gift, ExternalLink, Landmark, Smartphone, Heart, MailOpen } from 'lucide-react';
+import { Calendar, Clock, MapPin, Music, VolumeX, Gift, ExternalLink, Landmark, Smartphone, Heart, MailOpen, CheckCircle2 } from 'lucide-react';
 
 export interface Theme {
     primaryText: string;
@@ -602,6 +602,17 @@ export default function InvitationPreview({ data, guestData }: InvitationPreview
                                     </motion.div>
                                 ) : (
                                     <form onSubmit={handleSubmit} className="space-y-12">
+                                        {guestData && guestData.status !== 'pending' && (
+                                            <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-2xl flex flex-col sm:flex-row items-center gap-4 text-emerald-800 mb-4 shadow-sm">
+                                                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                                                    <CheckCircle2 className="w-5 h-5 text-emerald-700" />
+                                                </div>
+                                                <div className="text-center sm:text-left">
+                                                    <p className="font-medium text-base mb-1 tracking-wide">RSVP Already Submitted</p>
+                                                    <p className="opacity-80 font-light text-sm">You have responded as <strong>{guestData.status === 'attending' ? 'Attending' : 'Declined'}</strong>.</p>
+                                                </div>
+                                            </div>
+                                        )}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-8">
                                             <div className="space-y-3">
                                                 <label htmlFor="firstName" className="block text-xs uppercase tracking-[0.1em] text-stone-400">First Name</label>
@@ -644,7 +655,8 @@ export default function InvitationPreview({ data, guestData }: InvitationPreview
                                                             value="yes"
                                                             checked={formData.attending === 'yes'}
                                                             onChange={handleInputChange}
-                                                            className="peer sr-only"
+                                                            disabled={!!guestData && guestData.status !== 'pending'}
+                                                            className={`peer sr-only ${guestData && guestData.status !== 'pending' ? 'cursor-not-allowed' : ''}`}
                                                         />
                                                         <div className="w-6 h-6 rounded-full border border-stone-300 peer-checked:border-emerald-700 transition-colors"></div>
                                                         <div className="w-3 h-3 rounded-full bg-emerald-700 absolute opacity-0 peer-checked:opacity-100 transition-opacity transform scale-50 peer-checked:scale-100"></div>
@@ -659,7 +671,8 @@ export default function InvitationPreview({ data, guestData }: InvitationPreview
                                                             value="no"
                                                             checked={formData.attending === 'no'}
                                                             onChange={handleInputChange}
-                                                            className="peer sr-only"
+                                                            disabled={!!guestData && guestData.status !== 'pending'}
+                                                            className={`peer sr-only ${guestData && guestData.status !== 'pending' ? 'cursor-not-allowed' : ''}`}
                                                         />
                                                         <div className="w-6 h-6 rounded-full border border-stone-300 peer-checked:border-stone-800 transition-colors"></div>
                                                         <div className="w-3 h-3 rounded-full bg-stone-800 absolute opacity-0 peer-checked:opacity-100 transition-opacity transform scale-50 peer-checked:scale-100"></div>
@@ -683,7 +696,8 @@ export default function InvitationPreview({ data, guestData }: InvitationPreview
                                                             name="guests"
                                                             value={formData.guests}
                                                             onChange={handleInputChange}
-                                                            className="w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors appearance-none cursor-pointer font-light"
+                                                            disabled={!!guestData && guestData.status !== 'pending'}
+                                                            className={`w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors appearance-none font-light ${guestData && guestData.status !== 'pending' ? 'text-stone-500 cursor-not-allowed border-dashed' : 'cursor-pointer'}`}
                                                         >
                                                             {Array.from({ length: guestData ? guestData.pax : 4 }, (_, i) => i + 1).map(num => (
                                                                 <option key={num} value={num}>{num} {num === 1 ? 'Person' : 'People'}</option>
@@ -704,8 +718,9 @@ export default function InvitationPreview({ data, guestData }: InvitationPreview
                                                         name="message"
                                                         value={formData.message}
                                                         onChange={handleInputChange}
+                                                        readOnly={!!guestData && guestData.status !== 'pending'}
                                                         rows={3}
-                                                        className="w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors resize-none placeholder:text-stone-300 font-light leading-relaxed"
+                                                        className={`w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors resize-none placeholder:text-stone-300 font-light leading-relaxed ${guestData && guestData.status !== 'pending' ? 'text-stone-500 cursor-not-allowed border-dashed' : ''}`}
                                                         placeholder="Leave us a note, a wish, or just some love..."
                                                     />
                                                 </div>
@@ -718,13 +733,15 @@ export default function InvitationPreview({ data, guestData }: InvitationPreview
                                                     {submitError}
                                                 </div>
                                             )}
-                                            <button
-                                                type="submit"
-                                                disabled={isSubmitting}
-                                                className="w-full py-5 px-8 bg-stone-900 text-white uppercase tracking-[0.2em] text-sm hover:bg-stone-800 transition-all duration-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                {isSubmitting ? "Sending..." : "Send RSVP"}
-                                            </button>
+                                            {(!guestData || guestData.status === 'pending') && (
+                                                <button
+                                                    type="submit"
+                                                    disabled={isSubmitting}
+                                                    className="w-full py-5 px-8 bg-stone-900 text-white uppercase tracking-[0.2em] text-sm hover:bg-stone-800 transition-all duration-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    {isSubmitting ? "Sending..." : "Send RSVP"}
+                                                </button>
+                                            )}
                                         </div>
                                     </form>
                                 )}

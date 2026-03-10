@@ -1,4 +1,5 @@
-import { pgTable, serial, text, varchar, timestamp, boolean, integer, jsonb, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, varchar, timestamp, boolean, integer, jsonb, uuid, pgPolicy } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 export const invitations = pgTable('invitations', {
     id: serial('id').primaryKey(),
@@ -24,7 +25,7 @@ export const invitations = pgTable('invitations', {
     customSections: jsonb('custom_sections').default([]),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
-});
+}).enableRLS();
 
 export const guests = pgTable('guests', {
     id: uuid('id').defaultRandom().primaryKey(),
@@ -36,4 +37,44 @@ export const guests = pgTable('guests', {
     message: text('message'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
-});
+}, (t) => [
+    pgPolicy("Admins have full access to guests", {
+        as: 'permissive',
+        for: 'all',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`,
+        withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`
+    }),
+    pgPolicy("Clients can manage their own guests", {
+        as: 'permissive',
+        for: 'all',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'client' AND invitation_id IN (SELECT id FROM public.invitations WHERE slug = (auth.jwt() -> 'app_metadata' ->> 'slug'))`,
+        withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'client' AND invitation_id IN (SELECT id FROM public.invitations WHERE slug = (auth.jwt() -> 'app_metadata' ->> 'slug'))`
+    })
+]).enableRLS();
+
+export const expenses = pgTable('expenses', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    slug: varchar('slug', { length: 255 }).references(() => invitations.slug).notNull(),
+    category: varchar('category', { length: 255 }).notNull(),
+    isIncluded: boolean('is_included').default(true),
+    supplier: varchar('supplier', { length: 255 }),
+    description: text('description'),
+    estimatedCost: integer('estimated_cost').default(0),
+    actualCost: integer('actual_cost').default(0),
+    notes: text('notes'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+}, (t) => [
+    pgPolicy("Admins have full access to expenses", {
+        as: 'permissive',
+        for: 'all',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`,
+        withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`
+    }),
+    pgPolicy("Clients can manage their own expenses", {
+        as: 'permissive',
+        for: 'all',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'client' AND slug = (auth.jwt() -> 'app_metadata' ->> 'slug')`,
+        withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'client' AND slug = (auth.jwt() -> 'app_metadata' ->> 'slug')`
+    })
+]).enableRLS();
