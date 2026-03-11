@@ -330,6 +330,17 @@ export default function DashboardPage() {
         return <div className="min-h-screen w-full flex items-center justify-center bg-stone-50"><p className="text-stone-500 animate-pulse">Loading Dashboard...</p></div>;
     }
 
+    const handleCopyLink = () => {
+        if (typeof window !== 'undefined' && userSlug) {
+            const url = `${window.location.origin}/invite/${userSlug}`;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Invite link copied to clipboard!');
+            }).catch(err => {
+                console.error('Could not copy text: ', err);
+            });
+        }
+    };
+
     const renderOverview = () => (
         <>
             <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -795,8 +806,8 @@ export default function DashboardPage() {
                         <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
                         <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
                     </div>
-                    <div className="text-[10px] font-mono text-stone-400 bg-stone-100 px-2 py-0.5 rounded uppercase tracking-widest">
-                        Live Preview
+                    <div className="text-[10px] font-mono text-stone-400 bg-stone-100 px-3 py-1 rounded">
+                        {typeof window !== 'undefined' ? window.location.origin : ''}/invite/{userSlug || 'slug'}
                     </div>
                 </div>
                 <div className="h-full w-full overflow-y-auto pt-10 pointer-events-auto">
