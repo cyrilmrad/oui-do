@@ -28,8 +28,8 @@ export default function LoginPage() {
             }
 
             if (data.user) {
-                // Check Role-Based Access Control logic via user_metadata
-                const role = data.user.user_metadata?.role;
+                // Check Role-Based Access Control logic via app_metadata
+                const role = data.user.app_metadata?.role;
 
                 if (role === 'admin') {
                     router.push('/admin');

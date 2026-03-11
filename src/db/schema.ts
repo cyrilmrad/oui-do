@@ -1,4 +1,5 @@
-import { pgTable, serial, text, varchar, timestamp, boolean, integer, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, varchar, timestamp, boolean, integer, jsonb, uuid, pgPolicy } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 export const invitations = pgTable('invitations', {
     id: serial('id').primaryKey(),
@@ -9,9 +10,13 @@ export const invitations = pgTable('invitations', {
     time: varchar('time', { length: 255 }),
     venue: varchar('venue', { length: 255 }),
     location: varchar('location', { length: 255 }),
+    receptionTime: varchar('reception_time', { length: 255 }),
+    receptionVenue: varchar('reception_venue', { length: 255 }),
+    receptionLocation: varchar('reception_location', { length: 255 }),
     mapLink: text('map_link'),
     heroImage: text('hero_image'),
     heroVideo: text('hero_video'),
+    detailsBackgroundUrl: text('details_background_url'),
     audioUrl: text('audio_url'),
     message: text('message'),
     giftMessage: text('gift_message'),
@@ -19,18 +24,61 @@ export const invitations = pgTable('invitations', {
     bankAccountNumber: varchar('bank_account_number', { length: 255 }),
     mobileTransferNumber: varchar('mobile_transfer_number', { length: 255 }),
     theme: jsonb('theme'), // Store Theme object here
+    heroLogoUrl: text('hero_logo_url'),
+    showHeroLogo: boolean('show_hero_logo').default(false),
+    customSections: jsonb('custom_sections').default([]),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
-});
+}).enableRLS();
 
-export const rsvps = pgTable('rsvps', {
-    id: serial('id').primaryKey(),
+export const guests = pgTable('guests', {
+    id: uuid('id').defaultRandom().primaryKey(),
     invitationId: integer('invitation_id').references(() => invitations.id).notNull(),
     firstName: varchar('first_name', { length: 255 }).notNull(),
     lastName: varchar('last_name', { length: 255 }).notNull(),
-    status: varchar('status', { length: 50 }).notNull(), // 'attending', 'declined'
-    guests: integer('guests').notNull().default(1),
-    dietary: text('dietary'),
+    pax: integer('pax').notNull().default(1),
+    status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending', 'attending', 'declined'
     message: text('message'),
     createdAt: timestamp('created_at').defaultNow(),
-});
+    updatedAt: timestamp('updated_at').defaultNow(),
+}, (t) => [
+    pgPolicy("Admins have full access to guests", {
+        as: 'permissive',
+        for: 'all',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`,
+        withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`
+    }),
+    pgPolicy("Clients can manage their own guests", {
+        as: 'permissive',
+        for: 'all',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'client' AND invitation_id IN (SELECT id FROM public.invitations WHERE slug = (auth.jwt() -> 'app_metadata' ->> 'slug'))`,
+        withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'client' AND invitation_id IN (SELECT id FROM public.invitations WHERE slug = (auth.jwt() -> 'app_metadata' ->> 'slug'))`
+    })
+]).enableRLS();
+
+export const expenses = pgTable('expenses', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    slug: varchar('slug', { length: 255 }).references(() => invitations.slug).notNull(),
+    category: varchar('category', { length: 255 }).notNull(),
+    isIncluded: boolean('is_included').default(true),
+    supplier: varchar('supplier', { length: 255 }),
+    description: text('description'),
+    estimatedCost: integer('estimated_cost').default(0),
+    actualCost: integer('actual_cost').default(0),
+    notes: text('notes'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+}, (t) => [
+    pgPolicy("Admins have full access to expenses", {
+        as: 'permissive',
+        for: 'all',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`,
+        withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`
+    }),
+    pgPolicy("Clients can manage their own expenses", {
+        as: 'permissive',
+        for: 'all',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'client' AND slug = (auth.jwt() -> 'app_metadata' ->> 'slug')`,
+        withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'client' AND slug = (auth.jwt() -> 'app_metadata' ->> 'slug')`
+    })
+]).enableRLS();
