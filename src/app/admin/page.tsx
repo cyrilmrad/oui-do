@@ -24,6 +24,8 @@ const defaultData: InvitationData = {
     location: "",
     message: "We can't wait to celebrate our special day with our favorite people.",
     showHeroLogo: false,
+    showFormalInvitation: false,
+    formalInvitationImage: "",
     customSections: [],
     theme: THEME_PRESETS.emerald
 };
@@ -448,6 +450,34 @@ export default function AdminDashboard() {
                                             </div>
                                         </div>
 
+                                        {/* Section: Formal Invitation */}
+                                        <div className="space-y-6">
+                                            <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                                                <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400">Formal Invitation Section</h2>
+                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        name="showFormalInvitation"
+                                                        className="sr-only peer"
+                                                        checked={liveData.showFormalInvitation || false}
+                                                        onChange={(e) => setLiveData(prev => ({ ...prev, showFormalInvitation: e.target.checked }))}
+                                                    />
+                                                    <div className="w-9 h-5 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                                                    <span className="ml-3 text-xs font-medium text-stone-500 hover:text-stone-700 transition-colors">Enable</span>
+                                                </label>
+                                            </div>
+
+                                            {liveData.showFormalInvitation && (
+                                                <div className="p-4 bg-stone-50 rounded-lg border border-stone-100 space-y-6">
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Formal Invitation Image URL</label>
+                                                        <input type="text" name="formalInvitationImage" value={liveData.formalInvitationImage || ''} onChange={handleInputChange} placeholder="https://.../formal-invitation.jpg" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 focus:border-transparent transition-all text-sm bg-white" />
+                                                        <p className="text-[10px] text-stone-400">Provide a high-quality image of the formal invitation. It will be displayed full-size.</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
                                         {/* Section: Event Details */}
                                         <div className="space-y-6">
                                             <div className="flex items-center justify-between border-b border-stone-100 pb-2">
@@ -509,18 +539,16 @@ export default function AdminDashboard() {
                                                 <div className="space-y-4">
                                                     <div className="flex items-center justify-between border-b border-stone-200 pb-2">
                                                         <label className="text-xs font-semibold text-stone-600 uppercase tracking-wider">Hero Section (Top)</label>
-                                                        <label className="flex items-center cursor-pointer gap-2">
-                                                            <span className="text-xs text-stone-500 font-medium">Use Logo Graphic</span>
-                                                            <div className="relative inline-block w-10 h-5 align-middle select-none transition duration-200 ease-in">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    name="showHeroLogo"
-                                                                    checked={liveData.showHeroLogo || false}
-                                                                    onChange={(e) => setLiveData(prev => ({ ...prev, showHeroLogo: e.target.checked }))}
-                                                                    className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-stone-300 appearance-none cursor-pointer"
-                                                                />
-                                                                <label className="toggle-label block overflow-hidden h-5 rounded-full bg-stone-300 cursor-pointer"></label>
-                                                            </div>
+                                                        <label className="relative inline-flex items-center cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                name="showHeroLogo"
+                                                                className="sr-only peer"
+                                                                checked={liveData.showHeroLogo || false}
+                                                                onChange={(e) => setLiveData(prev => ({ ...prev, showHeroLogo: e.target.checked }))}
+                                                            />
+                                                            <div className="w-9 h-5 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                                                            <span className="ml-3 text-xs font-medium text-stone-500 hover:text-stone-700 transition-colors">Use Logo Graphic</span>
                                                         </label>
                                                     </div>
 
