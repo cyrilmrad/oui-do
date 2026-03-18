@@ -64,7 +64,9 @@ export default function DashboardPage() {
         bankAccountName: "",
         bankAccountNumber: "",
         mobileTransferNumber: "",
-        theme: "classic" as unknown as Theme
+        theme: "classic" as unknown as Theme,
+        showFormalInvitation: false,
+        formalInvitationImage: ""
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -190,7 +192,9 @@ export default function DashboardPage() {
                                 bankAccountName: dbData.bankAccountName || "",
                                 bankAccountNumber: dbData.bankAccountNumber || "",
                                 mobileTransferNumber: dbData.mobileTransferNumber || "",
-                                theme: dbData.theme || undefined
+                                theme: dbData.theme || undefined,
+                                showFormalInvitation: dbData.showFormalInvitation || false,
+                                formalInvitationImage: dbData.formalInvitationImage || ""
                             });
                         }
                     }
@@ -580,18 +584,16 @@ export default function DashboardPage() {
                         <div className="space-y-4">
                             <div className="flex items-center justify-between border-b border-stone-200 pb-2">
                                 <label className="text-xs font-semibold text-stone-600 uppercase tracking-wider">Hero Section Logo Graphic</label>
-                                <label className="flex items-center cursor-pointer gap-2">
-                                    <div className="relative inline-block w-10 h-5 align-middle select-none transition duration-200 ease-in">
-                                        <input
-                                            type="checkbox"
-                                            name="showHeroLogo"
-                                            checked={weddingDetails.showHeroLogo || false}
-                                            onChange={(e) => setWeddingDetails(prev => ({ ...prev, showHeroLogo: e.target.checked }))}
-                                            className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-stone-300 appearance-none cursor-pointer"
-                                        />
-                                        <label className="toggle-label block overflow-hidden h-5 rounded-full bg-stone-300 cursor-pointer"></label>
-                                    </div>
-                                    <span className="text-xs text-stone-500 font-medium">Enable</span>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        name="showHeroLogo"
+                                        className="sr-only peer"
+                                        checked={weddingDetails.showHeroLogo || false}
+                                        onChange={(e) => setWeddingDetails(prev => ({ ...prev, showHeroLogo: e.target.checked }))}
+                                    />
+                                    <div className="w-9 h-5 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                                    <span className="ml-3 text-xs font-medium text-stone-500 hover:text-stone-700 transition-colors">Enable</span>
                                 </label>
                             </div>
 
@@ -661,6 +663,33 @@ export default function DashboardPage() {
                                 className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                             />
                         </div>
+                    </div>
+
+                    <div>
+                        <h3 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2 mb-6 flex items-center justify-between">
+                            Formal Invitation Section
+                            <label className="relative inline-flex items-center cursor-pointer scale-90 origin-right">
+                                <input
+                                    type="checkbox"
+                                    name="showFormalInvitation"
+                                    className="sr-only peer"
+                                    checked={weddingDetails.showFormalInvitation || false}
+                                    onChange={(e) => setWeddingDetails(prev => ({ ...prev, showFormalInvitation: e.target.checked }))}
+                                />
+                                <div className="w-9 h-5 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                                <span className="ml-3 text-xs font-medium text-stone-500 hover:text-stone-700 transition-colors">Enable</span>
+                            </label>
+                        </h3>
+
+                        {weddingDetails.showFormalInvitation && (
+                            <div className="p-5 bg-stone-50 rounded-xl border border-stone-100 space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Formal Invitation Image URL</label>
+                                    <input type="text" name="formalInvitationImage" value={weddingDetails.formalInvitationImage || ''} onChange={handleSettingsChange} placeholder="https://.../formal-invitation.jpg" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm bg-white" />
+                                    <p className="text-[10px] text-stone-400">Provide a high-quality image of the formal invitation. It will be displayed full-size.</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div>

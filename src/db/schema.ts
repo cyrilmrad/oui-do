@@ -26,6 +26,8 @@ export const invitations = pgTable('invitations', {
     theme: jsonb('theme'), // Store Theme object here
     heroLogoUrl: text('hero_logo_url'),
     showHeroLogo: boolean('show_hero_logo').default(false),
+    showFormalInvitation: boolean('show_formal_invitation').default(false),
+    formalInvitationImage: text('formal_invitation_image'),
     customSections: jsonb('custom_sections').default([]),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),

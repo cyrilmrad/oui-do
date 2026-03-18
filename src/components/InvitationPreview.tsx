@@ -44,6 +44,8 @@ export interface InvitationData {
     bankAccountNumber?: string;
     mobileTransferNumber?: string;
     theme: Theme;
+    showFormalInvitation?: boolean;
+    formalInvitationImage?: string;
 }
 
 interface InvitationPreviewProps {
@@ -354,9 +356,11 @@ export default function InvitationPreview({ data, guestData }: InvitationPreview
                                             {data.bride || "Bride"} & {data.groom || "Groom"}
                                         </h1>
                                     )}
-                                    <p className="text-lg md:text-xl lg:text-2xl font-light tracking-[0.3em] uppercase drop-shadow-sm mt-8 opacity-90">
-                                        {formatDate(data.date)}
-                                    </p>
+                                    {!data.showFormalInvitation && (
+                                        <p className="text-lg md:text-xl lg:text-2xl font-light tracking-[0.3em] uppercase drop-shadow-sm mt-8 opacity-90">
+                                            {formatDate(data.date)}
+                                        </p>
+                                    )}
                                 </motion.div>
                             </div>
 
@@ -370,6 +374,25 @@ export default function InvitationPreview({ data, guestData }: InvitationPreview
                                 <div className="w-[1px] h-16 bg-gradient-to-b from-white/0 via-white/50 to-white/0 mx-auto" />
                             </motion.div>
                         </section>
+
+                        {/* Formal Invitation Section */}
+                        {data.showFormalInvitation && data.formalInvitationImage && (
+                            <motion.section
+                                className="relative w-full min-h-screen py-20 px-4 md:px-12 flex items-center justify-center bg-stone-50"
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true, margin: "-100px" }}
+                                variants={sectionVariants}
+                            >
+                                <div className="w-full max-w-5xl h-[80vh] md:h-[90vh] relative flex items-center justify-center">
+                                    <img 
+                                        src={data.formalInvitationImage} 
+                                        alt="Formal Invitation" 
+                                        className="w-full h-full object-contain drop-shadow-2xl" 
+                                    />
+                                </div>
+                            </motion.section>
+                        )}
 
                         {/* Welcome Section & Countdown */}
                         <motion.section

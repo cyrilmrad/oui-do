@@ -3,6 +3,43 @@ import { db } from '@/db';
 import { invitations, guests as guestsTable } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
+import { Metadata } from 'next';
+
+export async function generateMetadata({
+    params
+}: {
+    params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+    const { slug } = await params;
+    const result = await db.select().from(invitations).where(eq(invitations.slug, slug));
+    
+    if (result.length === 0) {
+        return {
+            title: 'Invitation Not Found'
+        };
+    }
+
+    const data = result[0];
+    const title = `${data.bride} & ${data.groom} | Wedding Invitation`;
+    const description = `You are invited to the wedding of ${data.bride} & ${data.groom}. Join us on ${data.date || 'our special day'}.`;
+    const imageUrl = data.heroImage || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070&auto=format&fit=crop";
+
+    return {
+        title,
+        description,
+        openGraph: {
+            title,
+            description,
+            images: [imageUrl],
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title,
+            description,
+            images: [imageUrl],
+        }
+    };
+}
 
 export default async function InvitePage({
     params,
@@ -65,6 +102,8 @@ export default async function InvitePage({
         bankAccountName: dbData.bankAccountName || "",
         bankAccountNumber: dbData.bankAccountNumber || "",
         mobileTransferNumber: dbData.mobileTransferNumber || "",
+        showFormalInvitation: dbData.showFormalInvitation || false,
+        formalInvitationImage: dbData.formalInvitationImage || "",
         theme: (dbData.theme as Theme) || {
             primaryText: "text-stone-800",
             accent: "text-emerald-700",
