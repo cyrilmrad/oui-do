@@ -48,13 +48,13 @@ export default function AdminDashboard() {
     const [isSaving, setIsSaving] = useState(false);
 
     // Budget State
-    const [activeTab, setActiveTab] = useState<'builder' | 'budget'>('builder');
+    const [activeTab, setActiveTab] = useState<'clients-list' | 'builder' | 'budget'>('clients-list');
     const [expenses, setExpenses] = useState<SelectExpense[]>([]);
 
     // Static Mock Clients for Sidebar Visualization
     const mockClients = [
-        { id: 1, slug: "nadine-and-tariq", bride: "Nadine", groom: "Tariq", email: "nadine@example.com" },
-        { id: 2, slug: "sarah-and-marc", bride: "Sarah", groom: "Marc", email: "sarah@example.com" },
+        { id: 1, slug: "nadine-and-tariq", bride: "Nadine", groom: "Tariq", email: "nadine@example.com", date: "September 24, 2024", heroImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuDbAOBko1Dk8GDsphjtoBUbSpSbGbSyk3Mwmg2T4hbZPqMFrOEstIqckxRqYWcb6dU0d0FoL6ijszAJPAcGoqhAEpxJTPBadj9kR3W09eSmyv7iDeLYnnp_qXsF-eLJYGCf4PyJp66ekx6IDu0s5lFx0BARQX_TUKmxv_Rrc37LVZbydUq6WC2K_UgUMZVBqjU-YbqFyuuazqam4T0P_3Me-SPt_JiZIAkXCLTjDQ7LWoS-tYfowUcc_Pb9nNEg6ESmxj62v4b5sr1k" },
+        { id: 2, slug: "sarah-and-marc", bride: "Sarah", groom: "Marc", email: "sarah@example.com", date: "October 12, 2024", heroImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuAcZ8hcUUydrCODFQcRhZz-MxvASKxJBNJnoB15Ir8Irl72QGmwIlmvaXw20Pflc3BuODfXM9wgbhqC6ZuBLd17kQI148-_vyX4yA0iXF5dLwZwJ19IhrabzMlXJgTT4uETLXuOlE5olAryBFxm7Fmo4hQVpkZ5M5exFrnaK9jFZnvimbmeZ58sJ6sppdjeFzN3GxbdXvUc3dWtzhbQ_yL5SfFgaKqcYLwGxfpwp00ebopPQUNEwp8CTmot_PRyaa0gIGgcJAVDvVkd" },
     ];
 
     const [useMocks, setUseMocks] = useState(false);
@@ -228,65 +228,36 @@ export default function AdminDashboard() {
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-2 flex flex-col scrollbar-hide">
-                    <div className="flex items-center justify-between mb-4 px-3">
-                        <span className="text-[0.65rem] font-bold text-secondary uppercase tracking-widest">Use Mock Data</span>
-                        <button
-                            onClick={() => setUseMocks(!useMocks)}
-                            className={`w-10 h-5 rounded-full relative transition-colors ${useMocks ? 'bg-primary' : 'bg-surface-dim'}`}
+                <div className="flex-1 px-0 flex flex-col pt-8">
+                    <nav className="flex-1 space-y-2">
+                        <button 
+                            className="w-full flex items-center gap-3 text-secondary py-3 px-8 hover:bg-surface-container-lowest hover:text-primary rounded-r-full transition-all duration-200"
                         >
-                            <span className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white transition-transform ${useMocks ? 'translate-x-[22px]' : 'translate-x-[2px]'}`} />
+                            <LayoutDashboard className="w-5 h-5" />
+                            <span className="font-label uppercase tracking-[0.05em] text-[0.75rem] font-medium">Dashboard</span>
                         </button>
-                    </div>
+                        <button 
+                            className={`w-full flex items-center gap-3 py-3 px-8 rounded-r-full transition-all duration-200 ${activeTab === 'clients-list' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm scale-[0.99]' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
+                            onClick={() => {
+                                setLiveData(defaultData); // Clear builder
+                                setActiveTab('clients-list');
+                            }}
+                        >
+                            <Users className="w-5 h-5" />
+                            <span className="font-label uppercase tracking-[0.05em] text-[0.75rem] font-bold">Active Clients</span>
+                        </button>
+                    </nav>
 
-                    <div className="relative mb-6 px-2">
-                        <Search className="w-4 h-4 absolute left-5 top-1/2 -translate-y-1/2 text-outline-variant" />
-                        <input
-                            type="text"
-                            placeholder="Search clients..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg py-2 pl-9 pr-4 text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all font-body placeholder:text-outline-variant"
-                        />
-                    </div>
-
-                    <div className="space-y-1 flex-1 overflow-y-auto min-h-0">
-                        <p className="text-[0.65rem] uppercase tracking-widest text-secondary font-bold mb-3 px-3">Active Clients</p>
-                        {(useMocks ? mockClients : realClients).filter(c => c.slug.includes(searchQuery.toLowerCase())).map(client => (
+                    <div className="mt-auto px-6 mb-4">
+                        <div className="flex items-center justify-between px-3 py-3 bg-surface-container-highest/20 rounded-xl">
+                            <span className="text-[0.65rem] font-bold text-secondary uppercase tracking-widest">Mock Mode</span>
                             <button
-                                key={client.id}
-                                onClick={async () => {
-                                    setIsCreatingClient(false);
-                                    try {
-                                        const res = await fetch(`/api/invitation?slug=${client.slug}`);
-                                        if (res.ok) {
-                                            const dbData = await res.json();
-                                            if (dbData) {
-                                                setThemeSelection(dbData.theme ? Object.keys(THEME_PRESETS).find(k => THEME_PRESETS[k].accent === (dbData.theme as Theme).accent) || 'emerald' : 'emerald');
-                                                setLiveData({ ...defaultData, ...dbData, theme: dbData.theme || THEME_PRESETS.emerald });
-                                            } else {
-                                                setLiveData({ ...defaultData, slug: client.slug, bride: client.bride, groom: client.groom });
-                                            }
-                                            const exp = await getExpensesBySlug(client.slug);
-                                            setExpenses(exp);
-                                        }
-                                    } catch (e) {
-                                        console.error(e);
-                                    }
-                                }}
-                                className={`w-full text-left px-4 py-3 rounded-r-full flex items-center justify-between group transition-all ${liveData.slug === client.slug && !isCreatingClient ? 'bg-surface-container-lowest text-primary shadow-sm ring-1 ring-outline-variant/10' : 'text-secondary hover:bg-surface-container-lowest/50 hover:text-primary'}`}
+                                onClick={() => setUseMocks(!useMocks)}
+                                className={`w-8 h-4 rounded-full relative transition-colors ${useMocks ? 'bg-primary' : 'bg-surface-dim'}`}
                             >
-                                <div className="flex items-center gap-3 w-full">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${liveData.slug === client.slug && !isCreatingClient ? 'bg-primary/5 text-primary' : 'bg-surface text-secondary group-hover:bg-primary/5 group-hover:text-primary'}`}>
-                                        <Users className="w-4 h-4" />
-                                    </div>
-                                    <div className="truncate flex-1">
-                                        <p className="text-[0.8rem] font-label font-bold tracking-tight truncate">{client.bride} & {client.groom}</p>
-                                        <p className={`text-[0.65rem] truncate font-mono ${liveData.slug === client.slug && !isCreatingClient ? 'text-primary' : 'text-outline-variant'}`}>/{client.slug}</p>
-                                    </div>
-                                </div>
+                                <span className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white transition-transform ${useMocks ? 'translate-x-[18px]' : 'translate-x-[2px]'}`} />
                             </button>
-                        ))}
+                        </div>
                     </div>
                 </div>
 
@@ -304,17 +275,17 @@ export default function AdminDashboard() {
             <main className="flex-1 flex flex-col h-full relative bg-surface">
 
                 {/* Top Nav Tabs */}
-                {liveData.slug && (
-                    <div className="h-14 border-b border-stone-200 flex items-center px-8 gap-8 shrink-0 bg-stone-50/50">
+                {liveData.slug && activeTab !== 'clients-list' && (
+                    <div className="h-14 border-b border-surface-container-highest flex items-center px-8 gap-8 shrink-0 bg-surface-container-low/50">
                         <button
                             onClick={() => setActiveTab('builder')}
-                            className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'builder' ? 'border-stone-900 text-stone-900' : 'border-transparent text-stone-500 hover:text-stone-700'}`}
+                            className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'builder' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-primary'}`}
                         >
                             Invitation Builder
                         </button>
                         <button
                             onClick={() => setActiveTab('budget')}
-                            className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'budget' ? 'border-stone-900 text-stone-900' : 'border-transparent text-stone-500 hover:text-stone-700'}`}
+                            className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'budget' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-primary'}`}
                         >
                             Budget Tracker
                         </button>
@@ -323,7 +294,121 @@ export default function AdminDashboard() {
 
                 <div className="flex-1 flex flex-col lg:flex-row w-full overflow-hidden relative">
 
-                    {activeTab === 'builder' || !liveData.slug ? (
+                    {activeTab === 'clients-list' && !isCreatingClient && (
+                        <div className="w-full h-full overflow-y-auto w-full max-w-[1600px] mx-auto p-8 md:p-12 lg:p-16">
+                            {/* Header Section */}
+                            <header className="mb-16">
+                                <div className="flex justify-between items-end mb-8">
+                                    <div>
+                                        <span className="font-label uppercase tracking-[0.2em] text-[0.7rem] font-semibold text-secondary mb-3 block">Portfolio Management</span>
+                                        <h2 className="font-headline text-[3.5rem] leading-tight text-primary">Active Clients</h2>
+                                    </div>
+                                    <div className="hidden md:flex items-center gap-4 bg-surface-container-low p-2 rounded-full px-6 py-3 border border-outline-variant/10">
+                                        <Search className="w-5 h-5 text-primary" />
+                                        <input 
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="bg-transparent border-none focus:ring-0 text-sm font-body w-64 placeholder:text-secondary/50 outline-none" 
+                                            placeholder="Search clients or dates..." 
+                                            type="text" 
+                                        />
+                                        <span className="w-px h-6 bg-outline-variant/30"></span>
+                                        <button className="flex items-center gap-2 text-secondary hover:text-primary transition-colors">
+                                            <span className="text-[0.75rem] font-bold uppercase tracking-wider">Filter</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Insight Row */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                    <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 relative overflow-hidden group">
+                                        <div className="relative z-10">
+                                            <p className="font-label uppercase tracking-widest text-[0.7rem] font-bold text-secondary mb-4">Total Active Weddings</p>
+                                            <h3 className="font-headline text-5xl text-primary">24</h3>
+                                            <p className="mt-4 text-[0.8rem] text-secondary flex items-center gap-1 italic">
+                                                <span className="text-green-600 text-sm font-bold mr-1">↑</span> +3 from last month
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 hidden md:block">
+                                        <p className="font-label uppercase tracking-widest text-[0.7rem] font-bold text-secondary mb-4">Upcoming This Week</p>
+                                        <h3 className="font-headline text-5xl text-primary">02</h3>
+                                        <p className="mt-4 text-[0.8rem] text-secondary">Awaiting final confirmations</p>
+                                    </div>
+                                    <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 hidden md:block">
+                                        <p className="font-label uppercase tracking-widest text-[0.7rem] font-bold text-secondary mb-4">Client Satisfaction</p>
+                                        <h3 className="font-headline text-5xl text-primary">98%</h3>
+                                        <p className="mt-4 text-[0.8rem] text-secondary italic">Editorial Benchmark: High</p>
+                                    </div>
+                                </div>
+                            </header>
+
+                            {/* Editorial Grid / Table */}
+                            <section>
+                                <div className="mb-6 flex items-center justify-between px-4">
+                                    <div className="flex gap-8">
+                                        <button className="text-[0.75rem] font-bold uppercase tracking-wider text-primary border-b-2 border-primary pb-2">All Clients</button>
+                                        <button className="text-[0.75rem] font-bold uppercase tracking-wider text-secondary hover:text-primary transition-colors pb-2">In Progress</button>
+                                        <button className="text-[0.75rem] font-bold uppercase tracking-wider text-secondary hover:text-primary transition-colors pb-2">Live</button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {(useMocks ? mockClients : realClients).filter(c => c.slug.includes(searchQuery.toLowerCase())).map(client => (
+                                        <div key={client.id} className="group bg-surface-container-lowest hover:bg-surface-container-low transition-all duration-300 rounded-xl p-6 flex items-center justify-between border border-transparent hover:border-outline-variant/20 shadow-sm cursor-pointer" onClick={async () => {
+                                            try {
+                                                const res = await fetch(`/api/invitation?slug=${client.slug}`);
+                                                if (res.ok) {
+                                                    const dbData = await res.json();
+                                                    if (dbData) {
+                                                        setThemeSelection(dbData.theme ? Object.keys(THEME_PRESETS).find(k => THEME_PRESETS[k].accent === (dbData.theme as Theme).accent) || 'emerald' : 'emerald');
+                                                        setLiveData({ ...defaultData, ...dbData, theme: dbData.theme || THEME_PRESETS.emerald });
+                                                    } else {
+                                                        setLiveData({ ...defaultData, slug: client.slug, bride: client.bride, groom: client.groom });
+                                                    }
+                                                    const exp = await getExpensesBySlug(client.slug);
+                                                    setExpenses(exp);
+                                                    setActiveTab('builder'); // Transition to Builder
+                                                }
+                                            } catch (e) { console.error(e); }
+                                        }}>
+                                            <div className="flex items-center gap-6 w-[60%] md:w-1/3">
+                                                <div className="w-16 h-16 rounded-full bg-surface-container-high overflow-hidden flex-shrink-0 border border-outline-variant/10">
+                                                    {client.heroImage ? (
+                                                        <img src={client.heroImage} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt="Hero" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-outline-variant"><Users className="w-6 h-6 opacity-40" /></div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-headline text-xl text-primary">{client.bride} & {client.groom}</h4>
+                                                    <p className="font-body text-xs text-secondary mt-1 tracking-widest lowercase">slug: /{client.slug}</p>
+                                                </div>
+                                            </div>
+                                            <div className="hidden md:block w-1/4">
+                                                <span className="font-label uppercase tracking-widest text-[0.65rem] font-bold text-secondary block mb-1">Wedding Date</span>
+                                                <p className="font-body text-sm font-semibold text-primary">{client.date || 'TBD'}</p>
+                                            </div>
+                                            <div className="hidden md:block w-1/6">
+                                                <span className="font-label uppercase tracking-widest text-[0.65rem] font-bold text-secondary block mb-1">Status</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                                                    <span className="font-body text-xs font-bold text-primary">In Progress</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-3">
+                                                <button className="p-3 rounded-full text-secondary hover:bg-surface-container-highest hover:text-primary transition-all">
+                                                    <ChevronRight className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        </div>
+                    )}
+
+                    {(activeTab === 'builder' || isCreatingClient) && (
                         <>
                             {/* Onboard Client Form Native */}
                             {isCreatingClient && (
@@ -740,8 +825,10 @@ export default function AdminDashboard() {
                                 </div>
                             </div>
                         </>
-                    ) : (
-                        <div className="w-full h-full overflow-y-auto p-8 bg-stone-50/50">
+                    )}
+
+                    {activeTab === 'budget' && !isCreatingClient && (
+                        <div className="w-full h-full overflow-y-auto p-8 bg-surface-container-low">
                             <BudgetTracker slug={liveData.slug} initialExpenses={expenses} />
                         </div>
                     )}
