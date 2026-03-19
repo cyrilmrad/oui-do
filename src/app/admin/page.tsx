@@ -206,73 +206,67 @@ export default function AdminDashboard() {
     }
 
     return (
-        <div className="h-screen w-full flex bg-stone-50 overflow-hidden font-sans">
+        <div className="flex h-screen w-full font-body overflow-hidden bg-surface text-on-surface">
 
             {/* Sidebar - Admin Navigation */}
-            <aside className="w-80 bg-stone-950 text-stone-300 flex flex-col h-full flex-shrink-0 z-20">
-                <div className="p-6 border-b border-stone-800">
-                    <div className="flex items-center gap-3 text-white mb-2">
-                        <LayoutDashboard className="w-6 h-6" />
-                        <h2 className="text-xl font-serif">Admin Panel</h2>
-                    </div>
-                    <p className="text-xs font-mono text-stone-500">Workspace Management</p>
+            <aside className="hidden md:flex flex-col h-full py-8 px-4 bg-surface-container-low text-primary w-64 shrink-0 whitespace-separation z-20 scrollbar-hide">
+                <div className="mb-8 px-4">
+                    <h1 className="text-lg font-headline text-primary">Oui-Do Admin</h1>
+                    <p className="text-[0.75rem] font-label uppercase tracking-wider text-secondary mt-1">Editorial Workspace</p>
                 </div>
 
-                <div className="p-4 border-b border-stone-800">
+                <div className="px-4 mb-4">
                     <button
-                        onClick={() => setIsCreatingClient(true)}
-                        className="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2.5 px-4 rounded flex items-center justify-center gap-2 transition-colors text-sm font-medium"
+                        onClick={() => {
+                            setLiveData(defaultData);
+                            setIsCreatingClient(true);
+                        }}
+                        className="w-full py-4 px-6 rounded-full text-[10px] font-label uppercase tracking-widest transition-all hover:opacity-90 font-bold text-on-primary shadow-xl shadow-primary/10"
+                        style={{ background: 'linear-gradient(135deg, #00150F 0%, #062C22 100%)' }}
                     >
-                        <Plus className="w-4 h-4" /> New Client Instance
+                        New Client Instance
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 flex flex-col">
-                    <div className="flex items-center justify-between mb-4 px-1">
-                        <span className="text-xs font-medium text-stone-500 uppercase tracking-wider">Use Mock Data</span>
+                <div className="flex-1 overflow-y-auto px-2 flex flex-col scrollbar-hide">
+                    <div className="flex items-center justify-between mb-4 px-3">
+                        <span className="text-[0.65rem] font-bold text-secondary uppercase tracking-widest">Use Mock Data</span>
                         <button
                             onClick={() => setUseMocks(!useMocks)}
-                            className={`w-10 h-5 rounded-full relative transition-colors ${useMocks ? 'bg-emerald-600' : 'bg-stone-700'}`}
+                            className={`w-10 h-5 rounded-full relative transition-colors ${useMocks ? 'bg-primary' : 'bg-surface-dim'}`}
                         >
                             <span className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white transition-transform ${useMocks ? 'translate-x-[22px]' : 'translate-x-[2px]'}`} />
                         </button>
                     </div>
 
-                    <div className="relative mb-6">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-500" />
+                    <div className="relative mb-6 px-2">
+                        <Search className="w-4 h-4 absolute left-5 top-1/2 -translate-y-1/2 text-outline-variant" />
                         <input
                             type="text"
                             placeholder="Search clients..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-stone-900 border border-stone-800 rounded-md py-2 pl-9 pr-4 text-sm text-stone-300 focus:outline-none focus:border-stone-600 transition-colors"
+                            className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg py-2 pl-9 pr-4 text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all font-body placeholder:text-outline-variant"
                         />
                     </div>
 
                     <div className="space-y-1 flex-1 overflow-y-auto min-h-0">
-                        <p className="text-xs uppercase tracking-wider text-stone-600 font-semibold mb-3 px-2">Active Clients</p>
+                        <p className="text-[0.65rem] uppercase tracking-widest text-secondary font-bold mb-3 px-3">Active Clients</p>
                         {(useMocks ? mockClients : realClients).filter(c => c.slug.includes(searchQuery.toLowerCase())).map(client => (
                             <button
                                 key={client.id}
                                 onClick={async () => {
+                                    setIsCreatingClient(false);
                                     try {
                                         const res = await fetch(`/api/invitation?slug=${client.slug}`);
                                         if (res.ok) {
                                             const dbData = await res.json();
                                             if (dbData) {
-                                                // Map DB fields back to state
                                                 setThemeSelection(dbData.theme ? Object.keys(THEME_PRESETS).find(k => THEME_PRESETS[k].accent === (dbData.theme as Theme).accent) || 'emerald' : 'emerald');
-                                                setLiveData({
-                                                    ...defaultData,
-                                                    ...dbData,
-                                                    theme: dbData.theme || THEME_PRESETS.emerald
-                                                });
+                                                setLiveData({ ...defaultData, ...dbData, theme: dbData.theme || THEME_PRESETS.emerald });
                                             } else {
-                                                // DB empty for this client
                                                 setLiveData({ ...defaultData, slug: client.slug, bride: client.bride, groom: client.groom });
                                             }
-
-                                            // Fetch expenses
                                             const exp = await getExpensesBySlug(client.slug);
                                             setExpenses(exp);
                                         }
@@ -280,27 +274,26 @@ export default function AdminDashboard() {
                                         console.error(e);
                                     }
                                 }}
-                                className={`w-full text-left px-3 py-3 rounded-md flex items-center justify-between group transition-colors ${liveData.slug === client.slug ? 'bg-stone-800 text-white' : 'hover:bg-stone-900'}`}
+                                className={`w-full text-left px-4 py-3 rounded-r-full flex items-center justify-between group transition-all ${liveData.slug === client.slug && !isCreatingClient ? 'bg-surface-container-lowest text-primary shadow-sm ring-1 ring-outline-variant/10' : 'text-secondary hover:bg-surface-container-lowest/50 hover:text-primary'}`}
                             >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-stone-800 flex items-center justify-center flex-shrink-0">
+                                <div className="flex items-center gap-3 w-full">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${liveData.slug === client.slug && !isCreatingClient ? 'bg-primary/5 text-primary' : 'bg-surface text-secondary group-hover:bg-primary/5 group-hover:text-primary'}`}>
                                         <Users className="w-4 h-4" />
                                     </div>
-                                    <div className="truncate">
-                                        <p className="text-sm font-medium truncate">{client.bride} & {client.groom}</p>
-                                        <p className="text-xs text-stone-500 truncate">/{client.slug}</p>
+                                    <div className="truncate flex-1">
+                                        <p className="text-[0.8rem] font-label font-bold tracking-tight truncate">{client.bride} & {client.groom}</p>
+                                        <p className={`text-[0.65rem] truncate font-mono ${liveData.slug === client.slug && !isCreatingClient ? 'text-primary' : 'text-outline-variant'}`}>/{client.slug}</p>
                                     </div>
                                 </div>
-                                <ChevronRight className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${liveData.slug === client.slug ? 'opacity-100 text-emerald-500' : ''}`} />
                             </button>
                         ))}
                     </div>
                 </div>
 
-                <div className="p-4 border-t border-stone-800">
+                <div className="px-4 py-4 pt-4 border-t border-outline-variant/10">
                     <button
                         onClick={handleSignOut}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-stone-400 hover:text-white hover:bg-stone-900 rounded-md transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-secondary hover:text-primary transition-colors font-label uppercase tracking-widest font-bold"
                     >
                         <LogOut className="w-4 h-4" /> Sign Out
                     </button>
@@ -308,7 +301,7 @@ export default function AdminDashboard() {
             </aside>
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col h-full relative bg-white">
+            <main className="flex-1 flex flex-col h-full relative bg-surface">
 
                 {/* Top Nav Tabs */}
                 {liveData.slug && (
@@ -332,52 +325,52 @@ export default function AdminDashboard() {
 
                     {activeTab === 'builder' || !liveData.slug ? (
                         <>
-                            {/* Overlay Form: Create New Client */}
+                            {/* Onboard Client Form Native */}
                             {isCreatingClient && (
-                                <div className="absolute inset-0 z-50 flex bg-white/50 backdrop-blur-sm">
-                                    <div className="w-full max-w-md bg-white shadow-2xl border-r border-stone-200 p-8 flex flex-col h-full animate-in slide-in-from-left">
-                                        <div className="flex justify-between items-center mb-8">
-                                            <h3 className="text-2xl font-serif text-stone-900">Onboard Client</h3>
-                                            <button onClick={() => setIsCreatingClient(false)} className="text-stone-400 hover:text-stone-900">✕</button>
+                                <div className="absolute inset-0 z-50 flex flex-col overflow-y-auto bg-surface backdrop-blur-sm px-6 py-12 md:py-24 animate-in fade-in duration-300">
+                                    <div className="max-w-4xl mx-auto w-full space-y-16">
+                                        
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-4">
+                                                <h2 className="text-5xl font-headline text-primary tracking-tight">New Client Instance</h2>
+                                                <p className="text-lg text-secondary max-w-xl leading-relaxed">This securely generates a new user account with client permissions and binds it to a unique URL slug.</p>
+                                            </div>
+                                            <button onClick={() => setIsCreatingClient(false)} className="text-secondary hover:text-primary font-bold uppercase tracking-widest text-sm p-4">✕ Close</button>
                                         </div>
 
-                                        <p className="text-sm text-stone-500 mb-8">This securely generates a new user account with 'client' permissions and binds it to a unique URL slug.</p>
-
                                         {onboardMessage && (
-                                            <div className={`mb-6 p-4 text-sm rounded-lg border ${onboardMessage.type === 'error' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>
+                                            <div className={`p-4 text-sm rounded-xl border ${onboardMessage.type === 'error' ? 'bg-error-container/20 text-error border-error/30' : 'bg-primary-fixed/30 text-primary border-primary/20'}`}>
                                                 {onboardMessage.text}
                                             </div>
                                         )}
 
-                                        <form onSubmit={handleCreateClient} className="space-y-5 flex-1">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Client Email</label>
-                                                <input type="email" required value={newClientForm.email} onChange={e => setNewClientForm({ ...newClientForm, email: e.target.value })} className="w-full border border-stone-300 rounded p-2.5 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="client@example.com" />
+                                        <form onSubmit={handleCreateClient} className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                                            <div className="space-y-3">
+                                                <label className="text-[0.75rem] font-label font-bold uppercase tracking-[0.1em] text-secondary ml-1">Client Email</label>
+                                                <input type="email" required value={newClientForm.email} onChange={e => setNewClientForm({ ...newClientForm, email: e.target.value })} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-6 py-5 text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-lg font-body" placeholder="client@example.com" />
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Temporary Password</label>
-                                                <input type="password" required value={newClientForm.password} onChange={e => setNewClientForm({ ...newClientForm, password: e.target.value })} className="w-full border border-stone-300 rounded p-2.5 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="••••••••" minLength={6} />
-                                            </div>
-                                            <div className="space-y-2 relative">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Assigned Wedding Slug</label>
-                                                <input
-                                                    type="text"
-                                                    required
-                                                    value={newClientForm.slug}
-                                                    onChange={e => {
-                                                        setNewClientForm({ ...newClientForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') });
-                                                        setShowSlugDropdown(true);
-                                                    }}
-                                                    onFocus={() => setShowSlugDropdown(true)}
-                                                    onBlur={() => setTimeout(() => setShowSlugDropdown(false), 200)}
-                                                    className="w-full border border-stone-300 rounded p-2.5 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                                                    placeholder="Type to search existing or create new... e.g. maya-and-john"
-                                                />
-                                                <p className="text-xs text-stone-400 mt-1">URL will be: /invite/{newClientForm.slug || '...'}</p>
+                                            <div className="space-y-3 relative">
+                                                <label className="text-[0.75rem] font-label font-bold uppercase tracking-[0.1em] text-secondary ml-1">Assigned Wedding Slug</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-outline-variant text-lg font-body">oui-do.com/</span>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={newClientForm.slug}
+                                                        onChange={e => {
+                                                            setNewClientForm({ ...newClientForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') });
+                                                            setShowSlugDropdown(true);
+                                                        }}
+                                                        onFocus={() => setShowSlugDropdown(true)}
+                                                        onBlur={() => setTimeout(() => setShowSlugDropdown(false), 200)}
+                                                        className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg pl-[8.5rem] pr-6 py-5 text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-lg font-body"
+                                                        placeholder="maya-and-john"
+                                                    />
+                                                </div>
 
                                                 {/* Suggestions Dropdown */}
                                                 {showSlugDropdown && (
-                                                    <div className="absolute top-[70px] left-0 w-full bg-white border border-stone-200 rounded-md shadow-lg max-h-48 overflow-y-auto z-50">
+                                                    <div className="absolute top-[100%] left-0 mt-2 w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-[60] font-body">
                                                         {(useMocks ? mockClients : realClients)
                                                             .filter(c => c.slug.includes(newClientForm.slug.toLowerCase()))
                                                             .map(c => (
@@ -388,26 +381,41 @@ export default function AdminDashboard() {
                                                                         setNewClientForm({ ...newClientForm, slug: c.slug });
                                                                         setShowSlugDropdown(false);
                                                                     }}
-                                                                    className="w-full text-left px-4 py-2 text-sm hover:bg-stone-100 flex justify-between items-center"
+                                                                    className="w-full text-left px-6 py-3 text-sm hover:bg-surface-container-low flex justify-between items-center border-b border-surface-variant/50 last:border-0 transition-colors"
                                                                 >
-                                                                    <span className="font-medium text-stone-700">{c.slug}</span>
-                                                                    <span className="text-xs text-stone-400">{c.bride} & {c.groom}</span>
+                                                                    <span className="font-medium text-primary text-base">{c.slug}</span>
+                                                                    <span className="text-secondary">{c.bride} & {c.groom}</span>
                                                                 </button>
                                                             ))}
                                                         {newClientForm.slug && !(useMocks ? mockClients : realClients).some(c => c.slug === newClientForm.slug) && (
-                                                            <div className="px-4 py-2 text-sm text-stone-500 italic border-t border-stone-100">
+                                                            <div className="px-6 py-4 text-sm text-secondary italic border-t border-surface-variant/50">
                                                                 Create new slug: "{newClientForm.slug}"
                                                             </div>
                                                         )}
                                                     </div>
                                                 )}
                                             </div>
-                                            <button type="submit" disabled={onboardLoading} className="w-full bg-stone-900 text-white rounded p-3 text-sm font-medium mt-8 disabled:opacity-50">
-                                                {onboardLoading ? 'Provisioning...' : 'Create Account'}
-                                            </button>
+                                            
+                                            <div className="space-y-3 md:col-span-2">
+                                                <label className="text-[0.75rem] font-label font-bold uppercase tracking-[0.1em] text-secondary ml-1">Temporary Password</label>
+                                                <input type="password" required value={newClientForm.password} onChange={e => setNewClientForm({ ...newClientForm, password: e.target.value })} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-6 py-5 text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-lg font-body" placeholder="••••••••••••" minLength={6} />
+                                                <p className="text-xs text-secondary/70 mt-3 px-1">We recommend a secure, auto-generated string for the first login.</p>
+                                            </div>
+
+                                            <div className="md:col-span-2 flex flex-col md:flex-row items-center gap-8 pt-10 border-t border-surface-container-high">
+                                                <button type="submit" disabled={onboardLoading} style={{ background: 'linear-gradient(135deg, #00150F 0%, #062C22 100%)' }} className="w-full md:w-auto px-12 py-5 text-on-primary rounded-full text-sm font-label font-bold uppercase tracking-widest shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity disabled:opacity-50">
+                                                    {onboardLoading ? 'Provisioning...' : 'Create Account'}
+                                                </button>
+                                                <button type="button" onClick={() => setIsCreatingClient(false)} className="text-sm font-label font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors">
+                                                    Cancel & Return
+                                                </button>
+                                            </div>
                                         </form>
+                                        
+                                        <div className="mt-32 opacity-20 flex justify-center pb-24">
+                                            <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=2669&auto=format&fit=crop" className="w-64 h-64 object-cover rounded-full filter grayscale sepia mix-blend-multiply" alt="Elegant flair" />
+                                        </div>
                                     </div>
-                                    <div className="flex-1" onClick={() => setIsCreatingClient(false)}></div>
                                 </div>
                             )}
 
