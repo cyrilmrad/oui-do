@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Active Clients | Oui-Do Editorial Excellence</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&amp;family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-tint": "#426559",
+              "inverse-on-surface": "#f2f1ee",
+              "surface-bright": "#faf9f6",
+              "primary-fixed-dim": "#a9cfc0",
+              "surface-dim": "#dbdad7",
+              "on-surface-variant": "#414845",
+              "on-secondary-fixed-variant": "#474746",
+              "primary": "#00150f",
+              "on-error": "#ffffff",
+              "on-tertiary": "#ffffff",
+              "surface-container-high": "#e9e8e5",
+              "surface-container": "#efeeeb",
+              "tertiary-fixed": "#ffdad7",
+              "on-secondary-fixed": "#1c1b1b",
+              "tertiary": "#250908",
+              "error": "#ba1a1a",
+              "surface-variant": "#e3e2e0",
+              "outline-variant": "#c1c8c4",
+              "on-tertiary-fixed": "#311211",
+              "on-primary-container": "#719587",
+              "inverse-primary": "#a9cfc0",
+              "secondary-fixed": "#e5e2e1",
+              "tertiary-fixed-dim": "#f0b9b5",
+              "on-primary-fixed": "#002118",
+              "error-container": "#ffdad6",
+              "tertiary-container": "#3e1d1b",
+              "outline": "#717975",
+              "on-surface": "#1a1c1a",
+              "background": "#faf9f6",
+              "on-secondary": "#ffffff",
+              "secondary-container": "#e2dfde",
+              "on-tertiary-container": "#b3817e",
+              "surface": "#faf9f6",
+              "on-secondary-container": "#636262",
+              "primary-container": "#062c22",
+              "on-primary-fixed-variant": "#2b4d42",
+              "on-background": "#1a1c1a",
+              "on-tertiary-fixed-variant": "#633c39",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-low": "#f4f3f1",
+              "surface-container-highest": "#e3e2e0",
+              "inverse-surface": "#2f312f",
+              "secondary-fixed-dim": "#c8c6c5",
+              "on-primary": "#ffffff",
+              "primary-fixed": "#c4ebdb",
+              "secondary": "#5f5e5e",
+              "on-error-container": "#93000a"
+            },
+            fontFamily: {
+              "headline": ["Noto Serif"],
+              "body": ["Manrope"],
+              "label": ["Manrope"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: #FAF9F6;
+            color: #1A1C1A;
+            -webkit-font-smoothing: antialiased;
+        }
+        .serif-text { font-family: 'Noto Serif', serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface">
+<!-- SideNavBar Component -->
+<aside class="fixed left-0 top-0 h-full flex flex-col py-8 bg-[#F4F3F1] dark:bg-stone-900 w-72 z-50">
+<div class="px-8 mb-12">
+<h1 class="font-serif text-xl text-[#00150F] dark:text-stone-100">Oui-Do</h1>
+<p class="font-sans uppercase tracking-[0.05em] text-[0.75rem] font-medium text-[#5F5E5E] mt-1">Editorial Excellence</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 text-[#5F5E5E] dark:text-stone-400 py-3 px-6 hover:bg-[#FAF9F6] dark:hover:bg-stone-800 rounded-r-full transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-sans uppercase tracking-[0.05em] text-[0.75rem] font-medium">Dashboard</span>
+</a>
+<!-- Active State: Active Weddings (Maps to 'Active Clients' intent) -->
+<a class="flex items-center gap-3 text-[#00150F] dark:text-white font-bold bg-[#FAF9F6]/50 dark:bg-stone-800/50 rounded-r-full py-3 px-6 scale-[0.99] transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-sans uppercase tracking-[0.05em] text-[0.75rem] font-bold">Active Weddings</span>
+</a>
+<a class="flex items-center gap-3 text-[#5F5E5E] dark:text-stone-400 py-3 px-6 hover:bg-[#FAF9F6] dark:hover:bg-stone-800 rounded-r-full transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="archive">archive</span>
+<span class="font-sans uppercase tracking-[0.05em] text-[0.75rem] font-medium">Archive</span>
+</a>
+<a class="flex items-center gap-3 text-[#5F5E5E] dark:text-stone-400 py-3 px-6 hover:bg-[#FAF9F6] dark:hover:bg-stone-800 rounded-r-full transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="layers">layers</span>
+<span class="font-sans uppercase tracking-[0.05em] text-[0.75rem] font-medium">Templates</span>
+</a>
+<a class="flex items-center gap-3 text-[#5F5E5E] dark:text-stone-400 py-3 px-6 hover:bg-[#FAF9F6] dark:hover:bg-stone-800 rounded-r-full transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+<span class="font-sans uppercase tracking-[0.05em] text-[0.75rem] font-medium">Settings</span>
+</a>
+</nav>
+<div class="px-6 mb-8">
+<button class="w-full py-4 px-6 rounded-full bg-gradient-to-br from-[#00150F] to-[#062C22] text-white font-sans uppercase tracking-widest text-[0.7rem] font-bold shadow-lg shadow-primary/10 transition-transform active:scale-95">
+                New Wedding
+            </button>
+</div>
+<div class="mt-auto border-t border-outline-variant/10 pt-6">
+<a class="flex items-center gap-3 text-[#5F5E5E] dark:text-stone-400 py-3 px-6 hover:bg-[#FAF9F6] dark:hover:bg-stone-800 rounded-r-full transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+<span class="font-sans uppercase tracking-[0.05em] text-[0.75rem] font-medium">Support</span>
+</a>
+<a class="flex items-center gap-3 text-[#5F5E5E] dark:text-stone-400 py-3 px-6 hover:bg-[#FAF9F6] dark:hover:bg-stone-800 rounded-r-full transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-sans uppercase tracking-[0.05em] text-[0.75rem] font-medium">Log Out</span>
+</a>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="ml-72 min-h-screen p-12 max-w-[1600px] mx-auto">
+<!-- Header Section -->
+<header class="mb-16">
+<div class="flex justify-between items-end mb-8">
+<div>
+<span class="font-sans uppercase tracking-[0.2em] text-[0.7rem] font-semibold text-secondary mb-3 block">Portfolio Management</span>
+<h2 class="font-serif text-[3.5rem] leading-tight text-primary">Active Clients</h2>
+</div>
+<div class="flex items-center gap-4 bg-surface-container-low p-2 rounded-full px-6 py-3 border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm font-body w-64 placeholder:text-secondary/50" placeholder="Search clients or dates..." type="text"/>
+<span class="w-px h-6 bg-outline-variant/30"></span>
+<button class="flex items-center gap-2 text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[1.2rem]" data-icon="filter_list">filter_list</span>
+<span class="text-[0.75rem] font-bold uppercase tracking-wider">Filter</span>
+</button>
+</div>
+</div>
+<!-- Insight Row -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Signature Component: Insight Card -->
+<div class="bg-surface-container-lowest p-8 rounded-lg border border-outline-variant/10 relative overflow-hidden group">
+<div class="relative z-10">
+<p class="font-sans uppercase tracking-widest text-[0.7rem] font-bold text-secondary mb-4">Total Active Weddings</p>
+<h3 class="font-serif text-5xl text-primary">24</h3>
+<p class="mt-4 text-[0.8rem] text-secondary flex items-center gap-1 italic">
+<span class="material-symbols-outlined text-green-600 text-sm" data-icon="trending_up">trending_up</span>
+                            +3 from last month
+                        </p>
+</div>
+<span class="material-symbols-outlined absolute -right-4 -bottom-4 text-[8rem] text-primary/5 opacity-[0.03] group-hover:opacity-10 transition-opacity" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div class="bg-surface-container-lowest p-8 rounded-lg border border-outline-variant/10">
+<p class="font-sans uppercase tracking-widest text-[0.7rem] font-bold text-secondary mb-4">Upcoming This Week</p>
+<h3 class="font-serif text-5xl text-primary">02</h3>
+<p class="mt-4 text-[0.8rem] text-secondary">Awaiting final confirmations</p>
+</div>
+<div class="bg-surface-container-lowest p-8 rounded-lg border border-outline-variant/10">
+<p class="font-sans uppercase tracking-widest text-[0.7rem] font-bold text-secondary mb-4">Client Satisfaction</p>
+<h3 class="font-serif text-5xl text-primary">98%</h3>
+<p class="mt-4 text-[0.8rem] text-secondary italic">Editorial Benchmark: High</p>
+</div>
+</div>
+</header>
+<!-- Editorial Grid / Table -->
+<section>
+<div class="mb-6 flex items-center justify-between px-4">
+<div class="flex gap-8">
+<button class="text-[0.75rem] font-bold uppercase tracking-wider text-primary border-b-2 border-primary pb-2">All Clients</button>
+<button class="text-[0.75rem] font-bold uppercase tracking-wider text-secondary hover:text-primary transition-colors pb-2">In Progress</button>
+<button class="text-[0.75rem] font-bold uppercase tracking-wider text-secondary hover:text-primary transition-colors pb-2">Live</button>
+</div>
+<div class="flex items-center gap-2 text-secondary text-[0.75rem] font-medium">
+<span>Showing 24 of 24 results</span>
+</div>
+</div>
+<div class="space-y-4">
+<!-- Client Row 1 -->
+<div class="group bg-surface-container-lowest hover:bg-surface-container-low transition-all duration-300 rounded-lg p-6 flex items-center justify-between border border-transparent hover:border-outline-variant/20 shadow-sm">
+<div class="flex items-center gap-6 w-1/3">
+<div class="w-16 h-16 rounded-full bg-surface-container-high overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" data-alt="Elegant couple in wedding attire" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbAOBko1Dk8GDsphjtoBUbSpSbGbSyk3Mwmg2T4hbZPqMFrOEstIqckxRqYWcb6dU0d0FoL6ijszAJPAcGoqhAEpxJTPBadj9kR3W09eSmyv7iDeLYnnp_qXsF-eLJYGCf4PyJp66ekx6IDu0s5lFx0BARQX_TUKmxv_Rrc37LVZbydUq6WC2K_UgUMZVBqjU-YbqFyuuazqam4T0P_3Me-SPt_JiZIAkXCLTjDQ7LWoS-tYfowUcc_Pb9nNEg6ESmxj62v4b5sr1k"/>
+</div>
+<div>
+<h4 class="font-serif text-xl text-primary">Julianne &amp; Theodore</h4>
+<p class="font-body text-xs text-secondary mt-1">slug: /julianne-theodore-2024</p>
+</div>
+</div>
+<div class="w-1/4">
+<span class="font-sans uppercase tracking-widest text-[0.65rem] font-bold text-secondary block mb-1">Wedding Date</span>
+<p class="font-body text-sm font-semibold text-primary">September 24, 2024</p>
+</div>
+<div class="w-1/6">
+<span class="font-sans uppercase tracking-widest text-[0.65rem] font-bold text-secondary block mb-1">Status</span>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-blue-400"></span>
+<span class="font-body text-xs font-bold text-primary">In Progress</span>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="p-2 rounded-full text-secondary hover:bg-surface-container-highest hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[1.2rem]" data-icon="open_in_new">open_in_new</span>
+</button>
+<button class="p-2 rounded-full text-secondary hover:bg-surface-container-highest hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[1.2rem]" data-icon="more_horiz">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Client Row 2 -->
+<div class="group bg-surface-container-lowest hover:bg-surface-container-low transition-all duration-300 rounded-lg p-6 flex items-center justify-between border border-transparent hover:border-outline-variant/20 shadow-sm">
+<div class="flex items-center gap-6 w-1/3">
+<div class="w-16 h-16 rounded-full bg-surface-container-high overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" data-alt="Couple laughing during sunset wedding" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcZ8hcUUydrCODFQcRhZz-MxvASKxJBNJnoB15Ir8Irl72QGmwIlmvaXw20Pflc3BuODfXM9wgbhqC6ZuBLd17kQI148-_vyX4yA0iXF5dLwZwJ19IhrabzMlXJgTT4uETLXuOlE5olAryBFxm7Fmo4hQVpkZ5M5exFrnaK9jFZnvimbmeZ58sJ6sppdjeFzN3GxbdXvUc3dWtzhbQ_yL5SfFgaKqcYLwGxfpwp00ebopPQUNEwp8CTmot_PRyaa0gIGgcJAVDvVkd"/>
+</div>
+<div>
+<h4 class="font-serif text-xl text-primary">Eleanor &amp; Marcus</h4>
+<p class="font-body text-xs text-secondary mt-1">slug: /eleanor-marcus-live</p>
+</div>
+</div>
+<div class="w-1/4">
+<span class="font-sans uppercase tracking-widest text-[0.65rem] font-bold text-secondary block mb-1">Wedding Date</span>
+<p class="font-body text-sm font-semibold text-primary">October 12, 2024</p>
+</div>
+<div class="w-1/6">
+<span class="font-sans uppercase tracking-widest text-[0.65rem] font-bold text-secondary block mb-1">Status</span>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="font-body text-xs font-bold text-primary">Live</span>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="p-2 rounded-full text-secondary hover:bg-surface-container-highest hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[1.2rem]" data-icon="open_in_new">open_in_new</span>
+</button>
+<button class="p-2 rounded-full text-secondary hover:bg-surface-container-highest hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[1.2rem]" data-icon="more_horiz">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Client Row 3 -->
+<div class="group bg-surface-container-lowest hover:bg-surface-container-low transition-all duration-300 rounded-lg p-6 flex items-center justify-between border border-transparent hover:border-outline-variant/20 shadow-sm">
+<div class="flex items-center gap-6 w-1/3">
+<div class="w-16 h-16 rounded-full bg-surface-container-high overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" data-alt="Classic wedding portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDaShe6L9K08wtDkxFWpulp-sUro78U7jmgErJeV66R3jbJLGqIYiw3HzU7DKiG5Gh0tK0TkPdsw0cNG8jCI13-Hug2gSVP082mjq8jtJHiMn0pFDD8wtLZ6s7mzx5gs8HCurX02TAfZfhJbQx_FLIuvR1ecqS-AmOJlxle3sOPVXZ_Lv6TcP7oSFYRHXef41Z0_VmZbuthwrv5lSxEdHJBabp2hKymId2kHljX6VI_YmWMIi9AlEdVEVf2KIK64m5U1NQFkXK7sGZx"/>
+</div>
+<div>
+<h4 class="font-serif text-xl text-primary">Sophie &amp; Bennett</h4>
+<p class="font-body text-xs text-secondary mt-1">slug: /sophie-bennett-draft</p>
+</div>
+</div>
+<div class="w-1/4">
+<span class="font-sans uppercase tracking-widest text-[0.65rem] font-bold text-secondary block mb-1">Wedding Date</span>
+<p class="font-body text-sm font-semibold text-primary">November 08, 2024</p>
+</div>
+<div class="w-1/6">
+<span class="font-sans uppercase tracking-widest text-[0.65rem] font-bold text-secondary block mb-1">Status</span>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-stone-300"></span>
+<span class="font-body text-xs font-bold text-primary">Draft</span>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="p-2 rounded-full text-secondary hover:bg-surface-container-highest hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[1.2rem]" data-icon="open_in_new">open_in_new</span>
+</button>
+<button class="p-2 rounded-full text-secondary hover:bg-surface-container-highest hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[1.2rem]" data-icon="more_horiz">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Client Row 4 -->
+<div class="group bg-surface-container-lowest hover:bg-surface-container-low transition-all duration-300 rounded-lg p-6 flex items-center justify-between border border-transparent hover:border-outline-variant/20 shadow-sm opacity-90">
+<div class="flex items-center gap-6 w-1/3">
+<div class="w-16 h-16 rounded-full bg-surface-container-high overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" data-alt="Close up of wedding rings" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5T2rIbpxJYQMu6QO-ja8E3p5ISCT3Nr06xfSg5f3Q44SvB4PEQXF-qnQ-1yO1b2iUwSix4Ud54lwikqS4Bp_QcJ02QBAI_sN6bizjuotmcDQb_cLKwPOeybxciOvrgmsQFUfEPFOhI7GdIO7a0YqoOZ7wDsVhkQdoVTaz_NLZFgYX4_BACYAz_khhdg8OcciowSQqTdGo6ARYpoF0CC4pNfgego1_Iq-gpiDRkteeakZmf8hPO05O-WaFim7gSACqX5Zr41WbIK_M"/>
+</div>
+<div>
+<h4 class="font-serif text-xl text-primary">Clara &amp; Silas</h4>
+<p class="font-body text-xs text-secondary mt-1">slug: /clara-silas-2025</p>
+</div>
+</div>
+<div class="w-1/4">
+<span class="font-sans uppercase tracking-widest text-[0.65rem] font-bold text-secondary block mb-1">Wedding Date</span>
+<p class="font-body text-sm font-semibold text-primary">January 15, 2025</p>
+</div>
+<div class="w-1/6">
+<span class="font-sans uppercase tracking-widest text-[0.65rem] font-bold text-secondary block mb-1">Status</span>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-blue-400"></span>
+<span class="font-body text-xs font-bold text-primary">In Progress</span>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="p-2 rounded-full text-secondary hover:bg-surface-container-highest hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[1.2rem]" data-icon="open_in_new">open_in_new</span>
+</button>
+<button class="p-2 rounded-full text-secondary hover:bg-surface-container-highest hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[1.2rem]" data-icon="more_horiz">more_horiz</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Pagination/Load More (Editorial Style) -->
+<div class="mt-12 text-center">
+<button class="inline-flex items-center gap-2 px-8 py-4 bg-surface-container-low hover:bg-surface-container-high text-primary font-sans uppercase tracking-widest text-[0.7rem] font-bold rounded-full transition-all">
+<span>Explore Archive</span>
+<span class="material-symbols-outlined text-[1rem]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</section>
+</main>
+<!-- Contextual FAB - Only for specific screens like Dashboards/Home -->
+<button class="fixed bottom-12 right-12 w-16 h-16 bg-gradient-to-br from-[#00150F] to-[#062C22] text-white rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-90 group">
+<span class="material-symbols-outlined text-[2rem]" data-icon="add">add</span>
+<span class="absolute right-full mr-4 bg-primary px-4 py-2 rounded-lg text-[0.7rem] font-bold uppercase tracking-widest whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">Add New Client</span>
+</button>
+</body></html>
