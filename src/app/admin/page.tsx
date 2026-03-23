@@ -6,7 +6,10 @@ import { supabase } from '@/lib/supabaseClient';
 import InvitationPreview, { InvitationData, Theme } from '@/components/InvitationPreview';
 import { LogOut, Users, Plus, LayoutDashboard, Search, ChevronRight, Copy, Link, QrCode, Download, Share, Lock } from 'lucide-react';
 import BudgetTracker from '@/components/BudgetTracker';
+import TableSeating from '@/components/TableSeating';
 import { getExpensesBySlug, SelectExpense } from '@/app/actions/budget';
+import { getSeatingData } from '@/app/actions/seating';
+import type { SelectSeatingTable, SelectGuest } from '@/app/actions/seating';
 
 const THEME_PRESETS: Record<string, Theme> = {
     emerald: { primaryText: "text-stone-800", accent: "text-emerald-700", background: "bg-stone-50" },
@@ -48,8 +51,12 @@ export default function AdminDashboard() {
     const [isSaving, setIsSaving] = useState(false);
 
     // Budget State
-    const [activeTab, setActiveTab] = useState<'clients-list' | 'builder' | 'budget'>('clients-list');
+    const [activeTab, setActiveTab] = useState<'clients-list' | 'builder' | 'budget' | 'seating'>('clients-list');
     const [expenses, setExpenses] = useState<SelectExpense[]>([]);
+
+    // Seating State
+    const [seatingTables, setSeatingTables] = useState<SelectSeatingTable[]>([]);
+    const [seatingGuests, setSeatingGuests] = useState<SelectGuest[]>([]);
 
     // Static Mock Clients for Sidebar Visualization
     const mockClients = [
@@ -275,19 +282,38 @@ export default function AdminDashboard() {
 
                 {/* Top Nav Tabs */}
                 {liveData.slug && activeTab !== 'clients-list' && (
-                    <div className="h-14 border-b border-surface-container-highest flex items-center px-8 gap-8 shrink-0 bg-surface-container-low/50">
+                    <div className="h-14 border-b border-surface-container-highest flex items-center px-8 gap-0 shrink-0 bg-surface-container-low/50">
+                        {/* Back Button + Client Name */}
                         <button
-                            onClick={() => setActiveTab('builder')}
-                            className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'builder' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-primary'}`}
+                            onClick={() => {
+                                setLiveData(defaultData);
+                                setActiveTab('clients-list');
+                            }}
+                            className="flex items-center gap-2 mr-6 pr-6 border-r border-outline-variant/20 h-full text-secondary hover:text-primary transition-colors"
                         >
-                            Invitation Builder
+                            <ChevronRight className="w-4 h-4 rotate-180" />
+                            <span className="text-sm font-headline font-semibold text-primary">{liveData.bride} & {liveData.groom}</span>
                         </button>
-                        <button
-                            onClick={() => setActiveTab('budget')}
-                            className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'budget' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-primary'}`}
-                        >
-                            Budget Tracker
-                        </button>
+                        <div className="flex items-center gap-8 h-full">
+                            <button
+                                onClick={() => setActiveTab('builder')}
+                                className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'builder' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-primary'}`}
+                            >
+                                Invitation Builder
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('budget')}
+                                className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'budget' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-primary'}`}
+                            >
+                                Budget Tracker
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('seating')}
+                                className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'seating' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-primary'}`}
+                            >
+                                Table Seating
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -367,6 +393,9 @@ export default function AdminDashboard() {
                                                     }
                                                     const exp = await getExpensesBySlug(client.slug);
                                                     setExpenses(exp);
+                                                    const seatData = await getSeatingData(client.slug);
+                                                    setSeatingTables(seatData.tables);
+                                                    setSeatingGuests(seatData.guests);
                                                     setActiveTab('builder'); // Transition to Builder
                                                 }
                                             } catch (e) { console.error(e); }
@@ -870,6 +899,12 @@ export default function AdminDashboard() {
                     {activeTab === 'budget' && !isCreatingClient && (
                         <div className="w-full h-full overflow-y-auto p-8 bg-surface-container-low">
                             <BudgetTracker slug={liveData.slug} initialExpenses={expenses} />
+                        </div>
+                    )}
+
+                    {activeTab === 'seating' && !isCreatingClient && (
+                        <div className="w-full h-full overflow-y-auto p-8 bg-surface-container-low">
+                            <TableSeating slug={liveData.slug} initialTables={seatingTables} initialGuests={seatingGuests} />
                         </div>
                     )}
                 </div>

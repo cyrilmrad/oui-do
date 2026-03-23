@@ -33,12 +33,36 @@ export const invitations = pgTable('invitations', {
     updatedAt: timestamp('updated_at').defaultNow(),
 }).enableRLS();
 
+export const seatingTables = pgTable('seating_tables', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    slug: varchar('slug', { length: 255 }).references(() => invitations.slug).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    capacity: integer('capacity').default(8),
+    shape: varchar('shape', { length: 50 }).default('round'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+}, (t) => [
+    pgPolicy("Admins have full access to seating_tables", {
+        as: 'permissive',
+        for: 'all',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`,
+        withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`
+    }),
+    pgPolicy("Clients can manage their own seating_tables", {
+        as: 'permissive',
+        for: 'all',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'client' AND slug = (auth.jwt() -> 'app_metadata' ->> 'slug')`,
+        withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'client' AND slug = (auth.jwt() -> 'app_metadata' ->> 'slug')`
+    })
+]).enableRLS();
+
 export const guests = pgTable('guests', {
     id: uuid('id').defaultRandom().primaryKey(),
     invitationId: integer('invitation_id').references(() => invitations.id).notNull(),
     firstName: varchar('first_name', { length: 255 }).notNull(),
     lastName: varchar('last_name', { length: 255 }).notNull(),
     pax: integer('pax').notNull().default(1),
+    tableId: uuid('table_id').references(() => seatingTables.id, { onDelete: 'set null' }),
     status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending', 'attending', 'declined'
     message: text('message'),
     createdAt: timestamp('created_at').defaultNow(),

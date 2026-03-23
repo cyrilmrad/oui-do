@@ -19,14 +19,18 @@ import {
     MapPin,
     Copy,
     Plus,
-    Calculator
+    Calculator,
+    Armchair
 } from 'lucide-react';
 import InvitationPreview, { InvitationData, Theme } from '@/components/InvitationPreview';
 import BudgetTracker from '@/components/BudgetTracker';
+import TableSeating from '@/components/TableSeating';
 import { getExpensesBySlug } from '@/app/actions/budget';
+import { getSeatingData } from '@/app/actions/seating';
+import type { SelectSeatingTable, SelectGuest } from '@/app/actions/seating';
 
 type RsvpStatus = 'all' | 'attending' | 'declined' | 'pending';
-type DashboardTab = 'overview' | 'guests' | 'messages' | 'budget' | 'settings';
+type DashboardTab = 'overview' | 'guests' | 'messages' | 'budget' | 'seating' | 'settings';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -43,6 +47,7 @@ export default function DashboardPage() {
     // Overview State
     const [rsvps, setRsvps] = useState<any[]>([]);
     const [expenses, setExpenses] = useState<any[]>([]);
+    const [seatingData, setSeatingData] = useState<{ tables: SelectSeatingTable[]; guests: SelectGuest[] }>({ tables: [], guests: [] });
     const [filterStatus, setFilterStatus] = useState<RsvpStatus>('all');
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -207,6 +212,9 @@ export default function DashboardPage() {
 
                     const expData = await getExpensesBySlug(slug);
                     setExpenses(expData);
+
+                    const seatData = await getSeatingData(slug);
+                    setSeatingData(seatData);
                 } catch (e) {
                     console.error("Failed to load settings or RSVPs or expenses", e);
                 }
@@ -541,6 +549,10 @@ export default function DashboardPage() {
 
     const renderBudget = () => (
         <BudgetTracker slug={userSlug} initialExpenses={expenses} />
+    );
+
+    const renderSeating = () => (
+        <TableSeating slug={userSlug} initialTables={seatingData.tables} initialGuests={seatingData.guests} />
     );
 
     const renderSettings = () => (
@@ -887,6 +899,13 @@ export default function DashboardPage() {
                         Budget
                     </button>
                     <button
+                        onClick={() => setActiveTab('seating')}
+                        className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'seating' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
+                    >
+                        <Armchair className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'seating' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
+                        Seating
+                    </button>
+                    <button
                         onClick={() => setActiveTab('settings')}
                         className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'settings' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
                     >
@@ -919,6 +938,9 @@ export default function DashboardPage() {
                     <button onClick={() => setActiveTab('budget')} className={`p-2 rounded-md ${activeTab === 'budget' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <Calculator className="w-5 h-5" />
                     </button>
+                    <button onClick={() => setActiveTab('seating')} className={`p-2 rounded-md ${activeTab === 'seating' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
+                        <Armchair className="w-5 h-5" />
+                    </button>
                     <button onClick={() => setActiveTab('settings')} className={`p-2 rounded-md ${activeTab === 'settings' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <Settings className="w-5 h-5" />
                     </button>
@@ -932,6 +954,7 @@ export default function DashboardPage() {
                     {activeTab === 'guests' && renderGuests()}
                     {activeTab === 'messages' && renderMessages()}
                     {activeTab === 'budget' && renderBudget()}
+                    {activeTab === 'seating' && renderSeating()}
                     {activeTab === 'settings' && renderSettings()}
                 </div>
             </main>
