@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Oui-Do | Invitation Builder</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&amp;family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "outline": "#717975",
+              "on-primary-fixed-variant": "#2b4d42",
+              "inverse-primary": "#a9cfc0",
+              "on-secondary-fixed": "#1c1b1b",
+              "surface-variant": "#e3e2e0",
+              "tertiary-fixed-dim": "#f0b9b5",
+              "on-tertiary-fixed-variant": "#633c39",
+              "primary-container": "#062c22",
+              "error": "#ba1a1a",
+              "surface-container-low": "#f4f3f1",
+              "on-primary-fixed": "#002118",
+              "on-secondary-container": "#636262",
+              "on-error": "#ffffff",
+              "on-tertiary-fixed": "#311211",
+              "inverse-on-surface": "#f2f1ee",
+              "surface-dim": "#dbdad7",
+              "primary-fixed": "#c4ebdb",
+              "inverse-surface": "#2f312f",
+              "on-primary-container": "#719587",
+              "surface-container-high": "#e9e8e5",
+              "tertiary": "#250908",
+              "on-tertiary": "#ffffff",
+              "surface-container-highest": "#e3e2e0",
+              "outline-variant": "#c1c8c4",
+              "primary-fixed-dim": "#a9cfc0",
+              "tertiary-fixed": "#ffdad7",
+              "primary": "#00150f",
+              "secondary-container": "#e2dfde",
+              "secondary-fixed-dim": "#c8c6c5",
+              "on-secondary": "#ffffff",
+              "secondary": "#5f5e5e",
+              "on-surface-variant": "#414845",
+              "on-primary": "#ffffff",
+              "surface-tint": "#426559",
+              "secondary-fixed": "#e5e2e1",
+              "error-container": "#ffdad6",
+              "on-secondary-fixed-variant": "#474746",
+              "on-tertiary-container": "#b3817e",
+              "on-background": "#1a1c1a",
+              "on-error-container": "#93000a",
+              "surface-container-lowest": "#ffffff",
+              "tertiary-container": "#3e1d1b",
+              "surface-container": "#efeeeb",
+              "surface-bright": "#faf9f6",
+              "on-surface": "#1a1c1a",
+              "background": "#faf9f6",
+              "surface": "#faf9f6"
+            },
+            fontFamily: {
+              "headline": ["Noto Serif"],
+              "body": ["Manrope"],
+              "label": ["Manrope"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Manrope', sans-serif; }
+        h1, h2, h3, .serif { font-family: 'Noto Serif', serif; }
+        .tracked-5 { letter-spacing: 0.05em; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface">
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full py-8 px-4 bg-[#F4F3F1] dark:bg-[#062C22] w-64 shrink-0">
+<div class="mb-10 px-4">
+<span class="text-lg font-serif text-[#00150F] dark:text-[#FAF9F6]">Oui-Do Admin</span>
+<p class="text-[0.75rem] font-label uppercase tracked-5 text-secondary">Editorial Workspace</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-[#5F5E5E] dark:text-[#F4F3F1]/70 hover:bg-[#FAF9F6] dark:hover:bg-white/5 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-[0.875rem] font-body uppercase">Dashboard</span>
+</a>
+<!-- Active Client State -->
+<a class="flex items-center gap-3 px-4 py-3 text-[#00150F] dark:text-white font-semibold bg-[#FAF9F6]/50 dark:bg-white/10 rounded-r-full translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="text-[0.875rem] font-body uppercase">Active Clients</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#5F5E5E] dark:text-[#F4F3F1]/70 hover:bg-[#FAF9F6] dark:hover:bg-white/5 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="text-[0.875rem] font-body uppercase">Templates</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#5F5E5E] dark:text-[#F4F3F1]/70 hover:bg-[#FAF9F6] dark:hover:bg-white/5 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="hub">hub</span>
+<span class="text-[0.875rem] font-body uppercase">Team</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 border-t border-outline-variant/10 space-y-2">
+<button class="w-full bg-primary-container text-white py-4 px-6 rounded-full text-[0.875rem] font-semibold mb-6">
+                    New Client Instance
+                </button>
+<a class="flex items-center gap-3 px-4 py-2 text-[#5F5E5E] hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="text-[0.875rem] uppercase">Support</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-[#5F5E5E] hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="text-[0.875rem] uppercase">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Workspace -->
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-10 py-4 bg-[#F4F3F1] dark:bg-[#062C22] shrink-0">
+<div class="flex items-center gap-8">
+<span class="text-xl font-serif italic text-[#00150F] dark:text-[#FAF9F6]">Oui-Do</span>
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-[#5F5E5E] dark:text-[#F4F3F1] font-medium hover:text-[#00150F] transition-colors duration-300" href="#">Workspaces</a>
+<a class="text-[#00150F] dark:text-[#FAF9F6] font-bold border-b-2 border-[#00150F] dark:border-[#FAF9F6] pb-1" href="#">Analytics</a>
+<a class="text-[#5F5E5E] dark:text-[#F4F3F1] font-medium hover:text-[#00150F] transition-colors duration-300" href="#">Archives</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-secondary" data-icon="notifications">notifications</button>
+<button class="material-symbols-outlined text-secondary" data-icon="settings">settings</button>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container-high ml-2">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="Close up portrait of a professional woman profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFKA95E3FGrdb8vERpaY_jJUY0urDI_BJYYrlPXvPKHq0zb9CAmFPpM1Wj8zwPo2Y7sNyAWJeN2DD56TGtM0Gb7GABBfqGMfMQqTieWR6tzr7Ci7BikFrqAGSgv40nx6WtVE6vYQyOFzJeUiBxbEQHraFHySImsQRdD0oAlmuqJEBGASjy9OYZ7n2qWwciAb6Y4rZ2_Bl501iBkkYmzVQ5Uq8mSzsePsc-D0tVPbz8YXYdsLcL72OeG6j4EsAaBfrY-dZbomyG7GTx"/>
+</div>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto bg-surface">
+<div class="max-w-[1600px] mx-auto px-10 py-12">
+<!-- Page Header Actions -->
+<div class="flex justify-between items-end mb-16">
+<div class="space-y-2">
+<h1 class="text-5xl font-serif text-primary">Invitation Builder</h1>
+<p class="text-secondary font-body">Crafting the narrative for Julianne &amp; Theodore's Autumn Gala.</p>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-surface-container-highest text-on-surface px-8 py-3 rounded-full flex items-center gap-2 font-medium">
+<span class="material-symbols-outlined text-sm" data-icon="link">link</span>
+                                Copy General Link
+                            </button>
+<button class="bg-gradient-to-br from-primary to-primary-container text-white px-8 py-3 rounded-full font-semibold shadow-lg shadow-on-background/5">
+                                Publish Changes
+                            </button>
+</div>
+</div>
+<!-- Editor Layout -->
+<div class="flex flex-col lg:flex-row gap-16">
+<!-- Left Column: Forms (60%) -->
+<div class="lg:w-3/5 space-y-16">
+<!-- Section: The Couple -->
+<section>
+<div class="flex justify-between items-center mb-8">
+<h2 class="text-2xl font-serif">The Couple</h2>
+<span class="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 01</span>
+</div>
+<div class="grid grid-cols-2 gap-8">
+<div class="space-y-1.5">
+<label class="text-[0.75rem] font-label uppercase text-secondary tracked-5">Partner One Name</label>
+<input class="w-full bg-surface-container-lowest border-outline/10 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface" type="text" value="Julianne Vane"/>
+</div>
+<div class="space-y-1.5">
+<label class="text-[0.75rem] font-label uppercase text-secondary tracked-5">Partner Two Name</label>
+<input class="w-full bg-surface-container-lowest border-outline/10 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface" type="text" value="Theodore Sterling"/>
+</div>
+</div>
+</section>
+<!-- Section: Ceremony Details -->
+<section>
+<div class="flex justify-between items-center mb-8">
+<h2 class="text-2xl font-serif">Ceremony Details</h2>
+<span class="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 02</span>
+</div>
+<div class="space-y-8">
+<div class="grid grid-cols-2 gap-8">
+<div class="space-y-1.5">
+<label class="text-[0.75rem] font-label uppercase text-secondary tracked-5">Ceremony Date</label>
+<input class="w-full bg-surface-container-lowest border-outline/10 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" type="date" value="2024-10-12"/>
+</div>
+<div class="space-y-1.5">
+<label class="text-[0.75rem] font-label uppercase text-secondary tracked-5">Starting Time</label>
+<input class="w-full bg-surface-container-lowest border-outline/10 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" type="time" value="16:00"/>
+</div>
+</div>
+<div class="space-y-1.5">
+<label class="text-[0.75rem] font-label uppercase text-secondary tracked-5">Venue Name</label>
+<input class="w-full bg-surface-container-lowest border-outline/10 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" type="text" value="The Glass Pavilion at Botanica"/>
+</div>
+<div class="space-y-1.5">
+<label class="text-[0.75rem] font-label uppercase text-secondary tracked-5">Google Maps URL</label>
+<input class="w-full bg-surface-container-lowest border-outline/10 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" type="url" value="https://maps.google.com/botanica-pavilion"/>
+</div>
+</div>
+</section>
+<!-- Section: Reception Details & Toggle -->
+<section>
+<div class="flex justify-between items-center mb-8">
+<div class="flex items-center gap-4">
+<h2 class="text-2xl font-serif">Formal Reception</h2>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+<span class="ms-3 text-[0.75rem] font-label uppercase text-primary">Enabled</span>
+</label>
+</div>
+<span class="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 03</span>
+</div>
+<div class="bg-surface-container-low p-8 rounded-lg space-y-6">
+<div class="space-y-1.5">
+<label class="text-[0.75rem] font-label uppercase text-secondary tracked-5">Reception Note</label>
+<textarea class="w-full bg-surface-container-lowest border-outline/10 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" rows="3">Dinner, dancing, and late-night festivities to follow the ceremony.</textarea>
+</div>
+<div class="flex items-center gap-2 text-primary font-medium cursor-pointer">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+<span class="text-sm">Add custom dietary requirements field</span>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Live Preview (40%) -->
+<div class="lg:w-2/5 sticky top-12 self-start flex flex-col items-center">
+<div class="text-center mb-6">
+<span class="text-[0.75rem] font-label uppercase text-secondary tracked-5">Live Mobile Preview</span>
+</div>
+<!-- Mobile Mockup Frame -->
+<div class="relative w-[340px] h-[680px] bg-white rounded-[3rem] shadow-2xl border-[8px] border-primary-container overflow-hidden ring-1 ring-white/20">
+<!-- Mockup Content -->
+<div class="h-full w-full bg-white flex flex-col overflow-y-auto no-scrollbar">
+<!-- Image Header -->
+<div class="h-1/2 w-full relative">
+<img class="w-full h-full object-cover" data-alt="Minimalist elegant wedding dinner setup with candles" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsjVRWHxekXPX7pJAwvq20YuL3B1kFhGNoV63pFibRi8GLBO66My57vkJvxDlrxbQ4KohIw92b9mjlRHfhhDpWmr-jciUqUa2dB2pzQruKt2woiQjLnTdy1ePEz6WPEzbh-N5NYKUKAI56tBKPVREPBOkznXcb_Az8G33P6Gnn5LTQWz04NFDC49EqR7XQxi_EJVd0LrKKumvSXkHwxG7qAGsfqsx9_F_fG19VoICGOnTK8VSQMetAXdcqHkSOSyYbdDquYxYUagxP"/>
+<div class="absolute inset-0 bg-gradient-to-t from-white/90 to-transparent"></div>
+</div>
+<!-- Invitation Text -->
+<div class="flex-1 px-8 py-10 text-center space-y-6">
+<div class="space-y-2">
+<p class="text-[0.65rem] font-label uppercase tracking-[0.2em] text-secondary">The Wedding of</p>
+<h3 class="text-3xl font-serif italic text-primary">Julianne <br/>&amp; Theodore</h3>
+</div>
+<div class="w-8 h-[1px] bg-primary/20 mx-auto"></div>
+<div class="space-y-1">
+<p class="font-body text-sm font-semibold text-primary uppercase tracking-widest">October 12, 2024</p>
+<p class="font-body text-[0.7rem] text-secondary uppercase">Four o'clock in the afternoon</p>
+</div>
+<div class="space-y-1">
+<p class="font-serif text-lg text-primary">The Glass Pavilion</p>
+<p class="font-body text-[0.75rem] text-secondary">Botanica Gardens, New York</p>
+</div>
+<div class="pt-4">
+<button class="w-full py-3 bg-primary text-white rounded-full text-[0.7rem] font-label tracking-widest uppercase">R.S.V.P</button>
+</div>
+</div>
+</div>
+<!-- Mockup Notch -->
+<div class="absolute top-0 inset-x-0 h-6 flex justify-center">
+<div class="w-24 h-5 bg-primary-container rounded-b-xl"></div>
+</div>
+</div>
+<div class="mt-8 flex gap-4">
+<button class="p-3 bg-surface-container-high rounded-full hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined" data-icon="qr_code">qr_code</span>
+</button>
+<button class="p-3 bg-surface-container-high rounded-full hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined" data-icon="file_download">file_download</span>
+</button>
+<button class="p-3 bg-surface-container-high rounded-full hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

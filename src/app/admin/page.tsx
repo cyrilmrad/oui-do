@@ -4,9 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import InvitationPreview, { InvitationData, Theme } from '@/components/InvitationPreview';
-import { LogOut, Users, Plus, LayoutDashboard, Search, ChevronRight, Copy } from 'lucide-react';
+import { LogOut, Users, Plus, LayoutDashboard, Search, ChevronRight, Copy, Link, QrCode, Download, Share, Lock } from 'lucide-react';
 import BudgetTracker from '@/components/BudgetTracker';
+import TableSeating from '@/components/TableSeating';
 import { getExpensesBySlug, SelectExpense } from '@/app/actions/budget';
+import { getSeatingData } from '@/app/actions/seating';
+import type { SelectSeatingTable, SelectGuest } from '@/app/actions/seating';
 
 const THEME_PRESETS: Record<string, Theme> = {
     emerald: { primaryText: "text-stone-800", accent: "text-emerald-700", background: "bg-stone-50" },
@@ -48,13 +51,17 @@ export default function AdminDashboard() {
     const [isSaving, setIsSaving] = useState(false);
 
     // Budget State
-    const [activeTab, setActiveTab] = useState<'builder' | 'budget'>('builder');
+    const [activeTab, setActiveTab] = useState<'clients-list' | 'builder' | 'budget' | 'seating'>('clients-list');
     const [expenses, setExpenses] = useState<SelectExpense[]>([]);
+
+    // Seating State
+    const [seatingTables, setSeatingTables] = useState<SelectSeatingTable[]>([]);
+    const [seatingGuests, setSeatingGuests] = useState<SelectGuest[]>([]);
 
     // Static Mock Clients for Sidebar Visualization
     const mockClients = [
-        { id: 1, slug: "nadine-and-tariq", bride: "Nadine", groom: "Tariq", email: "nadine@example.com" },
-        { id: 2, slug: "sarah-and-marc", bride: "Sarah", groom: "Marc", email: "sarah@example.com" },
+        { id: 1, slug: "nadine-and-tariq", bride: "Nadine", groom: "Tariq", email: "nadine@example.com", date: "September 24, 2024", heroImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuDbAOBko1Dk8GDsphjtoBUbSpSbGbSyk3Mwmg2T4hbZPqMFrOEstIqckxRqYWcb6dU0d0FoL6ijszAJPAcGoqhAEpxJTPBadj9kR3W09eSmyv7iDeLYnnp_qXsF-eLJYGCf4PyJp66ekx6IDu0s5lFx0BARQX_TUKmxv_Rrc37LVZbydUq6WC2K_UgUMZVBqjU-YbqFyuuazqam4T0P_3Me-SPt_JiZIAkXCLTjDQ7LWoS-tYfowUcc_Pb9nNEg6ESmxj62v4b5sr1k" },
+        { id: 2, slug: "sarah-and-marc", bride: "Sarah", groom: "Marc", email: "sarah@example.com", date: "October 12, 2024", heroImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuAcZ8hcUUydrCODFQcRhZz-MxvASKxJBNJnoB15Ir8Irl72QGmwIlmvaXw20Pflc3BuODfXM9wgbhqC6ZuBLd17kQI148-_vyX4yA0iXF5dLwZwJ19IhrabzMlXJgTT4uETLXuOlE5olAryBFxm7Fmo4hQVpkZ5M5exFrnaK9jFZnvimbmeZ58sJ6sppdjeFzN3GxbdXvUc3dWtzhbQ_yL5SfFgaKqcYLwGxfpwp00ebopPQUNEwp8CTmot_PRyaa0gIGgcJAVDvVkd" },
     ];
 
     const [useMocks, setUseMocks] = useState(false);
@@ -206,101 +213,64 @@ export default function AdminDashboard() {
     }
 
     return (
-        <div className="h-screen w-full flex bg-stone-50 overflow-hidden font-sans">
-
+        <div className="flex bg-surface text-on-surface font-body overflow-x-hidden relative h-screen w-full">
             {/* Sidebar - Admin Navigation */}
-            <aside className="w-80 bg-stone-950 text-stone-300 flex flex-col h-full flex-shrink-0 z-20">
-                <div className="p-6 border-b border-stone-800">
-                    <div className="flex items-center gap-3 text-white mb-2">
-                        <LayoutDashboard className="w-6 h-6" />
-                        <h2 className="text-xl font-serif">Admin Panel</h2>
-                    </div>
-                    <p className="text-xs font-mono text-stone-500">Workspace Management</p>
+            <aside className="hidden md:flex flex-col h-full py-8 px-4 bg-surface-container-low text-primary w-64 shrink-0 whitespace-separation z-20 scrollbar-hide">
+                <div className="mb-8 px-4">
+                    <h1 className="text-lg font-headline text-primary">Oui-Do Admin</h1>
+                    <p className="text-[0.75rem] font-label uppercase tracking-wider text-secondary mt-1">Editorial Workspace</p>
                 </div>
 
-                <div className="p-4 border-b border-stone-800">
+                <div className="px-4 mb-4">
                     <button
-                        onClick={() => setIsCreatingClient(true)}
-                        className="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2.5 px-4 rounded flex items-center justify-center gap-2 transition-colors text-sm font-medium"
+                        onClick={() => {
+                            setLiveData(defaultData);
+                            setIsCreatingClient(true);
+                        }}
+                        className="w-full py-4 px-6 rounded-full text-[10px] font-label uppercase tracking-widest transition-all hover:opacity-90 font-bold text-on-primary shadow-xl shadow-primary/10"
+                        style={{ background: 'linear-gradient(135deg, #00150F 0%, #062C22 100%)' }}
                     >
-                        <Plus className="w-4 h-4" /> New Client Instance
+                        New Client Instance
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 flex flex-col">
-                    <div className="flex items-center justify-between mb-4 px-1">
-                        <span className="text-xs font-medium text-stone-500 uppercase tracking-wider">Use Mock Data</span>
-                        <button
-                            onClick={() => setUseMocks(!useMocks)}
-                            className={`w-10 h-5 rounded-full relative transition-colors ${useMocks ? 'bg-emerald-600' : 'bg-stone-700'}`}
+                <div className="flex-1 px-0 flex flex-col pt-8">
+                    <nav className="flex-1 space-y-2">
+                        <button 
+                            className="w-full flex items-center gap-3 text-secondary py-3 px-8 hover:bg-surface-container-lowest hover:text-primary rounded-r-full transition-all duration-200"
                         >
-                            <span className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white transition-transform ${useMocks ? 'translate-x-[22px]' : 'translate-x-[2px]'}`} />
+                            <LayoutDashboard className="w-5 h-5" />
+                            <span className="font-label uppercase tracking-[0.05em] text-[0.75rem] font-medium">Dashboard</span>
                         </button>
-                    </div>
+                        <button 
+                            className={`w-full flex items-center gap-3 py-3 px-8 rounded-r-full transition-all duration-200 ${activeTab === 'clients-list' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm scale-[0.99]' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
+                            onClick={() => {
+                                setLiveData(defaultData); // Clear builder
+                                setActiveTab('clients-list');
+                            }}
+                        >
+                            <Users className="w-5 h-5" />
+                            <span className="font-label uppercase tracking-[0.05em] text-[0.75rem] font-bold">Active Clients</span>
+                        </button>
+                    </nav>
 
-                    <div className="relative mb-6">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-500" />
-                        <input
-                            type="text"
-                            placeholder="Search clients..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-stone-900 border border-stone-800 rounded-md py-2 pl-9 pr-4 text-sm text-stone-300 focus:outline-none focus:border-stone-600 transition-colors"
-                        />
-                    </div>
-
-                    <div className="space-y-1 flex-1 overflow-y-auto min-h-0">
-                        <p className="text-xs uppercase tracking-wider text-stone-600 font-semibold mb-3 px-2">Active Clients</p>
-                        {(useMocks ? mockClients : realClients).filter(c => c.slug.includes(searchQuery.toLowerCase())).map(client => (
+                    <div className="mt-auto px-6 mb-4">
+                        <div className="flex items-center justify-between px-3 py-3 bg-surface-container-highest/20 rounded-xl">
+                            <span className="text-[0.65rem] font-bold text-secondary uppercase tracking-widest">Mock Mode</span>
                             <button
-                                key={client.id}
-                                onClick={async () => {
-                                    try {
-                                        const res = await fetch(`/api/invitation?slug=${client.slug}`);
-                                        if (res.ok) {
-                                            const dbData = await res.json();
-                                            if (dbData) {
-                                                // Map DB fields back to state
-                                                setThemeSelection(dbData.theme ? Object.keys(THEME_PRESETS).find(k => THEME_PRESETS[k].accent === (dbData.theme as Theme).accent) || 'emerald' : 'emerald');
-                                                setLiveData({
-                                                    ...defaultData,
-                                                    ...dbData,
-                                                    theme: dbData.theme || THEME_PRESETS.emerald
-                                                });
-                                            } else {
-                                                // DB empty for this client
-                                                setLiveData({ ...defaultData, slug: client.slug, bride: client.bride, groom: client.groom });
-                                            }
-
-                                            // Fetch expenses
-                                            const exp = await getExpensesBySlug(client.slug);
-                                            setExpenses(exp);
-                                        }
-                                    } catch (e) {
-                                        console.error(e);
-                                    }
-                                }}
-                                className={`w-full text-left px-3 py-3 rounded-md flex items-center justify-between group transition-colors ${liveData.slug === client.slug ? 'bg-stone-800 text-white' : 'hover:bg-stone-900'}`}
+                                onClick={() => setUseMocks(!useMocks)}
+                                className={`w-8 h-4 rounded-full relative transition-colors ${useMocks ? 'bg-primary' : 'bg-surface-dim'}`}
                             >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-stone-800 flex items-center justify-center flex-shrink-0">
-                                        <Users className="w-4 h-4" />
-                                    </div>
-                                    <div className="truncate">
-                                        <p className="text-sm font-medium truncate">{client.bride} & {client.groom}</p>
-                                        <p className="text-xs text-stone-500 truncate">/{client.slug}</p>
-                                    </div>
-                                </div>
-                                <ChevronRight className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${liveData.slug === client.slug ? 'opacity-100 text-emerald-500' : ''}`} />
+                                <span className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white transition-transform ${useMocks ? 'translate-x-[18px]' : 'translate-x-[2px]'}`} />
                             </button>
-                        ))}
+                        </div>
                     </div>
                 </div>
 
-                <div className="p-4 border-t border-stone-800">
+                <div className="px-4 py-4 pt-4 border-t border-outline-variant/10">
                     <button
                         onClick={handleSignOut}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-stone-400 hover:text-white hover:bg-stone-900 rounded-md transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-secondary hover:text-primary transition-colors font-label uppercase tracking-widest font-bold"
                     >
                         <LogOut className="w-4 h-4" /> Sign Out
                     </button>
@@ -308,76 +278,212 @@ export default function AdminDashboard() {
             </aside>
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col h-full relative bg-white">
+            <main className="flex-1 flex flex-col h-full relative bg-surface">
 
                 {/* Top Nav Tabs */}
-                {liveData.slug && (
-                    <div className="h-14 border-b border-stone-200 flex items-center px-8 gap-8 shrink-0 bg-stone-50/50">
+                {liveData.slug && activeTab !== 'clients-list' && (
+                    <div className="h-14 border-b border-surface-container-highest flex items-center px-8 gap-0 shrink-0 bg-surface-container-low/50">
+                        {/* Back Button + Client Name */}
                         <button
-                            onClick={() => setActiveTab('builder')}
-                            className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'builder' ? 'border-stone-900 text-stone-900' : 'border-transparent text-stone-500 hover:text-stone-700'}`}
+                            onClick={() => {
+                                setLiveData(defaultData);
+                                setActiveTab('clients-list');
+                            }}
+                            className="flex items-center gap-2 mr-6 pr-6 border-r border-outline-variant/20 h-full text-secondary hover:text-primary transition-colors"
                         >
-                            Invitation Builder
+                            <ChevronRight className="w-4 h-4 rotate-180" />
+                            <span className="text-sm font-headline font-semibold text-primary">{liveData.bride} & {liveData.groom}</span>
                         </button>
-                        <button
-                            onClick={() => setActiveTab('budget')}
-                            className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'budget' ? 'border-stone-900 text-stone-900' : 'border-transparent text-stone-500 hover:text-stone-700'}`}
-                        >
-                            Budget Tracker
-                        </button>
+                        <div className="flex items-center gap-8 h-full">
+                            <button
+                                onClick={() => setActiveTab('builder')}
+                                className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'builder' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-primary'}`}
+                            >
+                                Invitation Builder
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('budget')}
+                                className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'budget' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-primary'}`}
+                            >
+                                Budget Tracker
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('seating')}
+                                className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'seating' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-primary'}`}
+                            >
+                                Table Seating
+                            </button>
+                        </div>
                     </div>
                 )}
 
                 <div className="flex-1 flex flex-col lg:flex-row w-full overflow-hidden relative">
 
-                    {activeTab === 'builder' || !liveData.slug ? (
+                    {activeTab === 'clients-list' && !isCreatingClient && (
+                        <div className="w-full h-full overflow-y-auto w-full max-w-[1600px] mx-auto p-8 md:p-12 lg:p-16">
+                            {/* Header Section */}
+                            <header className="mb-16">
+                                <div className="flex justify-between items-end mb-8">
+                                    <div>
+                                        <span className="font-label uppercase tracking-[0.2em] text-[0.7rem] font-semibold text-secondary mb-3 block">Portfolio Management</span>
+                                        <h2 className="font-headline text-[3.5rem] leading-tight text-primary">Active Clients</h2>
+                                    </div>
+                                    <div className="hidden md:flex items-center gap-4 bg-surface-container-low p-2 rounded-full px-6 py-3 border border-outline-variant/10">
+                                        <Search className="w-5 h-5 text-primary" />
+                                        <input 
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="bg-transparent border-none focus:ring-0 text-sm font-body w-64 placeholder:text-secondary/50 outline-none" 
+                                            placeholder="Search clients or dates..." 
+                                            type="text" 
+                                        />
+                                        <span className="w-px h-6 bg-outline-variant/30"></span>
+                                        <button className="flex items-center gap-2 text-secondary hover:text-primary transition-colors">
+                                            <span className="text-[0.75rem] font-bold uppercase tracking-wider">Filter</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Insight Row */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                    <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 relative overflow-hidden group">
+                                        <div className="relative z-10">
+                                            <p className="font-label uppercase tracking-widest text-[0.7rem] font-bold text-secondary mb-4">Total Active Weddings</p>
+                                            <h3 className="font-headline text-5xl text-primary">24</h3>
+                                            <p className="mt-4 text-[0.8rem] text-secondary flex items-center gap-1 italic">
+                                                <span className="text-green-600 text-sm font-bold mr-1">↑</span> +3 from last month
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 hidden md:block">
+                                        <p className="font-label uppercase tracking-widest text-[0.7rem] font-bold text-secondary mb-4">Upcoming This Week</p>
+                                        <h3 className="font-headline text-5xl text-primary">02</h3>
+                                        <p className="mt-4 text-[0.8rem] text-secondary">Awaiting final confirmations</p>
+                                    </div>
+                                    <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 hidden md:block">
+                                        <p className="font-label uppercase tracking-widest text-[0.7rem] font-bold text-secondary mb-4">Client Satisfaction</p>
+                                        <h3 className="font-headline text-5xl text-primary">98%</h3>
+                                        <p className="mt-4 text-[0.8rem] text-secondary italic">Editorial Benchmark: High</p>
+                                    </div>
+                                </div>
+                            </header>
+
+                            {/* Editorial Grid / Table */}
+                            <section>
+                                <div className="mb-6 flex items-center justify-between px-4">
+                                    <div className="flex gap-8">
+                                        <button className="text-[0.75rem] font-bold uppercase tracking-wider text-primary border-b-2 border-primary pb-2">All Clients</button>
+                                        <button className="text-[0.75rem] font-bold uppercase tracking-wider text-secondary hover:text-primary transition-colors pb-2">In Progress</button>
+                                        <button className="text-[0.75rem] font-bold uppercase tracking-wider text-secondary hover:text-primary transition-colors pb-2">Live</button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {(useMocks ? mockClients : realClients).filter(c => c.slug.includes(searchQuery.toLowerCase())).map(client => (
+                                        <div key={client.id} className="group bg-surface-container-lowest hover:bg-surface-container-low transition-all duration-300 rounded-xl p-6 flex items-center justify-between border border-transparent hover:border-outline-variant/20 shadow-sm cursor-pointer" onClick={async () => {
+                                            try {
+                                                const res = await fetch(`/api/invitation?slug=${client.slug}`);
+                                                if (res.ok) {
+                                                    const dbData = await res.json();
+                                                    if (dbData) {
+                                                        setThemeSelection(dbData.theme ? Object.keys(THEME_PRESETS).find(k => THEME_PRESETS[k].accent === (dbData.theme as Theme).accent) || 'emerald' : 'emerald');
+                                                        setLiveData({ ...defaultData, ...dbData, theme: dbData.theme || THEME_PRESETS.emerald });
+                                                    } else {
+                                                        setLiveData({ ...defaultData, slug: client.slug, bride: client.bride, groom: client.groom });
+                                                    }
+                                                    const exp = await getExpensesBySlug(client.slug);
+                                                    setExpenses(exp);
+                                                    const seatData = await getSeatingData(client.slug);
+                                                    setSeatingTables(seatData.tables);
+                                                    setSeatingGuests(seatData.guests);
+                                                    setActiveTab('builder'); // Transition to Builder
+                                                }
+                                            } catch (e) { console.error(e); }
+                                        }}>
+                                            <div className="flex items-center gap-6 w-[60%] md:w-1/3">
+                                                <div className="w-16 h-16 rounded-full bg-surface-container-high overflow-hidden flex-shrink-0 border border-outline-variant/10">
+                                                    {client.heroImage ? (
+                                                        <img src={client.heroImage} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt="Hero" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-outline-variant"><Users className="w-6 h-6 opacity-40" /></div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-headline text-xl text-primary">{client.bride} & {client.groom}</h4>
+                                                    <p className="font-body text-xs text-secondary mt-1 tracking-widest lowercase">slug: /{client.slug}</p>
+                                                </div>
+                                            </div>
+                                            <div className="hidden md:block w-1/4">
+                                                <span className="font-label uppercase tracking-widest text-[0.65rem] font-bold text-secondary block mb-1">Wedding Date</span>
+                                                <p className="font-body text-sm font-semibold text-primary">{client.date || 'TBD'}</p>
+                                            </div>
+                                            <div className="hidden md:block w-1/6">
+                                                <span className="font-label uppercase tracking-widest text-[0.65rem] font-bold text-secondary block mb-1">Status</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                                                    <span className="font-body text-xs font-bold text-primary">In Progress</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-3">
+                                                <button className="p-3 rounded-full text-secondary hover:bg-surface-container-highest hover:text-primary transition-all">
+                                                    <ChevronRight className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        </div>
+                    )}
+
+                    {(activeTab === 'builder' || isCreatingClient) && (
                         <>
-                            {/* Overlay Form: Create New Client */}
+                            {/* Onboard Client Form Native */}
                             {isCreatingClient && (
-                                <div className="absolute inset-0 z-50 flex bg-white/50 backdrop-blur-sm">
-                                    <div className="w-full max-w-md bg-white shadow-2xl border-r border-stone-200 p-8 flex flex-col h-full animate-in slide-in-from-left">
-                                        <div className="flex justify-between items-center mb-8">
-                                            <h3 className="text-2xl font-serif text-stone-900">Onboard Client</h3>
-                                            <button onClick={() => setIsCreatingClient(false)} className="text-stone-400 hover:text-stone-900">✕</button>
+                                <div className="absolute inset-0 z-50 flex flex-col overflow-y-auto bg-surface backdrop-blur-sm px-6 py-12 md:py-24 animate-in fade-in duration-300">
+                                    <div className="max-w-4xl mx-auto w-full space-y-16">
+                                        
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-4">
+                                                <h2 className="text-5xl font-headline text-primary tracking-tight">New Client Instance</h2>
+                                                <p className="text-lg text-secondary max-w-xl leading-relaxed">This securely generates a new user account with client permissions and binds it to a unique URL slug.</p>
+                                            </div>
+                                            <button onClick={() => setIsCreatingClient(false)} className="text-secondary hover:text-primary font-bold uppercase tracking-widest text-sm p-4">✕ Close</button>
                                         </div>
 
-                                        <p className="text-sm text-stone-500 mb-8">This securely generates a new user account with 'client' permissions and binds it to a unique URL slug.</p>
-
                                         {onboardMessage && (
-                                            <div className={`mb-6 p-4 text-sm rounded-lg border ${onboardMessage.type === 'error' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>
+                                            <div className={`p-4 text-sm rounded-xl border ${onboardMessage.type === 'error' ? 'bg-error-container/20 text-error border-error/30' : 'bg-primary-fixed/30 text-primary border-primary/20'}`}>
                                                 {onboardMessage.text}
                                             </div>
                                         )}
 
-                                        <form onSubmit={handleCreateClient} className="space-y-5 flex-1">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Client Email</label>
-                                                <input type="email" required value={newClientForm.email} onChange={e => setNewClientForm({ ...newClientForm, email: e.target.value })} className="w-full border border-stone-300 rounded p-2.5 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="client@example.com" />
+                                        <form onSubmit={handleCreateClient} className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                                            <div className="space-y-3">
+                                                <label className="text-[0.75rem] font-label font-bold uppercase tracking-[0.1em] text-secondary ml-1">Client Email</label>
+                                                <input type="email" required value={newClientForm.email} onChange={e => setNewClientForm({ ...newClientForm, email: e.target.value })} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-6 py-5 text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-lg font-body" placeholder="client@example.com" />
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Temporary Password</label>
-                                                <input type="password" required value={newClientForm.password} onChange={e => setNewClientForm({ ...newClientForm, password: e.target.value })} className="w-full border border-stone-300 rounded p-2.5 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="••••••••" minLength={6} />
-                                            </div>
-                                            <div className="space-y-2 relative">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Assigned Wedding Slug</label>
-                                                <input
-                                                    type="text"
-                                                    required
-                                                    value={newClientForm.slug}
-                                                    onChange={e => {
-                                                        setNewClientForm({ ...newClientForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') });
-                                                        setShowSlugDropdown(true);
-                                                    }}
-                                                    onFocus={() => setShowSlugDropdown(true)}
-                                                    onBlur={() => setTimeout(() => setShowSlugDropdown(false), 200)}
-                                                    className="w-full border border-stone-300 rounded p-2.5 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                                                    placeholder="Type to search existing or create new... e.g. maya-and-john"
-                                                />
-                                                <p className="text-xs text-stone-400 mt-1">URL will be: /invite/{newClientForm.slug || '...'}</p>
+                                            <div className="space-y-3 relative">
+                                                <label className="text-[0.75rem] font-label font-bold uppercase tracking-[0.1em] text-secondary ml-1">Assigned Wedding Slug</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-outline-variant text-lg font-body">oui-do.com/</span>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={newClientForm.slug}
+                                                        onChange={e => {
+                                                            setNewClientForm({ ...newClientForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') });
+                                                            setShowSlugDropdown(true);
+                                                        }}
+                                                        onFocus={() => setShowSlugDropdown(true)}
+                                                        onBlur={() => setTimeout(() => setShowSlugDropdown(false), 200)}
+                                                        className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg pl-[8.5rem] pr-6 py-5 text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-lg font-body"
+                                                        placeholder="maya-and-john"
+                                                    />
+                                                </div>
 
                                                 {/* Suggestions Dropdown */}
                                                 {showSlugDropdown && (
-                                                    <div className="absolute top-[70px] left-0 w-full bg-white border border-stone-200 rounded-md shadow-lg max-h-48 overflow-y-auto z-50">
+                                                    <div className="absolute top-[100%] left-0 mt-2 w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-[60] font-body">
                                                         {(useMocks ? mockClients : realClients)
                                                             .filter(c => c.slug.includes(newClientForm.slug.toLowerCase()))
                                                             .map(c => (
@@ -388,72 +494,116 @@ export default function AdminDashboard() {
                                                                         setNewClientForm({ ...newClientForm, slug: c.slug });
                                                                         setShowSlugDropdown(false);
                                                                     }}
-                                                                    className="w-full text-left px-4 py-2 text-sm hover:bg-stone-100 flex justify-between items-center"
+                                                                    className="w-full text-left px-6 py-3 text-sm hover:bg-surface-container-low flex justify-between items-center border-b border-surface-variant/50 last:border-0 transition-colors"
                                                                 >
-                                                                    <span className="font-medium text-stone-700">{c.slug}</span>
-                                                                    <span className="text-xs text-stone-400">{c.bride} & {c.groom}</span>
+                                                                    <span className="font-medium text-primary text-base">{c.slug}</span>
+                                                                    <span className="text-secondary">{c.bride} & {c.groom}</span>
                                                                 </button>
                                                             ))}
                                                         {newClientForm.slug && !(useMocks ? mockClients : realClients).some(c => c.slug === newClientForm.slug) && (
-                                                            <div className="px-4 py-2 text-sm text-stone-500 italic border-t border-stone-100">
+                                                            <div className="px-6 py-4 text-sm text-secondary italic border-t border-surface-variant/50">
                                                                 Create new slug: "{newClientForm.slug}"
                                                             </div>
                                                         )}
                                                     </div>
                                                 )}
                                             </div>
-                                            <button type="submit" disabled={onboardLoading} className="w-full bg-stone-900 text-white rounded p-3 text-sm font-medium mt-8 disabled:opacity-50">
-                                                {onboardLoading ? 'Provisioning...' : 'Create Account'}
-                                            </button>
+                                            
+                                            <div className="space-y-3 md:col-span-2">
+                                                <label className="text-[0.75rem] font-label font-bold uppercase tracking-[0.1em] text-secondary ml-1">Temporary Password</label>
+                                                <input type="password" required value={newClientForm.password} onChange={e => setNewClientForm({ ...newClientForm, password: e.target.value })} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-6 py-5 text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-lg font-body" placeholder="••••••••••••" minLength={6} />
+                                                <p className="text-xs text-secondary/70 mt-3 px-1">We recommend a secure, auto-generated string for the first login.</p>
+                                            </div>
+
+                                            <div className="md:col-span-2 flex flex-col md:flex-row items-center gap-8 pt-10 border-t border-surface-container-high">
+                                                <button type="submit" disabled={onboardLoading} style={{ background: 'linear-gradient(135deg, #00150F 0%, #062C22 100%)' }} className="w-full md:w-auto px-12 py-5 text-on-primary rounded-full text-sm font-label font-bold uppercase tracking-widest shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity disabled:opacity-50">
+                                                    {onboardLoading ? 'Provisioning...' : 'Create Account'}
+                                                </button>
+                                                <button type="button" onClick={() => setIsCreatingClient(false)} className="text-sm font-label font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors">
+                                                    Cancel & Return
+                                                </button>
+                                            </div>
                                         </form>
+                                        
+                                        <div className="mt-32 opacity-20 flex justify-center pb-24">
+                                            <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=2669&auto=format&fit=crop" className="w-64 h-64 object-cover rounded-full filter grayscale sepia mix-blend-multiply" alt="Elegant flair" />
+                                        </div>
                                     </div>
-                                    <div className="flex-1" onClick={() => setIsCreatingClient(false)}></div>
                                 </div>
                             )}
 
                             {/* Center Column - Builder Form */}
-                            <div className={`w-full lg:w-1/2 h-full overflow-y-auto bg-white p-8 md:p-12 lg:p-16 border-r border-stone-200 transition-opacity ${isCreatingClient ? 'opacity-20 pointer-events-none' : ''}`}>
-                                <div className="max-w-xl mx-auto">
-                                    <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                        <div>
-                                            <h1 className="text-3xl font-serif text-stone-800 mb-2">Invitation Builder</h1>
-                                            <p className="text-stone-500 font-light">Editing {liveData.slug ? `/${liveData.slug}` : 'a new invitation'}</p>
+                            <div className="flex flex-1 overflow-hidden h-full w-full">
+                                {/* Left Column: Editor & Controls */}
+                                <div className={`w-full lg:w-3/5 h-full overflow-y-auto bg-surface p-8 md:p-12 lg:p-16 transition-opacity ${isCreatingClient ? 'opacity-20 pointer-events-none' : ''}`}>
+                                    <div className="max-w-3xl mx-auto space-y-16 pb-24">
+                                        {/* Page Header Actions */}
+                                    <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-6 mb-16">
+                                        <div className="space-y-2">
+                                            <h1 className="text-5xl font-headline text-primary">Invitation Builder</h1>
+                                            <p className="text-secondary font-body">Crafting the narrative for {liveData.slug ? `/${liveData.slug}` : 'a new invitation'}</p>
                                         </div>
-                                        {liveData.slug && (
+                                        <div className="flex flex-wrap items-center gap-3 xl:gap-4 shrink-0 mt-4 xl:mt-0">
+                                            {liveData.slug && (
+                                                <button
+                                                    onClick={async () => {
+                                                        const url = `${window.location.protocol}//${window.location.host}/invite/${liveData.slug}`;
+                                                        try {
+                                                            await navigator.clipboard.writeText(url);
+                                                        } catch (err) {
+                                                            const textArea = document.createElement("textarea");
+                                                            textArea.value = url;
+                                                            document.body.appendChild(textArea);
+                                                            textArea.select();
+                                                            document.execCommand("copy");
+                                                            document.body.removeChild(textArea);
+                                                        }
+                                                        const btn = document.getElementById('copy-btn-text');
+                                                        if (btn) {
+                                                            const original = btn.innerText;
+                                                            btn.innerText = "Copied!";
+                                                            setTimeout(() => btn.innerText = original, 2000);
+                                                        }
+                                                    }}
+                                                    className="bg-surface-container-high text-on-surface px-6 py-2.5 rounded-full flex items-center justify-center gap-2 font-medium hover:opacity-80 transition-opacity text-sm"
+                                                >
+                                                    <Link className="w-3.5 h-3.5 opacity-70" />
+                                                    <span id="copy-btn-text">Copy General Link</span>
+                                                </button>
+                                            )}
                                             <button
-                                                onClick={() => {
-                                                    const url = `${window.location.origin}/invite/${liveData.slug}`;
-                                                    navigator.clipboard.writeText(url);
-                                                    alert("General Invitation Link copied!");
-                                                }}
-                                                className="flex flex-shrink-0 items-center gap-2 px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-md transition-colors text-sm"
+                                                onClick={handleSaveInvitation}
+                                                disabled={isSaving}
+                                                className="bg-primary text-on-primary px-8 py-2.5 rounded-full font-medium shadow-md hover:bg-primary/90 disabled:opacity-50 transition-all text-sm"
                                             >
-                                                <Copy className="w-4 h-4" /> Copy General Link
+                                                {isSaving ? "Saving..." : "Publish Changes"}
                                             </button>
-                                        )}
+                                        </div>
                                     </div>
 
-                                    {/* Existing Builder Form UI */}
-                                    <div className="space-y-8">
-                                        {/* Section: Couple */}
-                                        <div className="space-y-6">
-                                            <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2">The Couple</h2>
-                                            <div className="grid grid-cols-2 gap-6">
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Bride Name *</label>
-                                                    <input required type="text" name="bride" value={liveData.bride} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Groom Name *</label>
-                                                    <input required type="text" name="groom" value={liveData.groom} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-                                                </div>
+                                    {/* Section 01: The Couple */}
+                                    <section>
+                                        <div className="flex justify-between items-center mb-8">
+                                            <h2 className="text-2xl font-headline text-primary">The Couple</h2>
+                                            <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 01</span>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Partner One Name</label>
+                                                <input required type="text" name="bride" value={liveData.bride} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Partner Two Name</label>
+                                                <input required type="text" name="groom" value={liveData.groom} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
                                             </div>
                                         </div>
+                                    </section>
 
-                                        {/* Section: Formal Invitation */}
-                                        <div className="space-y-6">
-                                            <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-                                                <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400">Formal Invitation Section</h2>
+                                    {/* Section 02: Invitation Assets */}
+                                    <section>
+                                        <div className="flex justify-between items-center mb-8">
+                                            <div className="flex items-center gap-4">
+                                                <h2 className="text-2xl font-headline text-primary">Invitation Assets</h2>
                                                 <label className="relative inline-flex items-center cursor-pointer">
                                                     <input
                                                         type="checkbox"
@@ -462,206 +612,213 @@ export default function AdminDashboard() {
                                                         checked={liveData.showFormalInvitation || false}
                                                         onChange={(e) => setLiveData(prev => ({ ...prev, showFormalInvitation: e.target.checked }))}
                                                     />
-                                                    <div className="w-9 h-5 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                                                    <span className="ml-3 text-xs font-medium text-stone-500 hover:text-stone-700 transition-colors">Enable</span>
+                                                    <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                                    <span className="ms-3 text-[0.75rem] font-label uppercase text-primary tracking-widest font-bold">Formal Image Override</span>
                                                 </label>
                                             </div>
-
-                                            {liveData.showFormalInvitation && (
-                                                <div className="p-4 bg-stone-50 rounded-lg border border-stone-100 space-y-6">
-                                                    <div className="space-y-2">
-                                                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Formal Invitation Image URL</label>
-                                                        <input type="text" name="formalInvitationImage" value={liveData.formalInvitationImage || ''} onChange={handleInputChange} placeholder="https://.../formal-invitation.jpg" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 focus:border-transparent transition-all text-sm bg-white" />
-                                                        <p className="text-[10px] text-stone-400">Provide a high-quality image of the formal invitation. It will be displayed full-size.</p>
+                                            <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 02</span>
+                                        </div>
+                                        <div className="bg-surface-container-low p-8 rounded-xl space-y-6">
+                                            {liveData.showFormalInvitation ? (
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Formal Invitation Image URL</label>
+                                                    <input type="text" name="formalInvitationImage" value={liveData.formalInvitationImage || ''} onChange={handleInputChange} placeholder="https://.../formal-invitation.jpg" className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                    <p className="text-[10px] text-secondary/70 mt-2 font-label tracking-widest uppercase">Provides a full-screen image fallback instead of native UI text blocks.</p>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-6">
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Event Hero Image URL</label>
+                                                        <input type="text" name="heroImage" value={liveData.heroImage || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="https://unsplash.com/beautiful-floral" />
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Background Audio URL</label>
+                                                        <input type="text" name="audioUrl" value={liveData.audioUrl || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
                                                     </div>
                                                 </div>
                                             )}
-                                        </div>
-
-                                        {/* Section: Event Details */}
-                                        <div className="space-y-6">
-                                            <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-                                                <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400">Ceremony Details</h2>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-6">
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Date</label>
-                                                    <input type="date" name="date" value={liveData.date} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Time</label>
-                                                    <input type="time" name="time" value={liveData.time} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Ceremony Venue Name</label>
-                                                <input type="text" name="venue" value={liveData.venue} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Ceremony Location</label>
-                                                <input type="text" name="location" value={liveData.location} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Google Maps Link</label>
-                                                <input type="text" name="mapLink" value={liveData.mapLink || ''} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-                                            </div>
-
-                                            <div className="flex items-center justify-between border-b border-stone-100 pb-2 pt-6">
-                                                <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400">Reception Details <span className="text-[10px] lowercase text-stone-400/80 ml-2">(optional override)</span></h2>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Reception Time</label>
-                                                <input type="time" name="receptionTime" value={liveData.receptionTime || ''} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Reception Venue Name</label>
-                                                <input type="text" name="receptionVenue" value={liveData.receptionVenue || ''} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Reception Location</label>
-                                                <input type="text" name="receptionLocation" value={liveData.receptionLocation || ''} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-                                            </div>
-
-                                            <div className="flex items-center justify-between border-b border-stone-100 pb-2 pt-6">
-                                                <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400">Styling Options</h2>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Event Details Background Image URL</label>
-                                                <input type="text" name="detailsBackgroundUrl" value={liveData.detailsBackgroundUrl || ''} onChange={handleInputChange} placeholder="https://.../texture.jpg" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-                                                <p className="text-[10px] text-stone-400">Applies an elegant textured background behind the Ceremony & Reception blocks.</p>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Styling Theme Token</label>
+                                                <select name="themeSelection" value={themeSelection} onChange={handleThemeChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body font-semibold">
+                                                    <option value="emerald">Emerald & Stone (Default Pattern)</option>
+                                                    <option value="slate">Slate & Monochrome</option>
+                                                    <option value="rose">Rose & Blush</option>
+                                                </select>
                                             </div>
                                         </div>
+                                    </section>
 
-                                        {/* Section: Media & Content */}
-                                        <div className="space-y-6">
-                                            <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2">Media & Content</h2>
-                                            <div className="p-4 bg-stone-50 rounded-lg border border-stone-100 space-y-6">
-                                                <div className="space-y-4">
-                                                    <div className="flex items-center justify-between border-b border-stone-200 pb-2">
-                                                        <label className="text-xs font-semibold text-stone-600 uppercase tracking-wider">Hero Section (Top)</label>
-                                                        <label className="relative inline-flex items-center cursor-pointer">
-                                                            <input
-                                                                type="checkbox"
-                                                                name="showHeroLogo"
-                                                                className="sr-only peer"
-                                                                checked={liveData.showHeroLogo || false}
-                                                                onChange={(e) => setLiveData(prev => ({ ...prev, showHeroLogo: e.target.checked }))}
-                                                            />
-                                                            <div className="w-9 h-5 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                                                            <span className="ml-3 text-xs font-medium text-stone-500 hover:text-stone-700 transition-colors">Use Logo Graphic</span>
-                                                        </label>
-                                                    </div>
-
-                                                    {liveData.showHeroLogo && (
-                                                        <div className="space-y-2 pb-2">
-                                                            <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Hero Logo URL (PNG)</label>
-                                                            <input type="text" name="heroLogoUrl" value={liveData.heroLogoUrl || ''} onChange={handleInputChange} placeholder="https://.../logo.png" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 transition-all text-sm bg-white" />
-                                                        </div>
-                                                    )}
-
-                                                    <div className="space-y-2">
-                                                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Video URL (MP4)</label>
-                                                        <input type="text" name="heroVideo" value={liveData.heroVideo || ''} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 focus:border-transparent transition-all text-sm bg-white" />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Fallback Image URL</label>
-                                                        <input type="text" name="heroImage" value={liveData.heroImage || ''} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 focus:border-transparent transition-all text-sm bg-white" />
-                                                    </div>
+                                    {/* Section 03: Ceremony Details */}
+                                    <section>
+                                        <div className="flex justify-between items-center mb-8">
+                                            <h2 className="text-2xl font-headline text-primary">Ceremony Details</h2>
+                                            <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 03</span>
+                                        </div>
+                                        <div className="space-y-8">
+                                            <div className="grid grid-cols-2 gap-8">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Ceremony Date</label>
+                                                    <input type="date" name="date" value={liveData.date} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Starting Time</label>
+                                                    <input type="time" name="time" value={liveData.time} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
                                                 </div>
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Background Audio URL</label>
-                                                <input type="text" name="audioUrl" value={liveData.audioUrl || ''} onChange={handleInputChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
+                                            <div className="space-y-1.5">
+                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Venue Name</label>
+                                                <input type="text" name="venue" value={liveData.venue} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Welcome Message</label>
-                                                <textarea name="message" value={liveData.message} onChange={handleInputChange} rows={3} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none" />
+                                            <div className="space-y-1.5">
+                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Geographical Details</label>
+                                                <input type="text" name="location" value={liveData.location} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
                                             </div>
-                                            <div className="space-y-4 pt-4 border-t border-stone-100">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Registry & Monetary Gifts</label>
-                                                <textarea name="giftMessage" value={liveData.giftMessage || ''} onChange={handleInputChange} rows={2} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none" />
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <input type="text" name="bankAccountName" value={liveData.bankAccountName || ''} onChange={handleInputChange} placeholder="Bank Account Name" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <input type="text" name="bankAccountNumber" value={liveData.bankAccountNumber || ''} onChange={handleInputChange} placeholder="Account / IBAN Number" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <input type="text" name="mobileTransferNumber" value={liveData.mobileTransferNumber || ''} onChange={handleInputChange} placeholder="Mobile Transfer Number" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-                                                </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Google Maps Itinerary URL</label>
+                                                <input type="text" name="mapLink" value={liveData.mapLink || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
                                             </div>
                                         </div>
+                                    </section>
 
-                                        {/* Section: Custom Blocks Builder */}
-                                        <div className="space-y-6 pt-6 border-t border-stone-100">
+                                    {/* Section 04: Reception Block */}
+                                    <section>
+                                        <div className="flex justify-between items-center mb-8">
+                                            <h2 className="text-2xl font-headline text-primary">Formal Reception</h2>
+                                            <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 04</span>
+                                        </div>
+                                        <div className="bg-surface-container-lowest border border-outline-variant/20 p-8 rounded-xl space-y-6">
+                                            <div className="grid grid-cols-2 gap-8">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception Time</label>
+                                                    <input type="time" name="receptionTime" value={liveData.receptionTime || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception Venue</label>
+                                                    <input type="text" name="receptionVenue" value={liveData.receptionVenue || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception Address</label>
+                                                <input type="text" name="receptionLocation" value={liveData.receptionLocation || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Welcome Note</label>
+                                                <textarea name="message" value={liveData.message} onChange={handleInputChange} rows={3} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body resize-none" />
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    {/* Section 05: Extra Media */}
+                                    <section>
+                                        <div className="flex justify-between items-center mb-8">
+                                            <h2 className="text-2xl font-headline text-primary">Media Links</h2>
+                                            <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 05</span>
+                                        </div>
+                                        <div className="bg-surface-container-low p-8 rounded-xl space-y-6">
                                             <div className="flex items-center justify-between">
-                                                <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400">Custom Sections</h2>
+                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Hero Graphics Rendering</label>
+                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        name="showHeroLogo"
+                                                        className="sr-only peer"
+                                                        checked={liveData.showHeroLogo || false}
+                                                        onChange={(e) => setLiveData(prev => ({ ...prev, showHeroLogo: e.target.checked }))}
+                                                    />
+                                                    <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                                    <span className="ms-3 text-[0.75rem] font-label uppercase text-primary font-bold">Graphic Toggle</span>
+                                                </label>
+                                            </div>
+                                            
+                                            {liveData.showHeroLogo && (
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Hero Logo URL (PNG Formatted)</label>
+                                                    <input type="text" name="heroLogoUrl" value={liveData.heroLogoUrl || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="https://unsplash.com/beautiful-floral" />
+                                                </div>
+                                            )}
+
+                                            <div className="space-y-1.5">
+                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Hero MP4 Render URL</label>
+                                                <input type="text" name="heroVideo" value={liveData.heroVideo || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Event Specific Detail Texture Background Image URL</label>
+                                                <input type="text" name="detailsBackgroundUrl" value={liveData.detailsBackgroundUrl || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    {/* Section 07: Custom Editor */}
+                                    <section>
+                                        <div className="flex justify-between items-center mb-8">
+                                            <h2 className="text-2xl font-headline text-primary">Custom Blocks</h2>
+                                            <div className="flex items-center gap-4">
                                                 <button
                                                     type="button"
                                                     onClick={handleAddSection}
-                                                    className="text-xs font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded transition-colors flex items-center gap-1"
+                                                    className="text-xs font-label uppercase font-bold text-primary hover:text-on-primary-container bg-surface-container-high px-4 py-2 rounded-full transition-colors flex items-center gap-1 tracking-widest"
                                                 >
-                                                    <Plus className="w-3 h-3" /> Add Section
+                                                    <Plus className="w-3 h-3" /> Append Block
                                                 </button>
+                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest ml-4">Section 07</span>
                                             </div>
+                                        </div>
 
-                                            {liveData.customSections?.length === 0 && (
-                                                <p className="text-sm text-stone-400 italic text-center py-4">No custom sections added yet.</p>
-                                            )}
-
-                                            <div className="space-y-6">
+                                        {liveData.customSections?.length === 0 ? (
+                                            <p className="text-[0.875rem] font-body text-secondary italic text-center py-8 bg-surface-container-lowest border border-outline-variant/20 rounded-xl">No custom editorial narrative blocks appended yet.</p>
+                                        ) : (
+                                            <div className="space-y-8">
                                                 {liveData.customSections?.map((section, idx) => (
-                                                    <div key={section.id} className="p-5 border border-stone-200 rounded-xl bg-white shadow-sm space-y-4 relative group">
+                                                    <div key={section.id} className="p-8 border border-outline-variant/20 rounded-2xl bg-surface-container-lowest shadow-sm space-y-6 relative group overflow-hidden">
+                                                        <div className="absolute top-0 left-0 w-2 h-full bg-primary/10"></div>
                                                         <button
                                                             onClick={() => handleRemoveSection(idx)}
-                                                            className="absolute top-4 right-4 text-stone-300 hover:text-red-500 transition-colors"
-                                                            title="Remove Section"
+                                                            className="absolute top-6 right-6 text-secondary hover:text-error transition-colors"
+                                                            title="Remove Script"
                                                         >
-                                                            ✕
+                                                            <span className="text-xs font-label uppercase tracking-widest font-bold">Remove</span>
                                                         </button>
 
-                                                        <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-                                                            <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">Block {idx + 1}</span>
+                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-surface-container-high pb-4 gap-4 pr-20">
+                                                            <span className="text-[0.75rem] font-label font-bold text-primary uppercase tracking-[0.1em]">Editorial Block 0{idx + 1}</span>
                                                             <select
                                                                 value={section.overlayType}
                                                                 onChange={(e) => handleSectionChange(idx, 'overlayType', e.target.value)}
-                                                                className="text-xs font-medium border border-stone-200 rounded px-2 py-1 text-stone-600 focus:outline-none focus:border-emerald-500"
+                                                                className="text-[0.75rem] font-label uppercase tracking-widest font-medium border border-outline-variant/30 rounded-md px-3 py-1.5 text-on-surface focus:outline-none focus:border-primary bg-surface"
                                                             >
-                                                                <option value="text">Text Overlay Mode</option>
-                                                                <option value="image">Image Overlay Mode</option>
+                                                                <option value="text">Textual Mode</option>
+                                                                <option value="image">Graphic Mode</option>
                                                             </select>
                                                         </div>
 
-                                                        <div className="space-y-2">
-                                                            <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Background Image URL *</label>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Cinematic Background Image URL</label>
                                                             <input
                                                                 type="text"
                                                                 value={section.backgroundUrl}
                                                                 onChange={(e) => handleSectionChange(idx, 'backgroundUrl', e.target.value)}
                                                                 placeholder="https://.../bg.jpg"
-                                                                className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 transition-all text-sm"
+                                                                className="w-full bg-surface border-outline-variant/30 border rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body"
                                                             />
                                                         </div>
 
                                                         {section.overlayType === 'text' ? (
-                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                                <div className="md:col-span-2 space-y-2">
-                                                                    <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Text Content</label>
+                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                                <div className="md:col-span-2 space-y-1.5">
+                                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Editorial Script content</label>
                                                                     <textarea
                                                                         value={section.textContent || ''}
                                                                         onChange={(e) => handleSectionChange(idx, 'textContent', e.target.value)}
                                                                         rows={2}
-                                                                        className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 transition-all text-sm resize-none"
+                                                                        className="w-full bg-surface border-outline-variant/30 border rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body resize-none"
                                                                     />
                                                                 </div>
-                                                                <div className="space-y-2">
-                                                                    <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Typography</label>
+                                                                <div className="space-y-1.5">
+                                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Typography Style</label>
                                                                     <select
                                                                         value={section.fontFamily || 'font-sans'}
                                                                         onChange={(e) => handleSectionChange(idx, 'fontFamily', e.target.value)}
-                                                                        className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 transition-all text-sm"
+                                                                        className="w-full bg-surface border-outline-variant/30 border rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body"
                                                                     >
                                                                         <option value="font-sans">Modern Sans</option>
                                                                         <option value="font-serif">Elegant Serif</option>
@@ -670,71 +827,84 @@ export default function AdminDashboard() {
                                                                 </div>
                                                             </div>
                                                         ) : (
-                                                            <div className="space-y-2">
-                                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Foreground Image URL (PNG Typography)</label>
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Foreground Transparency Graphic URL (PNG)</label>
                                                                 <input
                                                                     type="text"
                                                                     value={section.overlayImageUrl || ''}
                                                                     onChange={(e) => handleSectionChange(idx, 'overlayImageUrl', e.target.value)}
-                                                                    placeholder="https://.../text-graphic.png"
-                                                                    className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:emerald-500 transition-all text-sm"
+                                                                    placeholder="https://.../transparent-typography.png"
+                                                                    className="w-full bg-surface border-outline-variant/30 border rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body"
                                                                 />
                                                             </div>
                                                         )}
                                                     </div>
                                                 ))}
                                             </div>
-                                        </div>
+                                        )}
+                                    </section>
 
-                                        {/* Section: Styling & Save */}
-                                        <div className="space-y-6 pt-6 border-t border-stone-100">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Color Theme</label>
-                                                <select name="themeSelection" value={themeSelection} onChange={handleThemeChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
-                                                    <option value="emerald">Emerald & Stone (Default)</option>
-                                                    <option value="slate">Slate & Monochrome</option>
-                                                    <option value="rose">Rose & Blush</option>
-                                                </select>
-                                            </div>
-                                            <button
-                                                onClick={handleSaveInvitation}
-                                                disabled={isSaving}
-                                                className="w-full bg-stone-900 hover:bg-stone-800 text-white font-medium py-4 px-6 rounded-md shadow flex justify-center items-center disabled:opacity-50 transition-all"
-                                            >
-                                                {isSaving ? "Saving..." : "Save Invitation"}
-                                            </button>
+                                    {/* Section 06: Registry Blocks */}
+                                    <section>
+                                        <div className="flex justify-between items-center mb-8">
+                                            <h2 className="text-2xl font-headline text-primary">Registry Details</h2>
+                                            <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 06</span>
                                         </div>
-                                    </div>
+                                        <div className="bg-surface-container-latest p-8 space-y-6">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Message & Gratitude Tone</label>
+                                                <textarea name="giftMessage" value={liveData.giftMessage || ''} onChange={handleInputChange} rows={2} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body resize-none" />
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Bank Account Beneficiary</label>
+                                                    <input type="text" name="bankAccountName" value={liveData.bankAccountName || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Electronic Code / IBAN</label>
+                                                    <input type="text" name="bankAccountNumber" value={liveData.bankAccountNumber || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
                                 </div>
                             </div>
-
-                            {/* Right Column - Live Preview */}
-                            <div className={`w-full lg:w-1/2 h-full bg-stone-100 relative overflow-hidden transition-opacity ${isCreatingClient ? 'opacity-20 pointer-events-none' : ''}`}>
-                                <div className="absolute top-0 inset-x-0 h-12 bg-white/80 backdrop-blur-sm border-b border-stone-200 z-50 flex items-center justify-between px-6 shadow-sm">
-                                    <div className="flex gap-2">
-                                        <div className="w-3 h-3 rounded-full bg-rose-400"></div>
-                                        <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                                        <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
+                                       {/* Right Column - Live Preview */}
+                                <div className={`hidden lg:block lg:w-2/5 h-full bg-stone-100 relative overflow-hidden transition-opacity ${isCreatingClient ? 'opacity-20 pointer-events-none' : ''}`}>
+                                    <div className="absolute top-0 inset-x-0 h-12 bg-white/80 backdrop-blur-sm border-b border-stone-200 z-50 flex items-center justify-between px-6 shadow-sm">
+                                        <div className="flex gap-2">
+                                            <div className="w-3 h-3 rounded-full bg-rose-400"></div>
+                                            <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                                            <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
+                                        </div>
+                                        <div className="text-xs font-mono text-stone-400 bg-stone-100 px-3 py-1 rounded-md">
+                                            localhost:3000/invite/{liveData.slug || 'slug'}
+                                        </div>
+                                        <div className="w-12"></div>
                                     </div>
-                                    <div className="text-xs font-mono text-stone-400 bg-stone-100 px-3 py-1 rounded-md">
-                                        localhost:3000/invite/{liveData.slug || 'slug'}
-                                    </div>
-                                    <div className="w-12"></div>
-                                </div>
-                                <div className="h-full w-full overflow-y-auto pt-12">
-                                    <div className="pointer-events-auto">
-                                        {liveData.slug ? (
-                                            <InvitationPreview data={liveData} />
-                                        ) : (
-                                            <div className="h-full flex items-center justify-center text-stone-400 italic">Select a client from the sidebar to preview</div>
-                                        )}
+                                    <div className="h-full w-full overflow-y-auto pt-12">
+                                        <div className="pointer-events-auto">
+                                            {liveData.slug ? (
+                                                <InvitationPreview data={liveData} />
+                                            ) : (
+                                                <div className="h-full flex items-center justify-center text-stone-400 italic">Select a client from the sidebar to preview</div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </>
-                    ) : (
-                        <div className="w-full h-full overflow-y-auto p-8 bg-stone-50/50">
+                    )}
+
+                    {activeTab === 'budget' && !isCreatingClient && (
+                        <div className="w-full h-full overflow-y-auto p-8 bg-surface-container-low">
                             <BudgetTracker slug={liveData.slug} initialExpenses={expenses} />
+                        </div>
+                    )}
+
+                    {activeTab === 'seating' && !isCreatingClient && (
+                        <div className="w-full h-full overflow-y-auto p-8 bg-surface-container-low">
+                            <TableSeating slug={liveData.slug} initialTables={seatingTables} initialGuests={seatingGuests} />
                         </div>
                     )}
                 </div>

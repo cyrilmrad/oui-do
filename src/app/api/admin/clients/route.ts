@@ -41,7 +41,9 @@ export async function GET(request: Request) {
                     slug: slug,
                     email: user.email,
                     bride: inv?.bride || 'Bride',
-                    groom: inv?.groom || 'Groom'
+                    groom: inv?.groom || 'Groom',
+                    heroImage: inv?.heroImage || null,
+                    date: inv?.date || null
                 };
             });
 

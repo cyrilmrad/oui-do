@@ -61,9 +61,14 @@ interface InvitationPreviewProps {
         createdAt: Date | null;
         updatedAt: Date | null;
     } | null;
+    isPreview?: boolean;
 }
 
-export default function InvitationPreview({ data, guestData }: InvitationPreviewProps) {
+export default function InvitationPreview({ data, guestData, isPreview = false }: InvitationPreviewProps) {
+    const screenClass = isPreview ? "min-h-[750px]" : "min-h-screen";
+    const dvhClass = isPreview ? "min-h-[750px]" : "min-h-[100dvh]";
+    const h80Class = isPreview ? "h-[600px]" : "h-[80vh] md:h-[90vh]";
+    const h60Class = isPreview ? "min-h-[450px]" : "min-h-[60vh]";
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [formData, setFormData] = useState({
         firstName: guestData?.firstName || '',
@@ -253,7 +258,7 @@ export default function InvitationPreview({ data, guestData }: InvitationPreview
     const hasGiftsSection = !!(data.giftMessage || data.bankAccountNumber || data.mobileTransferNumber);
 
     return (
-        <div className={`min-h-screen ${data.theme.background} ${data.theme.primaryText} font-sans selection:bg-emerald-100/30 selection:text-emerald-900 w-full flex flex-col`}>
+        <div className={`${screenClass} ${data.theme.background} ${data.theme.primaryText} font-sans selection:bg-emerald-100/30 selection:text-emerald-900 w-full flex flex-col`}>
             {data.audioUrl && (
                 <audio ref={audioRef} src={data.audioUrl} loop preload="auto" />
             )}
@@ -263,7 +268,7 @@ export default function InvitationPreview({ data, guestData }: InvitationPreview
                     <motion.div
                         key="intro-overlay"
                         exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)", transition: { duration: 1, ease: [0.16, 1, 0.3, 1] } }}
-                        className="flex-1 flex flex-col items-center justify-center p-6 bg-stone-950 min-h-[100dvh] relative overflow-hidden"
+                        className={`flex-1 flex flex-col items-center justify-center p-6 bg-stone-950 relative overflow-hidden ${dvhClass}`}
                     >
                         {/* Background hint */}
                         <div className="absolute inset-0 z-0 overflow-hidden opacity-30 mix-blend-overlay">
@@ -314,7 +319,7 @@ export default function InvitationPreview({ data, guestData }: InvitationPreview
                         className="w-full flex flex-col relative"
                     >
                         {/* Hero Section */}
-                        <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+                        <section className={`relative flex items-center justify-center overflow-hidden ${screenClass}`}>
                             <div className="absolute inset-0 z-0 overflow-hidden bg-stone-900">
                                 <div className="absolute inset-0 bg-stone-950/40 z-10" />
                                 {isVideo ? (
@@ -378,13 +383,13 @@ export default function InvitationPreview({ data, guestData }: InvitationPreview
                         {/* Formal Invitation Section */}
                         {data.showFormalInvitation && data.formalInvitationImage && (
                             <motion.section
-                                className="relative w-full min-h-screen py-20 px-4 md:px-12 flex items-center justify-center bg-stone-50"
+                                className={`relative w-full py-20 px-4 md:px-12 flex items-center justify-center bg-stone-50 ${screenClass}`}
                                 initial="hidden"
                                 whileInView="visible"
                                 viewport={{ once: true, margin: "-100px" }}
                                 variants={sectionVariants}
                             >
-                                <div className="w-full max-w-5xl h-[80vh] md:h-[90vh] relative flex items-center justify-center">
+                                <div className={`w-full max-w-5xl relative flex items-center justify-center ${h80Class}`}>
                                     <img 
                                         src={data.formalInvitationImage} 
                                         alt="Formal Invitation" 
@@ -443,7 +448,7 @@ export default function InvitationPreview({ data, guestData }: InvitationPreview
 
                         {/* Event Details Section - Refactored to Stacked Elegant Layout */}
                         <motion.section
-                            className="relative py-32 md:py-48 px-6 md:px-12 flex items-center justify-center min-h-screen overflow-hidden"
+                            className={`relative py-32 md:py-48 px-6 md:px-12 flex items-center justify-center overflow-hidden ${screenClass}`}
                             initial="hidden"
                             whileInView="visible"
                             viewport={{ once: true, margin: "-100px" }}
@@ -550,7 +555,7 @@ export default function InvitationPreview({ data, guestData }: InvitationPreview
                         {data.customSections?.map((section, index) => (
                             <motion.section
                                 key={section.id || index}
-                                className="relative min-h-[60vh] flex items-center justify-center overflow-hidden py-24"
+                                className={`relative flex items-center justify-center overflow-hidden py-24 ${h60Class}`}
                                 initial="hidden"
                                 whileInView="visible"
                                 viewport={{ once: true, margin: "-100px" }}
