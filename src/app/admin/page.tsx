@@ -898,7 +898,7 @@ export default function AdminDashboard() {
 
                     {activeTab === 'budget' && !isCreatingClient && (
                         <div className="w-full h-full overflow-y-auto p-8 bg-surface-container-low">
-                            <BudgetTracker slug={liveData.slug} initialExpenses={expenses} />
+                            <BudgetTracker slug={liveData.slug} initialExpenses={expenses} isAdmin={true} />
                         </div>
                     )}
 

@@ -2,17 +2,27 @@
 
 import React, { useState, useMemo } from 'react';
 import { SelectExpense } from '@/app/actions/budget';
-import { Trash2, Plus, DollarSign, Calculator, LineChart } from 'lucide-react';
+import { Trash2, Plus, DollarSign, Calculator, LineChart, Wallet } from 'lucide-react';
 import { addExpense, updateExpense, deleteExpense } from '@/app/actions/budget';
+import PaymentModal from '@/components/PaymentModal';
 
 interface BudgetTrackerProps {
     slug: string;
     initialExpenses: SelectExpense[];
+    isAdmin?: boolean;
 }
 
-export default function BudgetTracker({ slug, initialExpenses }: BudgetTrackerProps) {
+export default function BudgetTracker({ slug, initialExpenses, isAdmin = false }: BudgetTrackerProps) {
     const [expenses, setExpenses] = useState<SelectExpense[]>(initialExpenses);
     const [isSaving, setIsSaving] = useState(false);
+
+    // Payment Modal State
+    const [paymentModal, setPaymentModal] = useState<{ isOpen: boolean; expenseId: string; expenseName: string; actualCost: number }>({
+        isOpen: false,
+        expenseId: '',
+        expenseName: '',
+        actualCost: 0,
+    });
 
     // Calculate Summary Totals
     const { estimatedTotal, actualTotal, difference } = useMemo(() => {
@@ -187,7 +197,7 @@ export default function BudgetTracker({ slug, initialExpenses }: BudgetTrackerPr
                                     <th className="px-6 py-4 w-36 text-right">Estimated</th>
                                     <th className="px-6 py-4 w-36 text-right">Actual</th>
                                     <th className="px-6 py-4">Notes</th>
-                                    <th className="px-6 py-4 w-12 text-center"></th>
+                                    <th className="px-6 py-4 w-20 text-center"></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-stone-100 text-stone-800">
@@ -271,14 +281,28 @@ export default function BudgetTracker({ slug, initialExpenses }: BudgetTrackerPr
                                                 className="w-full bg-transparent px-2 py-1.5 min-w-[150px] focus:outline-none focus:bg-white focus:ring-1 focus:ring-stone-200 rounded transition-all italic text-stone-500 text-xs"
                                             />
                                         </td>
-                                        <td className="px-6 py-3 text-center">
-                                            <button
-                                                onClick={() => handleDeleteExpense(expense.id)}
-                                                className="text-stone-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 p-2"
-                                                title="Delete this expense"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                        <td className="px-4 py-3 text-center">
+                                            <div className="flex items-center justify-center gap-1">
+                                                <button
+                                                    onClick={() => setPaymentModal({
+                                                        isOpen: true,
+                                                        expenseId: expense.id,
+                                                        expenseName: `${expense.category}${expense.supplier ? ` — ${expense.supplier}` : ''}`,
+                                                        actualCost: expense.actualCost || 0,
+                                                    })}
+                                                    className="text-stone-300 hover:text-stone-700 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 p-1.5 rounded-md hover:bg-stone-100"
+                                                    title="View payments"
+                                                >
+                                                    <Wallet className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteExpense(expense.id)}
+                                                    className="text-stone-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 p-1.5 rounded-md hover:bg-rose-50"
+                                                    title="Delete this expense"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -305,6 +329,17 @@ export default function BudgetTracker({ slug, initialExpenses }: BudgetTrackerPr
                 </div>
 
             </div>
+
+            {/* Payment Modal */}
+            <PaymentModal
+                isOpen={paymentModal.isOpen}
+                onClose={() => setPaymentModal(prev => ({ ...prev, isOpen: false }))}
+                expenseId={paymentModal.expenseId}
+                expenseName={paymentModal.expenseName}
+                actualCost={paymentModal.actualCost}
+                slug={slug}
+                isAdmin={isAdmin}
+            />
         </div>
     );
 }
