@@ -71,7 +71,8 @@ export default function DashboardPage() {
         mobileTransferNumber: "",
         theme: "classic" as unknown as Theme,
         showFormalInvitation: false,
-        formalInvitationImage: ""
+        formalInvitationImage: "",
+        preCeremonyMedia: ""
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -199,7 +200,8 @@ export default function DashboardPage() {
                                 mobileTransferNumber: dbData.mobileTransferNumber || "",
                                 theme: dbData.theme || undefined,
                                 showFormalInvitation: dbData.showFormalInvitation || false,
-                                formalInvitationImage: dbData.formalInvitationImage || ""
+                                formalInvitationImage: dbData.formalInvitationImage || "",
+                                preCeremonyMedia: dbData.preCeremonyMedia || ""
                             });
                         }
                     }
@@ -702,6 +704,19 @@ export default function DashboardPage() {
                                 </div>
                             </div>
                         )}
+                    </div>
+
+                    <div>
+                        <h3 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2 mb-6 flex items-center justify-between">
+                            Pre-Ceremony Full-Bleed Media
+                        </h3>
+                        <div className="p-5 bg-stone-50 rounded-xl border border-stone-100 space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Pre-Ceremony Media URL (Image or MP4)</label>
+                                <input type="text" name="preCeremonyMedia" value={weddingDetails.preCeremonyMedia || ''} onChange={handleSettingsChange} placeholder="https://.../video.mp4" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm bg-white" />
+                                <p className="text-[10px] text-stone-400">Provide an image or .MP4 video. It will autoplay full-screen right before the ceremony details.</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div>

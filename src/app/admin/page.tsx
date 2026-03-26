@@ -62,6 +62,10 @@ export default function AdminDashboard() {
 
     const [formalImageFile, setFormalImageFile] = useState<File | null>(null);
     const [formalImagePreview, setFormalImagePreview] = useState<string | null>(null);
+    
+    const [preCeremonyMediaFile, setPreCeremonyMediaFile] = useState<File | null>(null);
+    const [preCeremonyMediaPreview, setPreCeremonyMediaPreview] = useState<string | null>(null);
+
     const [detailsBgFile, setDetailsBgFile] = useState<File | null>(null);
     const [detailsBgPreview, setDetailsBgPreview] = useState<string | null>(null);
 
@@ -75,13 +79,14 @@ export default function AdminDashboard() {
             if (heroLogoPreview) URL.revokeObjectURL(heroLogoPreview);
             if (audioPreview) URL.revokeObjectURL(audioPreview);
             if (formalImagePreview) URL.revokeObjectURL(formalImagePreview);
+            if (preCeremonyMediaPreview) URL.revokeObjectURL(preCeremonyMediaPreview);
             if (detailsBgPreview) URL.revokeObjectURL(detailsBgPreview);
             Object.values(customFiles).forEach(opts => {
                 if (opts.bgPreview) URL.revokeObjectURL(opts.bgPreview);
                 if (opts.overlayPreview) URL.revokeObjectURL(opts.overlayPreview);
             });
         };
-    }, [heroImagePreview, heroVideoPreview, heroLogoPreview, audioPreview, formalImagePreview, detailsBgPreview, customFiles]);
+    }, [heroImagePreview, heroVideoPreview, heroLogoPreview, audioPreview, formalImagePreview, preCeremonyMediaPreview, detailsBgPreview, customFiles]);
 
 
 
@@ -297,6 +302,7 @@ export default function AdminDashboard() {
             };
 
             let updatedFormalImage = liveData.formalInvitationImage;
+            let updatedPreCeremonyMedia = liveData.preCeremonyMedia;
             let updatedDetailsBg = liveData.detailsBackgroundUrl;
 
             if (heroImageFile) updatedHeroImage = await uploadFile(heroImageFile, liveData.heroImage, setHeroImageFile);
@@ -304,6 +310,7 @@ export default function AdminDashboard() {
             if (heroLogoFile) updatedHeroLogoUrl = await uploadFile(heroLogoFile, liveData.heroLogoUrl, setHeroLogoFile);
             if (audioFile) updatedAudioUrl = await uploadFile(audioFile, liveData.audioUrl, setAudioFile);
             if (formalImageFile) updatedFormalImage = await uploadFile(formalImageFile, liveData.formalInvitationImage, setFormalImageFile);
+            if (preCeremonyMediaFile) updatedPreCeremonyMedia = await uploadFile(preCeremonyMediaFile, liveData.preCeremonyMedia, setPreCeremonyMediaFile);
             if (detailsBgFile) updatedDetailsBg = await uploadFile(detailsBgFile, liveData.detailsBackgroundUrl, setDetailsBgFile);
 
             const updatedCustomSections = await Promise.all((liveData.customSections || []).map(async (section) => {
@@ -335,6 +342,7 @@ export default function AdminDashboard() {
                 heroLogoUrl: updatedHeroLogoUrl,
                 audioUrl: updatedAudioUrl,
                 formalInvitationImage: updatedFormalImage,
+                preCeremonyMedia: updatedPreCeremonyMedia,
                 detailsBackgroundUrl: updatedDetailsBg,
                 customSections: updatedCustomSections
             };
@@ -862,14 +870,18 @@ export default function AdminDashboard() {
                                             <div className="bg-surface-container-low p-8 rounded-xl space-y-6">
                                                 {liveData.showFormalInvitation && (
                                                     <div className="space-y-1.5">
-                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Formal Invitation Image</label>
+                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Formal Invitation Media</label>
                                                         {formalImagePreview || liveData.formalInvitationImage ? (
-                                                            <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block">
-                                                                <img src={formalImagePreview || liveData.formalInvitationImage} alt="Formal Invite" className="h-32 w-auto object-cover" />
+                                                            <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block relative">
+                                                                {(formalImagePreview || liveData.formalInvitationImage || '').match(/\.(mp4|webm|ogg|mov)$/i) || formalImageFile?.type.startsWith('video/') ? (
+                                                                    <video src={formalImagePreview || liveData.formalInvitationImage} className="h-48 w-auto object-cover" controls playsInline muted />
+                                                                ) : (
+                                                                    <img src={formalImagePreview || liveData.formalInvitationImage} alt="Formal Invite" className="h-32 w-auto object-cover" />
+                                                                )}
                                                             </div>
                                                         ) : null}
-                                                        <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setFormalImageFile, setFormalImagePreview, formalImagePreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
-                                                        <p className="text-[10px] text-secondary/70 mt-2 font-label tracking-widest uppercase">Provides a full-screen image fallback instead of native UI text blocks.</p>
+                                                        <input type="file" accept="image/*,video/mp4,video/quicktime,video/webm,video/*" onChange={(e) => handleFileChange(e, setFormalImageFile, setFormalImagePreview, formalImagePreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
+                                                        <p className="text-[10px] text-secondary/70 mt-2 font-label tracking-widest uppercase">Provides a full-screen media fallback instead of native UI text blocks.</p>
                                                     </div>
                                                 )}
 
@@ -899,11 +911,35 @@ export default function AdminDashboard() {
                                             </div>
                                         </section>
 
-                                        {/* Section 04: Ceremony Details */}
+                                        {/* Section 04: Pre-Ceremony Media */}
+                                        <section>
+                                            <div className="flex justify-between items-center mb-8">
+                                                <h2 className="text-2xl font-headline text-primary">Pre-Ceremony Feature</h2>
+                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 04</span>
+                                            </div>
+                                            <div className="bg-surface-container-low p-8 rounded-xl space-y-6">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Pre-Ceremony Media</label>
+                                                    {preCeremonyMediaPreview || liveData.preCeremonyMedia ? (
+                                                        <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block relative">
+                                                            {(preCeremonyMediaPreview || liveData.preCeremonyMedia || '').match(/\.(mp4|webm|ogg|mov)$/i) || preCeremonyMediaFile?.type.startsWith('video/') ? (
+                                                                <video src={preCeremonyMediaPreview || liveData.preCeremonyMedia} className="h-48 w-auto object-cover" controls playsInline muted />
+                                                            ) : (
+                                                                <img src={preCeremonyMediaPreview || liveData.preCeremonyMedia} alt="Pre-Ceremony Feature" className="h-32 w-auto object-cover" />
+                                                            )}
+                                                        </div>
+                                                    ) : null}
+                                                    <input type="file" accept="image/*,video/mp4,video/quicktime,video/webm,video/*" onChange={(e) => handleFileChange(e, setPreCeremonyMediaFile, setPreCeremonyMediaPreview, preCeremonyMediaPreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
+                                                    <p className="text-[10px] text-secondary/70 mt-2 font-label tracking-widest uppercase">Displays a full-bleed border-to-border image or video before the Ceremony Details block.</p>
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        {/* Section 05: Ceremony Details */}
                                         <section>
                                             <div className="flex justify-between items-center mb-8">
                                                 <h2 className="text-2xl font-headline text-primary">Ceremony Details</h2>
-                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 04</span>
+                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 05</span>
                                             </div>
                                             <div className="space-y-8">
                                                 <div className="grid grid-cols-2 gap-8">
@@ -1096,7 +1132,14 @@ export default function AdminDashboard() {
                                         ...(heroVideoPreview && { heroVideo: heroVideoPreview }),
                                         ...(heroLogoPreview && { heroLogoUrl: heroLogoPreview }),
                                         ...(audioPreview && { audioUrl: audioPreview }),
-                                        ...(formalImagePreview && { formalInvitationImage: formalImagePreview }),
+                                        ...(formalImagePreview && { 
+                                            formalInvitationImage: formalImagePreview,
+                                            formalInvitationIsVideo: formalImageFile?.type.startsWith('video/')
+                                        }),
+                                        ...(preCeremonyMediaPreview && { 
+                                            preCeremonyMedia: preCeremonyMediaPreview,
+                                            preCeremonyMediaIsVideo: preCeremonyMediaFile?.type.startsWith('video/')
+                                        }),
                                         ...(detailsBgPreview && { detailsBackgroundUrl: detailsBgPreview }),
                                         customSections: liveData.customSections?.map(section => {
                                             const files = customFiles[section.id];

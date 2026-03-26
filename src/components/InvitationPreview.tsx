@@ -46,6 +46,9 @@ export interface InvitationData {
     theme: Theme;
     showFormalInvitation?: boolean;
     formalInvitationImage?: string;
+    formalInvitationIsVideo?: boolean;
+    preCeremonyMedia?: string;
+    preCeremonyMediaIsVideo?: boolean;
 }
 
 interface InvitationPreviewProps {
@@ -96,6 +99,8 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
 
     const [isPlaying, setIsPlaying] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const formalVideoRef = useRef<HTMLVideoElement | null>(null);
+    const preCeremonyVideoRef = useRef<HTMLVideoElement | null>(null);
 
     const [timeLeft, setTimeLeft] = useState<{ years: number; months: number; days: number } | null>(null);
 
@@ -152,8 +157,14 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                 months += 12;
             }
 
+            // Accumulate years into months for visual display restriction
+            if (years > 0) {
+                months += (years * 12);
+                years = 0;
+            }
+
             setTimeLeft({
-                years: years > 0 ? years : 0,
+                years: 0,
                 months: months > 0 ? months : 0,
                 days: days > 0 ? days : 0
             });
@@ -383,18 +394,31 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                         {/* Formal Invitation Section */}
                         {data.showFormalInvitation && data.formalInvitationImage && (
                             <motion.section
-                                className={`relative w-full py-20 px-4 md:px-12 flex items-center justify-center bg-stone-50 ${screenClass}`}
+                                className={`relative w-full overflow-hidden bg-stone-900 ${screenClass}`}
                                 initial="hidden"
                                 whileInView="visible"
                                 viewport={{ once: true, margin: "-100px" }}
                                 variants={sectionVariants}
+                                onViewportEnter={() => formalVideoRef.current?.play().catch(() => {})}
+                                onViewportLeave={() => formalVideoRef.current?.pause()}
                             >
-                                <div className={`w-full max-w-5xl relative flex items-center justify-center ${h80Class}`}>
-                                    <img 
-                                        src={data.formalInvitationImage} 
-                                        alt="Formal Invitation" 
-                                        className="w-full h-full object-contain drop-shadow-2xl" 
-                                    />
+                                <div className="absolute inset-0 w-full h-full">
+                                    {data.formalInvitationIsVideo || (data.formalInvitationImage || '').split('?')[0].match(/\.(mp4|webm|ogg|mov)$/i) ? (
+                                        <video
+                                            ref={formalVideoRef}
+                                            src={data.formalInvitationImage} 
+                                            className="w-full h-full object-cover" 
+                                            playsInline 
+                                            muted
+                                            loop
+                                        />
+                                    ) : (
+                                        <img 
+                                            src={data.formalInvitationImage} 
+                                            alt="Formal Invitation" 
+                                            className="w-full h-full object-cover" 
+                                        />
+                                    )}
                                 </div>
                             </motion.section>
                         )}
@@ -422,29 +446,57 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     <h3 className="text-sm md:text-base font-sans mb-10 tracking-[0.2em] uppercase text-stone-400">
                                         Countdown for the most special day
                                     </h3>
-                                    <div className="flex justify-center gap-8 md:gap-16">
-                                        {timeLeft.years > 0 && (
-                                            <div className="flex flex-col items-center">
-                                                <span className={`text-5xl md:text-7xl font-serif ${data.theme.accent} font-light tracking-tight`}>{timeLeft.years}</span>
-                                                <span className="text-xs md:text-sm uppercase tracking-[0.2em] text-stone-400 mt-4 font-sans">Years</span>
-                                            </div>
-                                        )}
+                                    <div className="flex justify-center items-center gap-6 md:gap-12">
                                         {(timeLeft.years > 0 || timeLeft.months > 0) && (
-                                            <div className="flex flex-col items-center">
-                                                <span className={`text-5xl md:text-7xl font-serif ${data.theme.accent} font-light tracking-tight`}>{timeLeft.months}</span>
-                                                <span className="text-xs md:text-sm uppercase tracking-[0.2em] text-stone-400 mt-4 font-sans">Months</span>
-                                            </div>
+                                            <>
+                                                <div className="flex flex-col items-center">
+                                                    <span className={`text-6xl md:text-8xl lg:text-9xl font-serif ${data.theme.accent} font-extralight tracking-tighter drop-shadow-sm`}>{timeLeft.months}</span>
+                                                    <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-stone-400 mt-6 font-medium">Months</span>
+                                                </div>
+                                                <div className="w-px h-16 md:h-24 bg-stone-200 mt-[-20px]" />
+                                            </>
                                         )}
                                         <div className="flex flex-col items-center">
-                                            <span className={`text-5xl md:text-7xl font-serif ${data.theme.accent} font-light tracking-tight`}>{timeLeft.days}</span>
-                                            <span className="text-xs md:text-sm uppercase tracking-[0.2em] text-stone-400 mt-4 font-sans">Days</span>
+                                            <span className={`text-6xl md:text-8xl lg:text-9xl font-serif ${data.theme.accent} font-extralight tracking-tighter drop-shadow-sm`}>{timeLeft.days}</span>
+                                            <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-stone-400 mt-6 font-medium">Days</span>
                                         </div>
                                     </div>
                                 </motion.div>
                             )}
-
                             <div className="w-12 h-[1px] bg-stone-300 mx-auto mt-20" />
                         </motion.section>
+
+                        {/* Pre-Ceremony Visual Extension */}
+                        {data.preCeremonyMedia && (
+                            <motion.section
+                                className={`relative w-full overflow-hidden bg-stone-900 ${screenClass}`}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true, margin: "-100px" }}
+                                variants={sectionVariants}
+                                onViewportEnter={() => preCeremonyVideoRef.current?.play().catch(() => {})}
+                                onViewportLeave={() => preCeremonyVideoRef.current?.pause()}
+                            >
+                                <div className="absolute inset-0 w-full h-full">
+                                    {data.preCeremonyMediaIsVideo || (data.preCeremonyMedia || '').split('?')[0].match(/\.(mp4|webm|ogg|mov)$/i) ? (
+                                        <video
+                                            ref={preCeremonyVideoRef}
+                                            src={data.preCeremonyMedia} 
+                                            className="w-full h-full object-cover" 
+                                            playsInline 
+                                            muted
+                                            loop
+                                        />
+                                    ) : (
+                                        <img 
+                                            src={data.preCeremonyMedia} 
+                                            alt="Pre-Ceremony Feature" 
+                                            className="w-full h-full object-cover" 
+                                        />
+                                    )}
+                                </div>
+                            </motion.section>
+                        )}
 
                         {/* Event Details Section - Refactored to Stacked Elegant Layout */}
                         <motion.section
@@ -532,7 +584,6 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                             )}
                                         </div>
                                         <div className="mt-8 space-y-2">
-                                            <p className="text-lg font-serif text-stone-700 tracking-widest">{formatDate(data.date)}</p>
                                             {data.receptionTime && <p className="text-lg font-serif text-stone-700 tracking-[0.2em]">{formatTime(data.receptionTime)}</p>}
                                         </div>
 
