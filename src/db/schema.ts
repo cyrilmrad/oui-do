@@ -108,3 +108,27 @@ export const expenses = pgTable('expenses', {
         withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'client' AND slug = (auth.jwt() -> 'app_metadata' ->> 'slug')`
     })
 ]).enableRLS();
+
+export const payments = pgTable('payments', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    expenseId: uuid('expense_id').references(() => expenses.id, { onDelete: 'cascade' }).notNull(),
+    slug: varchar('slug', { length: 255 }).references(() => invitations.slug).notNull(),
+    amount: integer('amount').notNull(),
+    paymentDate: timestamp('payment_date').defaultNow(),
+    receivedBy: varchar('received_by', { length: 255 }),
+    notes: text('notes'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+}, (t) => [
+    pgPolicy("Admins have full access to payments", {
+        as: 'permissive',
+        for: 'all',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`,
+        withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`
+    }),
+    pgPolicy("Clients can view their own payments", {
+        as: 'permissive',
+        for: 'select',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'client' AND slug = (auth.jwt() -> 'app_metadata' ->> 'slug')`
+    })
+]).enableRLS();

@@ -50,6 +50,79 @@ export default function AdminDashboard() {
     const [themeSelection, setThemeSelection] = useState<string>("emerald");
     const [isSaving, setIsSaving] = useState(false);
 
+    // File Upload State
+    const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
+    const [heroImagePreview, setHeroImagePreview] = useState<string | null>(null);
+    const [heroVideoFile, setHeroVideoFile] = useState<File | null>(null);
+    const [heroVideoPreview, setHeroVideoPreview] = useState<string | null>(null);
+    const [heroLogoFile, setHeroLogoFile] = useState<File | null>(null);
+    const [heroLogoPreview, setHeroLogoPreview] = useState<string | null>(null);
+    const [audioFile, setAudioFile] = useState<File | null>(null);
+    const [audioPreview, setAudioPreview] = useState<string | null>(null);
+
+    const [formalImageFile, setFormalImageFile] = useState<File | null>(null);
+    const [formalImagePreview, setFormalImagePreview] = useState<string | null>(null);
+    const [detailsBgFile, setDetailsBgFile] = useState<File | null>(null);
+    const [detailsBgPreview, setDetailsBgPreview] = useState<string | null>(null);
+
+    const [customFiles, setCustomFiles] = useState<Record<string, { bgFile?: File, bgPreview?: string, overlayFile?: File, overlayPreview?: string }>>({});
+
+    // Cleanup object URLs to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            if (heroImagePreview) URL.revokeObjectURL(heroImagePreview);
+            if (heroVideoPreview) URL.revokeObjectURL(heroVideoPreview);
+            if (heroLogoPreview) URL.revokeObjectURL(heroLogoPreview);
+            if (audioPreview) URL.revokeObjectURL(audioPreview);
+            if (formalImagePreview) URL.revokeObjectURL(formalImagePreview);
+            if (detailsBgPreview) URL.revokeObjectURL(detailsBgPreview);
+            Object.values(customFiles).forEach(opts => {
+                if (opts.bgPreview) URL.revokeObjectURL(opts.bgPreview);
+                if (opts.overlayPreview) URL.revokeObjectURL(opts.overlayPreview);
+            });
+        };
+    }, [heroImagePreview, heroVideoPreview, heroLogoPreview, audioPreview, formalImagePreview, detailsBgPreview, customFiles]);
+
+
+
+    const handleCustomFileChange = (
+        e: React.ChangeEvent<HTMLInputElement>,
+        sectionId: string,
+        type: 'bg' | 'overlay'
+    ) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setCustomFiles(prev => {
+                const currentSection = prev[sectionId] || {};
+                const prevPreview = type === 'bg' ? currentSection.bgPreview : currentSection.overlayPreview;
+                if (prevPreview) URL.revokeObjectURL(prevPreview);
+
+                return {
+                    ...prev,
+                    [sectionId]: {
+                        ...currentSection,
+                        [type === 'bg' ? 'bgFile' : 'overlayFile']: file,
+                        [type === 'bg' ? 'bgPreview' : 'overlayPreview']: URL.createObjectURL(file)
+                    }
+                };
+            });
+        }
+    };
+
+    const handleFileChange = (
+        e: React.ChangeEvent<HTMLInputElement>,
+        setFile: React.Dispatch<React.SetStateAction<File | null>>,
+        setPreview: React.Dispatch<React.SetStateAction<string | null>>,
+        prevPreview: string | null
+    ) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (prevPreview) URL.revokeObjectURL(prevPreview);
+            setFile(file);
+            setPreview(URL.createObjectURL(file));
+        }
+    };
+
     // Budget State
     const [activeTab, setActiveTab] = useState<'clients-list' | 'builder' | 'budget' | 'seating'>('clients-list');
     const [expenses, setExpenses] = useState<SelectExpense[]>([]);
@@ -189,10 +262,87 @@ export default function AdminDashboard() {
 
         setIsSaving(true);
         try {
+            let updatedHeroImage = liveData.heroImage;
+            let updatedHeroVideo = liveData.heroVideo;
+            let updatedHeroLogoUrl = liveData.heroLogoUrl;
+            let updatedAudioUrl = liveData.audioUrl;
+
+            const uploadFile = async (
+                file: File,
+                oldUrl?: string | null,
+                setFileState?: React.Dispatch<React.SetStateAction<File | null>>
+            ) => {
+                if (oldUrl && oldUrl.includes('/assets/')) {
+                    const rawPath = oldUrl.split('/assets/')[1];
+                    const cleanPath = rawPath?.split('?')[0]; // strip query parameters like ?token=
+                    console.log("[Storage Cleanup] Attempting to delete oldURL:", oldUrl);
+                    console.log("[Storage Cleanup] Extracted cleanPath:", cleanPath);
+                    if (cleanPath) {
+                        const { data, error: removeError } = await supabase.storage.from('assets').remove([cleanPath]);
+                        console.log("[Storage Cleanup] Delete result:", data, removeError);
+                    }
+                }
+                const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                const filepath = `${liveData.slug}/${filename}`;
+                const { error } = await supabase.storage.from('assets').upload(filepath, file, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
+                if (error) throw error;
+                const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(filepath);
+
+                if (setFileState) setFileState(null);
+
+                return publicUrl;
+            };
+
+            let updatedFormalImage = liveData.formalInvitationImage;
+            let updatedDetailsBg = liveData.detailsBackgroundUrl;
+
+            if (heroImageFile) updatedHeroImage = await uploadFile(heroImageFile, liveData.heroImage, setHeroImageFile);
+            if (heroVideoFile) updatedHeroVideo = await uploadFile(heroVideoFile, liveData.heroVideo, setHeroVideoFile);
+            if (heroLogoFile) updatedHeroLogoUrl = await uploadFile(heroLogoFile, liveData.heroLogoUrl, setHeroLogoFile);
+            if (audioFile) updatedAudioUrl = await uploadFile(audioFile, liveData.audioUrl, setAudioFile);
+            if (formalImageFile) updatedFormalImage = await uploadFile(formalImageFile, liveData.formalInvitationImage, setFormalImageFile);
+            if (detailsBgFile) updatedDetailsBg = await uploadFile(detailsBgFile, liveData.detailsBackgroundUrl, setDetailsBgFile);
+
+            const updatedCustomSections = await Promise.all((liveData.customSections || []).map(async (section) => {
+                const files = customFiles[section.id];
+                let bgUrl = section.backgroundUrl;
+                let overlayUrl = section.overlayImageUrl;
+
+                if (files?.bgFile) {
+                    bgUrl = await uploadFile(files.bgFile, section.backgroundUrl);
+                }
+                if (files?.overlayFile) {
+                    overlayUrl = await uploadFile(files.overlayFile, section.overlayImageUrl);
+                }
+
+                return {
+                    ...section,
+                    backgroundUrl: bgUrl,
+                    overlayImageUrl: overlayUrl
+                };
+            }));
+
+            // Clear custom files to prevent duplicate uploads
+            setCustomFiles({});
+
+            const payloadToSave = {
+                ...liveData,
+                heroImage: updatedHeroImage,
+                heroVideo: updatedHeroVideo,
+                heroLogoUrl: updatedHeroLogoUrl,
+                audioUrl: updatedAudioUrl,
+                formalInvitationImage: updatedFormalImage,
+                detailsBackgroundUrl: updatedDetailsBg,
+                customSections: updatedCustomSections
+            };
+
             const response = await fetch('/api/admin/invitation', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(liveData)
+                body: JSON.stringify(payloadToSave)
             });
 
             const result = await response.json();
@@ -200,6 +350,8 @@ export default function AdminDashboard() {
             if (!response.ok) {
                 throw new Error(result.error || 'Failed to save');
             }
+            
+            setLiveData(payloadToSave);
             alert("Invitation Saved Successfully!");
         } catch (error: any) {
             alert(error.message);
@@ -226,6 +378,13 @@ export default function AdminDashboard() {
                         onClick={() => {
                             setLiveData(defaultData);
                             setIsCreatingClient(true);
+                            setHeroImageFile(null); setHeroImagePreview(null);
+                            setHeroVideoFile(null); setHeroVideoPreview(null);
+                            setHeroLogoFile(null); setHeroLogoPreview(null);
+                            setAudioFile(null); setAudioPreview(null);
+                            setFormalImageFile(null); setFormalImagePreview(null);
+                            setDetailsBgFile(null); setDetailsBgPreview(null);
+                            setCustomFiles({});
                         }}
                         className="w-full py-4 px-6 rounded-full text-[10px] font-label uppercase tracking-widest transition-all hover:opacity-90 font-bold text-on-primary shadow-xl shadow-primary/10"
                         style={{ background: 'linear-gradient(135deg, #00150F 0%, #062C22 100%)' }}
@@ -236,17 +395,24 @@ export default function AdminDashboard() {
 
                 <div className="flex-1 px-0 flex flex-col pt-8">
                     <nav className="flex-1 space-y-2">
-                        <button 
+                        <button
                             className="w-full flex items-center gap-3 text-secondary py-3 px-8 hover:bg-surface-container-lowest hover:text-primary rounded-r-full transition-all duration-200"
                         >
                             <LayoutDashboard className="w-5 h-5" />
                             <span className="font-label uppercase tracking-[0.05em] text-[0.75rem] font-medium">Dashboard</span>
                         </button>
-                        <button 
+                        <button
                             className={`w-full flex items-center gap-3 py-3 px-8 rounded-r-full transition-all duration-200 ${activeTab === 'clients-list' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm scale-[0.99]' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
                             onClick={() => {
                                 setLiveData(defaultData); // Clear builder
                                 setActiveTab('clients-list');
+                                setHeroImageFile(null); setHeroImagePreview(null);
+                                setHeroVideoFile(null); setHeroVideoPreview(null);
+                                setHeroLogoFile(null); setHeroLogoPreview(null);
+                                setAudioFile(null); setAudioPreview(null);
+                                setFormalImageFile(null); setFormalImagePreview(null);
+                                setDetailsBgFile(null); setDetailsBgPreview(null);
+                                setCustomFiles({});
                             }}
                         >
                             <Users className="w-5 h-5" />
@@ -288,6 +454,13 @@ export default function AdminDashboard() {
                             onClick={() => {
                                 setLiveData(defaultData);
                                 setActiveTab('clients-list');
+                                setHeroImageFile(null); setHeroImagePreview(null);
+                                setHeroVideoFile(null); setHeroVideoPreview(null);
+                                setHeroLogoFile(null); setHeroLogoPreview(null);
+                                setAudioFile(null); setAudioPreview(null);
+                                setFormalImageFile(null); setFormalImagePreview(null);
+                                setDetailsBgFile(null); setDetailsBgPreview(null);
+                                setCustomFiles({});
                             }}
                             className="flex items-center gap-2 mr-6 pr-6 border-r border-outline-variant/20 h-full text-secondary hover:text-primary transition-colors"
                         >
@@ -330,12 +503,12 @@ export default function AdminDashboard() {
                                     </div>
                                     <div className="hidden md:flex items-center gap-4 bg-surface-container-low p-2 rounded-full px-6 py-3 border border-outline-variant/10">
                                         <Search className="w-5 h-5 text-primary" />
-                                        <input 
+                                        <input
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="bg-transparent border-none focus:ring-0 text-sm font-body w-64 placeholder:text-secondary/50 outline-none" 
-                                            placeholder="Search clients or dates..." 
-                                            type="text" 
+                                            className="bg-transparent border-none focus:ring-0 text-sm font-body w-64 placeholder:text-secondary/50 outline-none"
+                                            placeholder="Search clients or dates..."
+                                            type="text"
                                         />
                                         <span className="w-px h-6 bg-outline-variant/30"></span>
                                         <button className="flex items-center gap-2 text-secondary hover:text-primary transition-colors">
@@ -391,6 +564,10 @@ export default function AdminDashboard() {
                                                     } else {
                                                         setLiveData({ ...defaultData, slug: client.slug, bride: client.bride, groom: client.groom });
                                                     }
+                                                    setHeroImageFile(null); setHeroImagePreview(null);
+                                                    setHeroVideoFile(null); setHeroVideoPreview(null);
+                                                    setHeroLogoFile(null); setHeroLogoPreview(null);
+                                                    setAudioFile(null); setAudioPreview(null);
                                                     const exp = await getExpensesBySlug(client.slug);
                                                     setExpenses(exp);
                                                     const seatData = await getSeatingData(client.slug);
@@ -442,7 +619,7 @@ export default function AdminDashboard() {
                             {isCreatingClient && (
                                 <div className="absolute inset-0 z-50 flex flex-col overflow-y-auto bg-surface backdrop-blur-sm px-6 py-12 md:py-24 animate-in fade-in duration-300">
                                     <div className="max-w-4xl mx-auto w-full space-y-16">
-                                        
+
                                         <div className="flex justify-between items-start">
                                             <div className="space-y-4">
                                                 <h2 className="text-5xl font-headline text-primary tracking-tight">New Client Instance</h2>
@@ -508,7 +685,7 @@ export default function AdminDashboard() {
                                                     </div>
                                                 )}
                                             </div>
-                                            
+
                                             <div className="space-y-3 md:col-span-2">
                                                 <label className="text-[0.75rem] font-label font-bold uppercase tracking-[0.1em] text-secondary ml-1">Temporary Password</label>
                                                 <input type="password" required value={newClientForm.password} onChange={e => setNewClientForm({ ...newClientForm, password: e.target.value })} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-6 py-5 text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-lg font-body" placeholder="••••••••••••" minLength={6} />
@@ -524,7 +701,7 @@ export default function AdminDashboard() {
                                                 </button>
                                             </div>
                                         </form>
-                                        
+
                                         <div className="mt-32 opacity-20 flex justify-center pb-24">
                                             <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=2669&auto=format&fit=crop" className="w-64 h-64 object-cover rounded-full filter grayscale sepia mix-blend-multiply" alt="Elegant flair" />
                                         </div>
@@ -538,367 +715,433 @@ export default function AdminDashboard() {
                                 <div className={`w-full lg:w-3/5 h-full overflow-y-auto bg-surface p-8 md:p-12 lg:p-16 transition-opacity ${isCreatingClient ? 'opacity-20 pointer-events-none' : ''}`}>
                                     <div className="max-w-3xl mx-auto space-y-16 pb-24">
                                         {/* Page Header Actions */}
-                                    <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-6 mb-16">
-                                        <div className="space-y-2">
-                                            <h1 className="text-5xl font-headline text-primary">Invitation Builder</h1>
-                                            <p className="text-secondary font-body">Crafting the narrative for {liveData.slug ? `/${liveData.slug}` : 'a new invitation'}</p>
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-3 xl:gap-4 shrink-0 mt-4 xl:mt-0">
-                                            {liveData.slug && (
+                                        <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-6 mb-16">
+                                            <div className="space-y-2">
+                                                <h1 className="text-5xl font-headline text-primary">Invitation Builder</h1>
+                                                <p className="text-secondary font-body">Crafting the narrative for {liveData.slug ? `/${liveData.slug}` : 'a new invitation'}</p>
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-3 xl:gap-4 shrink-0 mt-4 xl:mt-0">
+                                                {liveData.slug && (
+                                                    <button
+                                                        onClick={async () => {
+                                                            const url = `${window.location.protocol}//${window.location.host}/invite/${liveData.slug}`;
+                                                            try {
+                                                                await navigator.clipboard.writeText(url);
+                                                            } catch (err) {
+                                                                const textArea = document.createElement("textarea");
+                                                                textArea.value = url;
+                                                                document.body.appendChild(textArea);
+                                                                textArea.select();
+                                                                document.execCommand("copy");
+                                                                document.body.removeChild(textArea);
+                                                            }
+                                                            const btn = document.getElementById('copy-btn-text');
+                                                            if (btn) {
+                                                                const original = btn.innerText;
+                                                                btn.innerText = "Copied!";
+                                                                setTimeout(() => btn.innerText = original, 2000);
+                                                            }
+                                                        }}
+                                                        className="bg-surface-container-high text-on-surface px-6 py-2.5 rounded-full flex items-center justify-center gap-2 font-medium hover:opacity-80 transition-opacity text-sm"
+                                                    >
+                                                        <Link className="w-3.5 h-3.5 opacity-70" />
+                                                        <span id="copy-btn-text">Copy General Link</span>
+                                                    </button>
+                                                )}
                                                 <button
-                                                    onClick={async () => {
-                                                        const url = `${window.location.protocol}//${window.location.host}/invite/${liveData.slug}`;
-                                                        try {
-                                                            await navigator.clipboard.writeText(url);
-                                                        } catch (err) {
-                                                            const textArea = document.createElement("textarea");
-                                                            textArea.value = url;
-                                                            document.body.appendChild(textArea);
-                                                            textArea.select();
-                                                            document.execCommand("copy");
-                                                            document.body.removeChild(textArea);
-                                                        }
-                                                        const btn = document.getElementById('copy-btn-text');
-                                                        if (btn) {
-                                                            const original = btn.innerText;
-                                                            btn.innerText = "Copied!";
-                                                            setTimeout(() => btn.innerText = original, 2000);
-                                                        }
-                                                    }}
-                                                    className="bg-surface-container-high text-on-surface px-6 py-2.5 rounded-full flex items-center justify-center gap-2 font-medium hover:opacity-80 transition-opacity text-sm"
+                                                    onClick={handleSaveInvitation}
+                                                    disabled={isSaving}
+                                                    className="bg-primary text-on-primary px-8 py-2.5 rounded-full font-medium shadow-md hover:bg-primary/90 disabled:opacity-50 transition-all text-sm"
                                                 >
-                                                    <Link className="w-3.5 h-3.5 opacity-70" />
-                                                    <span id="copy-btn-text">Copy General Link</span>
+                                                    {isSaving ? "Saving..." : "Publish Changes"}
                                                 </button>
-                                            )}
-                                            <button
-                                                onClick={handleSaveInvitation}
-                                                disabled={isSaving}
-                                                className="bg-primary text-on-primary px-8 py-2.5 rounded-full font-medium shadow-md hover:bg-primary/90 disabled:opacity-50 transition-all text-sm"
-                                            >
-                                                {isSaving ? "Saving..." : "Publish Changes"}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Section 01: The Couple */}
-                                    <section>
-                                        <div className="flex justify-between items-center mb-8">
-                                            <h2 className="text-2xl font-headline text-primary">The Couple</h2>
-                                            <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 01</span>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Partner One Name</label>
-                                                <input required type="text" name="bride" value={liveData.bride} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Partner Two Name</label>
-                                                <input required type="text" name="groom" value={liveData.groom} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                            </div>
-                                        </div>
-                                    </section>
-
-                                    {/* Section 02: Invitation Assets */}
-                                    <section>
-                                        <div className="flex justify-between items-center mb-8">
-                                            <div className="flex items-center gap-4">
-                                                <h2 className="text-2xl font-headline text-primary">Invitation Assets</h2>
-                                                <label className="relative inline-flex items-center cursor-pointer">
-                                                    <input
-                                                        type="checkbox"
-                                                        name="showFormalInvitation"
-                                                        className="sr-only peer"
-                                                        checked={liveData.showFormalInvitation || false}
-                                                        onChange={(e) => setLiveData(prev => ({ ...prev, showFormalInvitation: e.target.checked }))}
-                                                    />
-                                                    <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                                    <span className="ms-3 text-[0.75rem] font-label uppercase text-primary tracking-widest font-bold">Formal Image Override</span>
-                                                </label>
-                                            </div>
-                                            <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 02</span>
-                                        </div>
-                                        <div className="bg-surface-container-low p-8 rounded-xl space-y-6">
-                                            {liveData.showFormalInvitation ? (
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Formal Invitation Image URL</label>
-                                                    <input type="text" name="formalInvitationImage" value={liveData.formalInvitationImage || ''} onChange={handleInputChange} placeholder="https://.../formal-invitation.jpg" className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                    <p className="text-[10px] text-secondary/70 mt-2 font-label tracking-widest uppercase">Provides a full-screen image fallback instead of native UI text blocks.</p>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-6">
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Event Hero Image URL</label>
-                                                        <input type="text" name="heroImage" value={liveData.heroImage || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="https://unsplash.com/beautiful-floral" />
-                                                    </div>
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Background Audio URL</label>
-                                                        <input type="text" name="audioUrl" value={liveData.audioUrl || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <div className="space-y-1.5">
-                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Styling Theme Token</label>
-                                                <select name="themeSelection" value={themeSelection} onChange={handleThemeChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body font-semibold">
-                                                    <option value="emerald">Emerald & Stone (Default Pattern)</option>
-                                                    <option value="slate">Slate & Monochrome</option>
-                                                    <option value="rose">Rose & Blush</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </section>
-
-                                    {/* Section 03: Ceremony Details */}
-                                    <section>
-                                        <div className="flex justify-between items-center mb-8">
-                                            <h2 className="text-2xl font-headline text-primary">Ceremony Details</h2>
-                                            <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 03</span>
-                                        </div>
-                                        <div className="space-y-8">
-                                            <div className="grid grid-cols-2 gap-8">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Ceremony Date</label>
-                                                    <input type="date" name="date" value={liveData.date} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Starting Time</label>
-                                                    <input type="time" name="time" value={liveData.time} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Venue Name</label>
-                                                <input type="text" name="venue" value={liveData.venue} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Geographical Details</label>
-                                                <input type="text" name="location" value={liveData.location} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Google Maps Itinerary URL</label>
-                                                <input type="text" name="mapLink" value={liveData.mapLink || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                            </div>
-                                        </div>
-                                    </section>
-
-                                    {/* Section 04: Reception Block */}
-                                    <section>
-                                        <div className="flex justify-between items-center mb-8">
-                                            <h2 className="text-2xl font-headline text-primary">Formal Reception</h2>
-                                            <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 04</span>
-                                        </div>
-                                        <div className="bg-surface-container-lowest border border-outline-variant/20 p-8 rounded-xl space-y-6">
-                                            <div className="grid grid-cols-2 gap-8">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception Time</label>
-                                                    <input type="time" name="receptionTime" value={liveData.receptionTime || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception Venue</label>
-                                                    <input type="text" name="receptionVenue" value={liveData.receptionVenue || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception Address</label>
-                                                <input type="text" name="receptionLocation" value={liveData.receptionLocation || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Welcome Note</label>
-                                                <textarea name="message" value={liveData.message} onChange={handleInputChange} rows={3} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body resize-none" />
-                                            </div>
-                                        </div>
-                                    </section>
-
-                                    {/* Section 05: Extra Media */}
-                                    <section>
-                                        <div className="flex justify-between items-center mb-8">
-                                            <h2 className="text-2xl font-headline text-primary">Media Links</h2>
-                                            <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 05</span>
-                                        </div>
-                                        <div className="bg-surface-container-low p-8 rounded-xl space-y-6">
-                                            <div className="flex items-center justify-between">
-                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Hero Graphics Rendering</label>
-                                                <label className="relative inline-flex items-center cursor-pointer">
-                                                    <input
-                                                        type="checkbox"
-                                                        name="showHeroLogo"
-                                                        className="sr-only peer"
-                                                        checked={liveData.showHeroLogo || false}
-                                                        onChange={(e) => setLiveData(prev => ({ ...prev, showHeroLogo: e.target.checked }))}
-                                                    />
-                                                    <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                                    <span className="ms-3 text-[0.75rem] font-label uppercase text-primary font-bold">Graphic Toggle</span>
-                                                </label>
-                                            </div>
-                                            
-                                            {liveData.showHeroLogo && (
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Hero Logo URL (PNG Formatted)</label>
-                                                    <input type="text" name="heroLogoUrl" value={liveData.heroLogoUrl || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="https://unsplash.com/beautiful-floral" />
-                                                </div>
-                                            )}
-
-                                            <div className="space-y-1.5">
-                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Hero MP4 Render URL</label>
-                                                <input type="text" name="heroVideo" value={liveData.heroVideo || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Event Specific Detail Texture Background Image URL</label>
-                                                <input type="text" name="detailsBackgroundUrl" value={liveData.detailsBackgroundUrl || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                            </div>
-                                        </div>
-                                    </section>
-
-                                    {/* Section 07: Custom Editor */}
-                                    <section>
-                                        <div className="flex justify-between items-center mb-8">
-                                            <h2 className="text-2xl font-headline text-primary">Custom Blocks</h2>
-                                            <div className="flex items-center gap-4">
-                                                <button
-                                                    type="button"
-                                                    onClick={handleAddSection}
-                                                    className="text-xs font-label uppercase font-bold text-primary hover:text-on-primary-container bg-surface-container-high px-4 py-2 rounded-full transition-colors flex items-center gap-1 tracking-widest"
-                                                >
-                                                    <Plus className="w-3 h-3" /> Append Block
-                                                </button>
-                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest ml-4">Section 07</span>
                                             </div>
                                         </div>
 
-                                        {liveData.customSections?.length === 0 ? (
-                                            <p className="text-[0.875rem] font-body text-secondary italic text-center py-8 bg-surface-container-lowest border border-outline-variant/20 rounded-xl">No custom editorial narrative blocks appended yet.</p>
-                                        ) : (
-                                            <div className="space-y-8">
-                                                {liveData.customSections?.map((section, idx) => (
-                                                    <div key={section.id} className="p-8 border border-outline-variant/20 rounded-2xl bg-surface-container-lowest shadow-sm space-y-6 relative group overflow-hidden">
-                                                        <div className="absolute top-0 left-0 w-2 h-full bg-primary/10"></div>
-                                                        <button
-                                                            onClick={() => handleRemoveSection(idx)}
-                                                            className="absolute top-6 right-6 text-secondary hover:text-error transition-colors"
-                                                            title="Remove Script"
-                                                        >
-                                                            <span className="text-xs font-label uppercase tracking-widest font-bold">Remove</span>
-                                                        </button>
-
-                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-surface-container-high pb-4 gap-4 pr-20">
-                                                            <span className="text-[0.75rem] font-label font-bold text-primary uppercase tracking-[0.1em]">Editorial Block 0{idx + 1}</span>
-                                                            <select
-                                                                value={section.overlayType}
-                                                                onChange={(e) => handleSectionChange(idx, 'overlayType', e.target.value)}
-                                                                className="text-[0.75rem] font-label uppercase tracking-widest font-medium border border-outline-variant/30 rounded-md px-3 py-1.5 text-on-surface focus:outline-none focus:border-primary bg-surface"
-                                                            >
-                                                                <option value="text">Textual Mode</option>
-                                                                <option value="image">Graphic Mode</option>
-                                                            </select>
-                                                        </div>
-
-                                                        <div className="space-y-1.5">
-                                                            <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Cinematic Background Image URL</label>
-                                                            <input
-                                                                type="text"
-                                                                value={section.backgroundUrl}
-                                                                onChange={(e) => handleSectionChange(idx, 'backgroundUrl', e.target.value)}
-                                                                placeholder="https://.../bg.jpg"
-                                                                className="w-full bg-surface border-outline-variant/30 border rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body"
-                                                            />
-                                                        </div>
-
-                                                        {section.overlayType === 'text' ? (
-                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                                <div className="md:col-span-2 space-y-1.5">
-                                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Editorial Script content</label>
-                                                                    <textarea
-                                                                        value={section.textContent || ''}
-                                                                        onChange={(e) => handleSectionChange(idx, 'textContent', e.target.value)}
-                                                                        rows={2}
-                                                                        className="w-full bg-surface border-outline-variant/30 border rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body resize-none"
-                                                                    />
-                                                                </div>
-                                                                <div className="space-y-1.5">
-                                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Typography Style</label>
-                                                                    <select
-                                                                        value={section.fontFamily || 'font-sans'}
-                                                                        onChange={(e) => handleSectionChange(idx, 'fontFamily', e.target.value)}
-                                                                        className="w-full bg-surface border-outline-variant/30 border rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body"
-                                                                    >
-                                                                        <option value="font-sans">Modern Sans</option>
-                                                                        <option value="font-serif">Elegant Serif</option>
-                                                                        <option value="font-script">Signature Script</option>
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Foreground Transparency Graphic URL (PNG)</label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={section.overlayImageUrl || ''}
-                                                                    onChange={(e) => handleSectionChange(idx, 'overlayImageUrl', e.target.value)}
-                                                                    placeholder="https://.../transparent-typography.png"
-                                                                    className="w-full bg-surface border-outline-variant/30 border rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body"
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </section>
-
-                                    {/* Section 06: Registry Blocks */}
-                                    <section>
-                                        <div className="flex justify-between items-center mb-8">
-                                            <h2 className="text-2xl font-headline text-primary">Registry Details</h2>
-                                            <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 06</span>
-                                        </div>
-                                        <div className="bg-surface-container-latest p-8 space-y-6">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Message & Gratitude Tone</label>
-                                                <textarea name="giftMessage" value={liveData.giftMessage || ''} onChange={handleInputChange} rows={2} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body resize-none" />
+                                        {/* Section 01: The Couple */}
+                                        <section>
+                                            <div className="flex justify-between items-center mb-8">
+                                                <h2 className="text-2xl font-headline text-primary">The Couple</h2>
+                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 01</span>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Bank Account Beneficiary</label>
-                                                    <input type="text" name="bankAccountName" value={liveData.bankAccountName || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Partner One Name</label>
+                                                    <input required type="text" name="bride" value={liveData.bride} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Electronic Code / IBAN</label>
-                                                    <input type="text" name="bankAccountNumber" value={liveData.bankAccountNumber || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Partner Two Name</label>
+                                                    <input required type="text" name="groom" value={liveData.groom} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        {/* Section 02: HERO Section */}
+                                        <section>
+                                            <div className="flex justify-between items-center mb-8">
+                                                <h2 className="text-2xl font-headline text-primary">HERO Section</h2>
+                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 02</span>
+                                            </div>
+                                            <div className="bg-surface-container-low p-8 rounded-xl space-y-6">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Event Hero Image</label>
+                                                    {heroImagePreview || liveData.heroImage ? (
+                                                        <div className="mb-2">
+                                                            <img src={heroImagePreview || liveData.heroImage} alt="Hero Preview" className="h-24 w-auto rounded-md object-cover border border-outline-variant/20" />
+                                                        </div>
+                                                    ) : null}
+                                                    <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setHeroImageFile, setHeroImagePreview, heroImagePreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Hero Video Render</label>
+                                                    {heroVideoPreview || liveData.heroVideo ? (
+                                                        <div className="mb-2 text-sm text-primary font-medium break-all">
+                                                            Current: {heroVideoFile?.name || liveData.heroVideo}
+                                                        </div>
+                                                    ) : null}
+                                                    <input type="file" accept="video/mp4,video/*" onChange={(e) => handleFileChange(e, setHeroVideoFile, setHeroVideoPreview, heroVideoPreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
+                                                </div>
+
+                                                <div className="flex items-center justify-between mt-6">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Hero Graphics Rendering</label>
+                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            name="showHeroLogo"
+                                                            className="sr-only peer"
+                                                            checked={liveData.showHeroLogo || false}
+                                                            onChange={(e) => setLiveData(prev => ({ ...prev, showHeroLogo: e.target.checked }))}
+                                                        />
+                                                        <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                                        <span className="ms-3 text-[0.75rem] font-label uppercase text-primary font-bold">Graphic Toggle</span>
+                                                    </label>
+                                                </div>
+
+                                                {liveData.showHeroLogo && (
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Hero Logo (PNG Formatted)</label>
+                                                        {heroLogoPreview || liveData.heroLogoUrl ? (
+                                                            <div className="mb-2 bg-surface-container-highest p-2 rounded-md inline-block">
+                                                                <img src={heroLogoPreview || liveData.heroLogoUrl} alt="Logo Preview" className="h-16 w-auto object-contain" />
+                                                            </div>
+                                                        ) : null}
+                                                        <input type="file" accept="image/png" onChange={(e) => handleFileChange(e, setHeroLogoFile, setHeroLogoPreview, heroLogoPreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
+                                                    </div>
+                                                )}
+
+                                                <div className="space-y-1.5 pt-4 border-t border-outline-variant/20">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Styling Theme Token</label>
+                                                    <select name="themeSelection" value={themeSelection} onChange={handleThemeChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body font-semibold">
+                                                        <option value="emerald">Emerald & Stone (Default Pattern)</option>
+                                                        <option value="slate">Slate & Monochrome</option>
+                                                        <option value="rose">Rose & Blush</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        {/* Section 03: Formal Invitation */}
+                                        <section>
+                                            <div className="flex justify-between items-center mb-8">
+                                                <div className="flex items-center gap-4">
+                                                    <h2 className="text-2xl font-headline text-primary">Formal Invitation</h2>
+                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            name="showFormalInvitation"
+                                                            className="sr-only peer"
+                                                            checked={liveData.showFormalInvitation || false}
+                                                            onChange={(e) => setLiveData(prev => ({ ...prev, showFormalInvitation: e.target.checked }))}
+                                                        />
+                                                        <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                                        <span className="ms-3 text-[0.75rem] font-label uppercase text-primary tracking-widest font-bold">Formal Image Override</span>
+                                                    </label>
+                                                </div>
+                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 03</span>
+                                            </div>
+                                            <div className="bg-surface-container-low p-8 rounded-xl space-y-6">
+                                                {liveData.showFormalInvitation && (
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Formal Invitation Image</label>
+                                                        {formalImagePreview || liveData.formalInvitationImage ? (
+                                                            <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block">
+                                                                <img src={formalImagePreview || liveData.formalInvitationImage} alt="Formal Invite" className="h-32 w-auto object-cover" />
+                                                            </div>
+                                                        ) : null}
+                                                        <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setFormalImageFile, setFormalImagePreview, formalImagePreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
+                                                        <p className="text-[10px] text-secondary/70 mt-2 font-label tracking-widest uppercase">Provides a full-screen image fallback instead of native UI text blocks.</p>
+                                                    </div>
+                                                )}
+
+                                                {!liveData.showFormalInvitation && (
+                                                    <div className="space-y-6">
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Event Specific Detail Texture Background Image</label>
+                                                            {detailsBgPreview || liveData.detailsBackgroundUrl ? (
+                                                                <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block">
+                                                                    <img src={detailsBgPreview || liveData.detailsBackgroundUrl} alt="Details Bg" className="h-24 w-auto object-cover" />
+                                                                </div>
+                                                            ) : null}
+                                                            <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setDetailsBgFile, setDetailsBgPreview, detailsBgPreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                <div className="space-y-1.5 pt-4 border-t border-outline-variant/20">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Background Audio</label>
+                                                    {audioPreview || liveData.audioUrl ? (
+                                                        <div className="mb-2 text-sm text-primary font-medium break-all">
+                                                            Current: {audioFile?.name || liveData.audioUrl}
+                                                        </div>
+                                                    ) : null}
+                                                    <input type="file" accept="audio/*" onChange={(e) => handleFileChange(e, setAudioFile, setAudioPreview, audioPreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        {/* Section 04: Ceremony Details */}
+                                        <section>
+                                            <div className="flex justify-between items-center mb-8">
+                                                <h2 className="text-2xl font-headline text-primary">Ceremony Details</h2>
+                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 04</span>
+                                            </div>
+                                            <div className="space-y-8">
+                                                <div className="grid grid-cols-2 gap-8">
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Ceremony Date</label>
+                                                        <input type="date" name="date" value={liveData.date} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Starting Time</label>
+                                                        <input type="time" name="time" value={liveData.time} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Venue Name</label>
+                                                    <input type="text" name="venue" value={liveData.venue} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Geographical Details</label>
+                                                    <input type="text" name="location" value={liveData.location} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Google Maps Itinerary URL</label>
+                                                    <input type="text" name="mapLink" value={liveData.mapLink || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        {/* Section 05: Reception Block */}
+                                        <section>
+                                            <div className="flex justify-between items-center mb-8">
+                                                <h2 className="text-2xl font-headline text-primary">Formal Reception</h2>
+                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 05</span>
+                                            </div>
+                                            <div className="bg-surface-container-lowest border border-outline-variant/20 p-8 rounded-xl space-y-6">
+                                                <div className="grid grid-cols-2 gap-8">
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception Time</label>
+                                                        <input type="time" name="receptionTime" value={liveData.receptionTime || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception Venue</label>
+                                                        <input type="text" name="receptionVenue" value={liveData.receptionVenue || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception Address</label>
+                                                    <input type="text" name="receptionLocation" value={liveData.receptionLocation || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Welcome Note</label>
+                                                    <textarea name="message" value={liveData.message} onChange={handleInputChange} rows={3} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body resize-none" />
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        {/* Section 06: Custom Editor */}
+                                        <section>
+                                            <div className="flex justify-between items-center mb-8">
+                                                <h2 className="text-2xl font-headline text-primary">Custom Blocks</h2>
+                                                <div className="flex items-center gap-4">
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleAddSection}
+                                                        className="text-xs font-label uppercase font-bold text-primary hover:text-on-primary-container bg-surface-container-high px-4 py-2 rounded-full transition-colors flex items-center gap-1 tracking-widest"
+                                                    >
+                                                        <Plus className="w-3 h-3" /> Append Block
+                                                    </button>
+                                                    <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest ml-4">Section 06</span>
+                                                </div>
+                                            </div>
+
+                                            {liveData.customSections?.length === 0 ? (
+                                                <p className="text-[0.875rem] font-body text-secondary italic text-center py-8 bg-surface-container-lowest border border-outline-variant/20 rounded-xl">No custom editorial narrative blocks appended yet.</p>
+                                            ) : (
+                                                <div className="space-y-8">
+                                                    {liveData.customSections?.map((section, idx) => (
+                                                        <div key={section.id} className="p-8 border border-outline-variant/20 rounded-2xl bg-surface-container-lowest shadow-sm space-y-6 relative group overflow-hidden">
+                                                            <div className="absolute top-0 left-0 w-2 h-full bg-primary/10"></div>
+                                                            <button
+                                                                onClick={() => handleRemoveSection(idx)}
+                                                                className="absolute top-6 right-6 text-secondary hover:text-error transition-colors"
+                                                                title="Remove Script"
+                                                            >
+                                                                <span className="text-xs font-label uppercase tracking-widest font-bold">Remove</span>
+                                                            </button>
+
+                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-surface-container-high pb-4 gap-4 pr-20">
+                                                                <span className="text-[0.75rem] font-label font-bold text-primary uppercase tracking-[0.1em]">Editorial Block 0{idx + 1}</span>
+                                                                <select
+                                                                    value={section.overlayType}
+                                                                    onChange={(e) => handleSectionChange(idx, 'overlayType', e.target.value)}
+                                                                    className="text-[0.75rem] font-label uppercase tracking-widest font-medium border border-outline-variant/30 rounded-md px-3 py-1.5 text-on-surface focus:outline-none focus:border-primary bg-surface"
+                                                                >
+                                                                    <option value="text">Textual Mode</option>
+                                                                    <option value="image">Graphic Mode</option>
+                                                                </select>
+                                                            </div>
+
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Cinematic Background Image</label>
+                                                                {customFiles[section.id]?.bgPreview || section.backgroundUrl ? (
+                                                                    <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block bg-black">
+                                                                        <img src={customFiles[section.id]?.bgPreview || section.backgroundUrl} alt={`Custom bg ${idx}`} className="h-24 w-auto object-cover opacity-80" />
+                                                                    </div>
+                                                                ) : null}
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    onChange={(e) => handleCustomFileChange(e, section.id, 'bg')}
+                                                                    className="w-full bg-surface border-outline-variant/30 border rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90"
+                                                                />
+                                                            </div>
+
+                                                            {section.overlayType === 'text' ? (
+                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                                    <div className="md:col-span-2 space-y-1.5">
+                                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Editorial Script content</label>
+                                                                        <textarea
+                                                                            value={section.textContent || ''}
+                                                                            onChange={(e) => handleSectionChange(idx, 'textContent', e.target.value)}
+                                                                            rows={2}
+                                                                            className="w-full bg-surface border-outline-variant/30 border rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body resize-none"
+                                                                        />
+                                                                    </div>
+                                                                    <div className="space-y-1.5">
+                                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Typography Style</label>
+                                                                        <select
+                                                                            value={section.fontFamily || 'font-sans'}
+                                                                            onChange={(e) => handleSectionChange(idx, 'fontFamily', e.target.value)}
+                                                                            className="w-full bg-surface border-outline-variant/30 border rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body"
+                                                                        >
+                                                                            <option value="font-sans">Modern Sans</option>
+                                                                            <option value="font-serif">Elegant Serif</option>
+                                                                            <option value="font-script">Signature Script</option>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="space-y-1.5">
+                                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Foreground Transparency Graphic (PNG)</label>
+                                                                    {customFiles[section.id]?.overlayPreview || section.overlayImageUrl ? (
+                                                                        <div className="mb-2 bg-surface-container-highest p-2 rounded-md inline-block">
+                                                                            <img src={customFiles[section.id]?.overlayPreview || section.overlayImageUrl} alt={`Overlay ${idx}`} className="h-16 w-auto object-contain" />
+                                                                        </div>
+                                                                    ) : null}
+                                                                    <input
+                                                                        type="file"
+                                                                        accept="image/png"
+                                                                        onChange={(e) => handleCustomFileChange(e, section.id, 'overlay')}
+                                                                        className="w-full bg-surface border-outline-variant/30 border rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90"
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </section>
+
+                                        {/* Section 07: Registry Blocks */}
+                                        <section>
+                                            <div className="flex justify-between items-center mb-8">
+                                                <h2 className="text-2xl font-headline text-primary">Registry Details</h2>
+                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 07</span>
+                                            </div>
+                                            <div className="bg-surface-container-latest p-8 space-y-6">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Message & Gratitude Tone</label>
+                                                    <textarea name="giftMessage" value={liveData.giftMessage || ''} onChange={handleInputChange} rows={2} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body resize-none" />
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Bank Account Beneficiary</label>
+                                                        <input type="text" name="bankAccountName" value={liveData.bankAccountName || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Electronic Code / IBAN</label>
+                                                        <input type="text" name="bankAccountNumber" value={liveData.bankAccountNumber || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </section>
+                                    </div>
+                                </div>
+                                {/* Right Column - Live Preview */}
+                                {(() => {
+                                    const previewData = {
+                                        ...liveData,
+                                        ...(heroImagePreview && { heroImage: heroImagePreview }),
+                                        ...(heroVideoPreview && { heroVideo: heroVideoPreview }),
+                                        ...(heroLogoPreview && { heroLogoUrl: heroLogoPreview }),
+                                        ...(audioPreview && { audioUrl: audioPreview }),
+                                        ...(formalImagePreview && { formalInvitationImage: formalImagePreview }),
+                                        ...(detailsBgPreview && { detailsBackgroundUrl: detailsBgPreview }),
+                                        customSections: liveData.customSections?.map(section => {
+                                            const files = customFiles[section.id];
+                                            if (files) {
+                                                return {
+                                                    ...section,
+                                                    ...(files.bgPreview && { backgroundUrl: files.bgPreview }),
+                                                    ...(files.overlayPreview && { overlayImageUrl: files.overlayPreview }),
+                                                };
+                                            }
+                                            return section;
+                                        })
+                                    };
+                                    return (
+                                        <div className={`hidden lg:block lg:w-2/5 h-full bg-stone-100 relative overflow-hidden transition-opacity ${isCreatingClient ? 'opacity-20 pointer-events-none' : ''}`}>
+                                            <div className="absolute top-0 inset-x-0 h-12 bg-white/80 backdrop-blur-sm border-b border-stone-200 z-50 flex items-center justify-between px-6 shadow-sm">
+                                                <div className="flex gap-2">
+                                                    <div className="w-3 h-3 rounded-full bg-rose-400"></div>
+                                                    <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                                                    <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
+                                                </div>
+                                                <div className="text-xs font-mono text-stone-400 bg-stone-100 px-3 py-1 rounded-md">
+                                                    localhost:3000/invite/{liveData.slug || 'slug'}
+                                                </div>
+                                                <div className="w-12"></div>
+                                            </div>
+                                            <div className="h-full w-full overflow-y-auto pt-12">
+                                                <div className="pointer-events-auto">
+                                                    {liveData.slug ? (
+                                                        <InvitationPreview data={previewData} />
+                                                    ) : (
+                                                        <div className="h-full flex items-center justify-center text-stone-400 italic">Select a client from the sidebar to preview</div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
-                                    </section>
-                                </div>
-                            </div>
-                                       {/* Right Column - Live Preview */}
-                                <div className={`hidden lg:block lg:w-2/5 h-full bg-stone-100 relative overflow-hidden transition-opacity ${isCreatingClient ? 'opacity-20 pointer-events-none' : ''}`}>
-                                    <div className="absolute top-0 inset-x-0 h-12 bg-white/80 backdrop-blur-sm border-b border-stone-200 z-50 flex items-center justify-between px-6 shadow-sm">
-                                        <div className="flex gap-2">
-                                            <div className="w-3 h-3 rounded-full bg-rose-400"></div>
-                                            <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                                            <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
-                                        </div>
-                                        <div className="text-xs font-mono text-stone-400 bg-stone-100 px-3 py-1 rounded-md">
-                                            localhost:3000/invite/{liveData.slug || 'slug'}
-                                        </div>
-                                        <div className="w-12"></div>
-                                    </div>
-                                    <div className="h-full w-full overflow-y-auto pt-12">
-                                        <div className="pointer-events-auto">
-                                            {liveData.slug ? (
-                                                <InvitationPreview data={liveData} />
-                                            ) : (
-                                                <div className="h-full flex items-center justify-center text-stone-400 italic">Select a client from the sidebar to preview</div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
+                                    );
+                                })()}
                             </div>
                         </>
                     )}
 
                     {activeTab === 'budget' && !isCreatingClient && (
                         <div className="w-full h-full overflow-y-auto p-8 bg-surface-container-low">
-                            <BudgetTracker slug={liveData.slug} initialExpenses={expenses} />
+                            <BudgetTracker slug={liveData.slug} initialExpenses={expenses} isAdmin={true} />
                         </div>
                     )}
 
