@@ -432,7 +432,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                 onViewportEnter={() => formalVideoRef.current?.play().catch(() => {})}
                                 onViewportLeave={() => formalVideoRef.current?.pause()}
                             >
-                                <div className="absolute inset-0 w-full h-full">
+                                <div className={`${data.formalInvitationIsVideo || (data.formalInvitationImage || '').split('?')[0].match(/\.(mp4|webm|ogg|mov)$/i) ? 'relative w-full' : 'absolute inset-0'} overflow-hidden bg-stone-900`}>
                                     {data.formalInvitationIsVideo || (data.formalInvitationImage || '').split('?')[0].match(/\.(mp4|webm|ogg|mov)$/i) ? (
                                         <video
                                             ref={formalVideoRef}
