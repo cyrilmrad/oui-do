@@ -72,7 +72,8 @@ export default function DashboardPage() {
         theme: "classic" as unknown as Theme,
         showFormalInvitation: false,
         formalInvitationImage: "",
-        preCeremonyMedia: ""
+        preCeremonyMedia: "",
+        showHeroDate: true
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -201,7 +202,8 @@ export default function DashboardPage() {
                                 theme: dbData.theme || undefined,
                                 showFormalInvitation: dbData.showFormalInvitation || false,
                                 formalInvitationImage: dbData.formalInvitationImage || "",
-                                preCeremonyMedia: dbData.preCeremonyMedia || ""
+                                preCeremonyMedia: dbData.preCeremonyMedia || "",
+                                showHeroDate: dbData.showHeroDate !== false
                             });
                         }
                     }
@@ -597,18 +599,31 @@ export default function DashboardPage() {
                         </h3>
                         <div className="space-y-4">
                             <div className="flex items-center justify-between border-b border-stone-200 pb-2">
-                                <label className="text-xs font-semibold text-stone-600 uppercase tracking-wider">Hero Section Logo Graphic</label>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        name="showHeroLogo"
-                                        className="sr-only peer"
-                                        checked={weddingDetails.showHeroLogo || false}
-                                        onChange={(e) => setWeddingDetails(prev => ({ ...prev, showHeroLogo: e.target.checked }))}
-                                    />
-                                    <div className="w-9 h-5 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                                    <span className="ml-3 text-xs font-medium text-stone-500 hover:text-stone-700 transition-colors">Enable</span>
-                                </label>
+                                <label className="text-xs font-semibold text-stone-600 uppercase tracking-wider">Hero Section Graphics</label>
+                                <div className="flex gap-4">
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="showHeroLogo"
+                                            className="sr-only peer"
+                                            checked={weddingDetails.showHeroLogo || false}
+                                            onChange={(e) => setWeddingDetails(prev => ({ ...prev, showHeroLogo: e.target.checked }))}
+                                        />
+                                        <div className="w-9 h-5 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                                        <span className="ml-3 text-xs font-medium text-stone-500 hover:text-stone-700 transition-colors">Logo</span>
+                                    </label>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="showHeroDate"
+                                            className="sr-only peer"
+                                            checked={weddingDetails.showHeroDate !== false}
+                                            onChange={(e) => setWeddingDetails(prev => ({ ...prev, showHeroDate: e.target.checked }))}
+                                        />
+                                        <div className="w-9 h-5 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                                        <span className="ml-3 text-xs font-medium text-stone-500 hover:text-stone-700 transition-colors">Date Ribbon</span>
+                                    </label>
+                                </div>
                             </div>
 
                             {weddingDetails.showHeroLogo && (
@@ -630,6 +645,49 @@ export default function DashboardPage() {
                                 <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Welcome Audio Soundtrack URL</label>
                                 <input type="text" name="audioUrl" value={weddingDetails.audioUrl || ''} onChange={handleSettingsChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm" />
                             </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2 mb-6 flex items-center">
+                            Styling & Theme
+                        </h3>
+                        <div className="space-y-4">
+                            <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Theme Profile</label>
+                            <select 
+                                value={typeof weddingDetails.theme === 'string' ? weddingDetails.theme : weddingDetails.theme?.name || 'emerald'} 
+                                onChange={(e) => {
+                                    if (e.target.value === 'custom') {
+                                        setWeddingDetails(prev => ({ ...prev, theme: { primaryText: 'text-[var(--theme-primary)]', accent: 'text-[var(--theme-accent)]', background: 'bg-[var(--theme-bg)]', name: 'custom', rawPrimary: '#1a1a1a', rawAccent: '#9ca3af', rawBackground: '#ffffff' } }));
+                                    } else {
+                                        const THEME_PRESETS: any = { emerald: { primaryText: 'text-stone-800', accent: 'text-emerald-700', background: 'bg-stone-50' }, slate: { primaryText: 'text-slate-900', accent: 'text-slate-500', background: 'bg-slate-50' }, rose: { primaryText: 'text-rose-950', accent: 'text-rose-400', background: 'bg-rose-50' } };
+                                        setWeddingDetails(prev => ({ ...prev, theme: THEME_PRESETS[e.target.value] || 'emerald' }));
+                                    }
+                                }} 
+                                className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                            >
+                                <option value="emerald">Emerald & Stone (Default Pattern)</option>
+                                <option value="slate">Slate & Monochrome</option>
+                                <option value="rose">Rose & Blush</option>
+                                <option value="custom">Custom Brand Colors</option>
+                            </select>
+
+                            {weddingDetails.theme?.name === 'custom' && (
+                                <div className="grid grid-cols-3 gap-4 pt-4 border-t border-stone-100 mt-2">
+                                    <div className="space-y-2 flex flex-col">
+                                        <label className="text-[10px] uppercase tracking-wider text-stone-500">Primary</label>
+                                        <input type="color" value={(weddingDetails.theme as any).rawPrimary || '#1a1a1a'} onChange={(e) => setWeddingDetails(prev => ({ ...prev, theme: { ...prev.theme, rawPrimary: e.target.value, name: 'custom' } as any }))} className="w-full h-10 rounded-md cursor-pointer" />
+                                    </div>
+                                    <div className="space-y-2 flex flex-col">
+                                        <label className="text-[10px] uppercase tracking-wider text-stone-500">Accent</label>
+                                        <input type="color" value={(weddingDetails.theme as any).rawAccent || '#9ca3af'} onChange={(e) => setWeddingDetails(prev => ({ ...prev, theme: { ...prev.theme, rawAccent: e.target.value, name: 'custom' } as any }))} className="w-full h-10 rounded-md cursor-pointer" />
+                                    </div>
+                                    <div className="space-y-2 flex flex-col">
+                                        <label className="text-[10px] uppercase tracking-wider text-stone-500">Background</label>
+                                        <input type="color" value={(weddingDetails.theme as any).rawBackground || '#ffffff'} onChange={(e) => setWeddingDetails(prev => ({ ...prev, theme: { ...prev.theme, rawBackground: e.target.value, name: 'custom' } as any }))} className="w-full h-10 rounded-md cursor-pointer" />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -676,6 +734,44 @@ export default function DashboardPage() {
                                 type="text" name="mapLink" value={weddingDetails.mapLink} onChange={handleSettingsChange}
                                 className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                             />
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2 mb-6 flex items-center">
+                            Reception Specifics
+                        </h3>
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Reception Time</label>
+                                    <input
+                                        type="time" name="receptionTime" value={weddingDetails.receptionTime || ''} onChange={handleSettingsChange}
+                                        className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Reception Venue Name</label>
+                                    <input
+                                        type="text" name="receptionVenue" value={weddingDetails.receptionVenue || ''} onChange={handleSettingsChange}
+                                        className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Reception Physical Address</label>
+                                <input
+                                    type="text" name="receptionAddress" value={weddingDetails.receptionAddress || ''} onChange={handleSettingsChange}
+                                    className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Reception Google Maps Link</label>
+                                <input
+                                    type="text" name="receptionLocation" value={weddingDetails.receptionLocation || ''} onChange={handleSettingsChange}
+                                    className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                />
+                            </div>
                         </div>
                     </div>
 
