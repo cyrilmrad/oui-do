@@ -302,7 +302,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
             } as React.CSSProperties : undefined}
         >
             {data.audioUrl && (
-                <audio ref={audioRef} src={data.audioUrl} loop preload="auto" />
+                <audio ref={audioRef} src={data.audioUrl} preload="auto" />
             )}
 
             <AnimatePresence mode="wait">
@@ -315,7 +315,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                         {/* Background hint */}
                         <div className="absolute inset-0 z-0 overflow-hidden opacity-30 mix-blend-overlay">
                             {isVideo ? (
-                                <video src={data.heroVideo} autoPlay muted loop playsInline className="w-full h-full object-cover blur-sm scale-110 pointer-events-none" />
+                                <video src={data.heroVideo} autoPlay muted playsInline className="w-full h-full object-cover blur-sm scale-110 pointer-events-none" />
                             ) : (
                                 <img src={data.heroImage || defaultImage} className="w-full h-full object-cover blur-sm scale-110 pointer-events-none" />
                             )}
@@ -361,17 +361,16 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                         className="w-full flex flex-col relative"
                     >
                         {/* Hero Section */}
-                        <section className={`relative flex items-center justify-center overflow-hidden ${screenClass}`}>
-                            <div className="absolute inset-0 z-0 overflow-hidden bg-stone-900">
+                        <section className={`relative flex items-center justify-center overflow-hidden ${isVideo ? 'w-full' : screenClass}`}>
+                            <div className={`${isVideo ? 'relative w-full' : 'absolute inset-0'} z-0 overflow-hidden bg-stone-900`}>
                                 <div className="absolute inset-0 bg-stone-950/40 z-10" />
                                 {isVideo ? (
                                     <motion.video
                                         src={data.heroVideo}
                                         autoPlay
                                         muted
-                                        loop
                                         playsInline
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-auto block"
                                         initial={{ scale: 1.15 }}
                                         animate={{ scale: 1 }}
                                         transition={{ duration: 12, ease: "easeOut" }}
@@ -425,7 +424,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                         {/* Formal Invitation Section */}
                         {data.showFormalInvitation && data.formalInvitationImage && (
                             <motion.section
-                                className={`relative w-full overflow-hidden bg-stone-900 ${screenClass}`}
+                                className={`relative w-full overflow-hidden bg-stone-900 ${data.formalInvitationIsVideo || (data.formalInvitationImage || '').split('?')[0].match(/\.(mp4|webm|ogg|mov)$/i) ? '' : screenClass}`}
                                 initial="hidden"
                                 whileInView="visible"
                                 viewport={{ once: true, margin: "-100px" }}
@@ -438,10 +437,9 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                         <video
                                             ref={formalVideoRef}
                                             src={data.formalInvitationImage} 
-                                            className="w-full h-full object-cover" 
+                                            className="w-full h-auto block" 
                                             playsInline 
                                             muted
-                                            loop
                                         />
                                     ) : (
                                         <img 
@@ -642,7 +640,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                             return (
                                 <motion.section
                                     key={section.id || index}
-                                    className={`relative flex items-center justify-center overflow-hidden ${isFullBleed ? screenClass : `py-24 ${h60Class}`}`}
+                                    className={`relative flex items-center justify-center overflow-hidden ${sectionIsVideo ? 'w-full' : (isFullBleed ? screenClass : `py-24 ${h60Class}`)}`}
                                     initial="hidden"
                                     whileInView="visible"
                                     viewport={{ once: true, margin: "-100px" }}
@@ -655,15 +653,14 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     }}
                                 >
                                     {/* Background Media */}
-                                    <div className="absolute inset-0 z-0 overflow-hidden bg-stone-900">
+                                    <div className={`${sectionIsVideo ? 'relative w-full' : 'absolute inset-0'} z-0 overflow-hidden bg-stone-900`}>
                                         {sectionIsVideo ? (
                                             <video 
                                                 id={`vid-custom-${section.id}`}
                                                 src={section.backgroundUrl} 
-                                                className="w-full h-full object-cover" 
+                                                className="w-full h-auto block" 
                                                 playsInline 
                                                 muted 
-                                                loop 
                                             />
                                         ) : (
                                             <div
@@ -678,7 +675,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
 
                                     {/* Content */}
                                     {section.overlayType !== 'none' && (
-                                        <div className={`relative z-20 text-center px-6 w-full ${isFullBleed ? '' : 'max-w-4xl'} mx-auto flex flex-col items-center`}>
+                                        <div className={`absolute inset-0 z-20 text-center px-6 w-full flex flex-col items-center justify-center ${sectionIsVideo ? '' : (isFullBleed ? '' : 'max-w-4xl mx-auto')}`}>
                                             {section.overlayType === 'text' && section.textContent && (
                                                 <h2 className={`text-4xl md:text-5xl lg:text-6xl text-white drop-shadow-md leading-relaxed ${section.fontFamily || 'font-sans'}`}>
                                                     {section.textContent}
