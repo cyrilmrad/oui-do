@@ -8,12 +8,19 @@ export interface Theme {
     primaryText: string;
     accent: string;
     background: string;
+    name?: string;
+    rawPrimary?: string;
+    rawAccent?: string;
+    rawBackground?: string;
 }
 
 export interface CustomSection {
     id: string;
     backgroundUrl: string;
-    overlayType: 'text' | 'image';
+    backgroundType?: 'image' | 'video';
+    showOverlay?: boolean;
+    isFullBleed?: boolean;
+    overlayType: 'text' | 'image' | 'none';
     textContent?: string;
     fontFamily?: string;
     overlayImageUrl?: string;
@@ -30,6 +37,7 @@ export interface InvitationData {
     receptionTime?: string;
     receptionVenue?: string;
     receptionLocation?: string;
+    receptionAddress?: string;
     mapLink?: string;
     heroImage?: string;
     heroVideo?: string;
@@ -44,6 +52,7 @@ export interface InvitationData {
     bankAccountNumber?: string;
     mobileTransferNumber?: string;
     theme: Theme;
+    showHeroDate?: boolean;
     showFormalInvitation?: boolean;
     formalInvitationImage?: string;
     formalInvitationIsVideo?: boolean;
@@ -268,8 +277,30 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
     const defaultImage = "https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop";
     const hasGiftsSection = !!(data.giftMessage || data.bankAccountNumber || data.mobileTransferNumber);
 
+    const sanitizeTheme = (theme: Theme | undefined) => {
+        if (!theme) return { primaryText: 'text-stone-800', accent: 'text-emerald-700', background: 'bg-stone-50' };
+        // Ensure we only use text-related classes for typography to avoid "box" issues
+        const cleanText = (s: string) => s.split(' ').filter(c => c.startsWith('text-') || c.startsWith('font-')).join(' ');
+        return {
+            ...theme,
+            primaryText: theme.name === 'custom' ? cleanText(theme.primaryText) : theme.primaryText,
+            accent: theme.name === 'custom' ? cleanText(theme.accent) : theme.accent,
+            background: theme.background // Background is fine to have bg-
+        };
+    };
+
+    const cleanTheme = sanitizeTheme(data.theme);
+
     return (
-        <div className={`${screenClass} ${data.theme.background} ${data.theme.primaryText} font-sans selection:bg-emerald-100/30 selection:text-emerald-900 w-full flex flex-col`}>
+        <div 
+            className={`${screenClass} ${cleanTheme.background || 'bg-stone-50'} ${cleanTheme.primaryText || 'text-stone-800'} font-sans selection:bg-emerald-100/30 selection:text-emerald-900 w-full flex flex-col`}
+            style={data.theme?.name === 'custom' ? {
+                '--theme-primary': data.theme.rawPrimary || '#1a1a1a',
+                '--theme-accent': data.theme.rawAccent || '#9ca3af',
+                '--theme-bg': data.theme.rawBackground || '#ffffff',
+                backgroundColor: 'var(--theme-bg)'
+            } as React.CSSProperties : undefined}
+        >
             {data.audioUrl && (
                 <audio ref={audioRef} src={data.audioUrl} loop preload="auto" />
             )}
@@ -372,7 +403,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                             {data.bride || "Bride"} & {data.groom || "Groom"}
                                         </h1>
                                     )}
-                                    {!data.showFormalInvitation && (
+                                    {data.showHeroDate !== false && (
                                         <p className="text-lg md:text-xl lg:text-2xl font-light tracking-[0.3em] uppercase drop-shadow-sm mt-8 opacity-90">
                                             {formatDate(data.date)}
                                         </p>
@@ -450,14 +481,14 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                         {(timeLeft.years > 0 || timeLeft.months > 0) && (
                                             <>
                                                 <div className="flex flex-col items-center">
-                                                    <span className={`text-6xl md:text-8xl lg:text-9xl font-serif ${data.theme.accent} font-extralight tracking-tighter drop-shadow-sm`}>{timeLeft.months}</span>
+                                                    <span className={`text-6xl md:text-8xl lg:text-9xl font-serif ${cleanTheme.accent} font-extralight tracking-tighter drop-shadow-sm`}>{timeLeft.months}</span>
                                                     <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-stone-400 mt-6 font-medium">Months</span>
                                                 </div>
                                                 <div className="w-px h-16 md:h-24 bg-stone-200 mt-[-20px]" />
                                             </>
                                         )}
                                         <div className="flex flex-col items-center">
-                                            <span className={`text-6xl md:text-8xl lg:text-9xl font-serif ${data.theme.accent} font-extralight tracking-tighter drop-shadow-sm`}>{timeLeft.days}</span>
+                                            <span className={`text-6xl md:text-8xl lg:text-9xl font-serif ${cleanTheme.accent} font-extralight tracking-tighter drop-shadow-sm`}>{timeLeft.days}</span>
                                             <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-stone-400 mt-6 font-medium">Days</span>
                                         </div>
                                     </div>
@@ -550,7 +581,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                 href={data.mapLink}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className={`inline-flex items-center mt-10 text-[10px] uppercase tracking-widest ${data.theme.accent} hover:opacity-70 transition-opacity pb-1 shadow-sm`}
+                                                className={`inline-flex items-center mt-10 text-[10px] uppercase tracking-widest ${cleanTheme.accent} hover:opacity-70 transition-opacity pb-1 shadow-sm`}
                                             >
                                                 View Map <ExternalLink className="w-3 h-3 ml-2" />
                                             </a>
@@ -577,9 +608,9 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                     {data.receptionVenue}
                                                 </p>
                                             )}
-                                            {data.receptionLocation && (
+                                            {data.receptionAddress && (
                                                 <p className="text-xs md:text-sm font-sans text-stone-600 uppercase tracking-[0.25em]">
-                                                    {data.receptionLocation}
+                                                    {data.receptionAddress}
                                                 </p>
                                             )}
                                         </div>
@@ -587,12 +618,12 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                             {data.receptionTime && <p className="text-lg font-serif text-stone-700 tracking-[0.2em]">{formatTime(data.receptionTime)}</p>}
                                         </div>
 
-                                        {data.mapLink && (
+                                        {data.receptionLocation && (
                                             <a
-                                                href={data.mapLink}
+                                                href={data.receptionLocation}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className={`inline-flex items-center mt-10 text-[10px] uppercase tracking-widest ${data.theme.accent} hover:opacity-70 transition-opacity pb-1 shadow-sm`}
+                                                className={`inline-flex items-center mt-10 text-[10px] uppercase tracking-widest ${cleanTheme.accent} hover:opacity-70 transition-opacity pb-1 shadow-sm`}
                                             >
                                                 View Map <ExternalLink className="w-3 h-3 ml-2" />
                                             </a>
@@ -603,41 +634,69 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                         </motion.section>
 
                         {/* Custom Modular Sections */}
-                        {data.customSections?.map((section, index) => (
-                            <motion.section
-                                key={section.id || index}
-                                className={`relative flex items-center justify-center overflow-hidden py-24 ${h60Class}`}
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={{ once: true, margin: "-100px" }}
-                                variants={sectionVariants}
-                            >
-                                {/* Background with Overlay */}
-                                <div
-                                    className="absolute inset-0 z-0 bg-cover bg-center"
-                                    style={{ backgroundImage: `url(${section.backgroundUrl})` }}
+                        {data.customSections?.map((section, index) => {
+                            const sectionIsVideo = section.backgroundType === 'video' || (section.backgroundUrl || '').split('?')[0].match(/\.(mp4|webm|ogg|mov)$/i);
+                            const showOverlay = section.showOverlay !== false;
+                            const isFullBleed = section.isFullBleed === true;
+                            
+                            return (
+                                <motion.section
+                                    key={section.id || index}
+                                    className={`relative flex items-center justify-center overflow-hidden ${isFullBleed ? screenClass : `py-24 ${h60Class}`}`}
+                                    initial="hidden"
+                                    whileInView="visible"
+                                    viewport={{ once: true, margin: "-100px" }}
+                                    variants={sectionVariants}
+                                    onViewportEnter={() => {
+                                        if (sectionIsVideo) {
+                                            const vid = document.getElementById(`vid-custom-${section.id}`) as HTMLVideoElement;
+                                            vid?.play().catch(() => {});
+                                        }
+                                    }}
                                 >
-                                    <div className="absolute inset-0 bg-stone-950/40 z-10" />
-                                </div>
+                                    {/* Background Media */}
+                                    <div className="absolute inset-0 z-0 overflow-hidden bg-stone-900">
+                                        {sectionIsVideo ? (
+                                            <video 
+                                                id={`vid-custom-${section.id}`}
+                                                src={section.backgroundUrl} 
+                                                className="w-full h-full object-cover" 
+                                                playsInline 
+                                                muted 
+                                                loop 
+                                            />
+                                        ) : (
+                                            <div
+                                                className="w-full h-full bg-cover bg-center"
+                                                style={{ backgroundImage: `url(${section.backgroundUrl})` }}
+                                            />
+                                        )}
+                                        {showOverlay && (
+                                            <div className="absolute inset-0 bg-stone-950/40 z-10" />
+                                        )}
+                                    </div>
 
-                                {/* Content */}
-                                <div className="relative z-20 text-center px-6 w-full max-w-4xl mx-auto flex flex-col items-center">
-                                    {section.overlayType === 'text' && section.textContent && (
-                                        <h2 className={`text-4xl md:text-5xl lg:text-6xl text-white drop-shadow-md leading-relaxed ${section.fontFamily || 'font-sans'}`}>
-                                            {section.textContent}
-                                        </h2>
-                                    )}
+                                    {/* Content */}
+                                    {section.overlayType !== 'none' && (
+                                        <div className={`relative z-20 text-center px-6 w-full ${isFullBleed ? '' : 'max-w-4xl'} mx-auto flex flex-col items-center`}>
+                                            {section.overlayType === 'text' && section.textContent && (
+                                                <h2 className={`text-4xl md:text-5xl lg:text-6xl text-white drop-shadow-md leading-relaxed ${section.fontFamily || 'font-sans'}`}>
+                                                    {section.textContent}
+                                                </h2>
+                                            )}
 
-                                    {section.overlayType === 'image' && section.overlayImageUrl && (
-                                        <img
-                                            src={section.overlayImageUrl}
-                                            alt="Custom Section Overlay"
-                                            className="w-full max-w-xs md:max-w-md lg:max-w-lg object-contain drop-shadow-xl"
-                                        />
+                                            {section.overlayType === 'image' && section.overlayImageUrl && (
+                                                <img
+                                                    src={section.overlayImageUrl}
+                                                    alt="Custom Section Overlay"
+                                                    className="w-full max-w-xs md:max-w-md lg:max-w-lg object-contain drop-shadow-xl"
+                                                />
+                                            )}
+                                        </div>
                                     )}
-                                </div>
-                            </motion.section>
-                        ))}
+                                </motion.section>
+                            );
+                        })}
 
                         {/* Gifts Section */}
                         {hasGiftsSection && (
@@ -650,7 +709,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                             >
                                 <div className="max-w-3xl mx-auto text-center">
                                     <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center mx-auto mb-8 shadow-sm">
-                                        <Gift className={`w-6 h-6 ${data.theme.accent}`} strokeWidth={1.5} />
+                                        <Gift className={`w-6 h-6 ${cleanTheme.accent}`} strokeWidth={1.5} />
                                     </div>
                                     <h3 className="text-sm md:text-base font-sans mb-8 tracking-[0.2em] uppercase text-stone-400">
                                         Registry & Gifts
@@ -668,7 +727,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                 <div className="mb-8 last:mb-0">
                                                     <div className="flex items-center mb-4">
                                                         <div className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center mr-3">
-                                                            <Landmark className={`w-4 h-4 ${data.theme.accent}`} />
+                                                            <Landmark className={`w-4 h-4 ${cleanTheme.accent}`} />
                                                         </div>
                                                         <h4 className="text-xs font-semibold uppercase tracking-widest text-stone-400">Bank Transfer</h4>
                                                     </div>
@@ -687,7 +746,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                 <div className="mb-8 last:mb-0">
                                                     <div className="flex items-center mb-4">
                                                         <div className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center mr-3">
-                                                            <Smartphone className={`w-4 h-4 ${data.theme.accent}`} />
+                                                            <Smartphone className={`w-4 h-4 ${cleanTheme.accent}`} />
                                                         </div>
                                                         <h4 className="text-xs font-semibold uppercase tracking-widest text-stone-400">Mobile Transfer</h4>
                                                     </div>
@@ -723,7 +782,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                         className="text-center py-12 md:py-16"
                                     >
                                         <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-8">
-                                            <MapPin className={`w-8 h-8 ${data.theme.accent}`} />
+                                            <MapPin className={`w-8 h-8 ${cleanTheme.accent}`} />
                                         </div>
                                         <h4 className="text-3xl font-serif mb-4 text-stone-800 font-light">Thank You for your RSVP!</h4>
                                         <p className="text-stone-500 font-light text-lg">We look forward to celebrating with you.</p>

@@ -97,6 +97,7 @@ export default function AdminDashboard() {
     ) => {
         const file = e.target.files?.[0];
         if (file) {
+            const isVideo = type === 'bg' && file.type.startsWith('video/');
             setCustomFiles(prev => {
                 const currentSection = prev[sectionId] || {};
                 const prevPreview = type === 'bg' ? currentSection.bgPreview : currentSection.overlayPreview;
@@ -111,6 +112,22 @@ export default function AdminDashboard() {
                     }
                 };
             });
+
+            if (isVideo) {
+                setLiveData(prev => {
+                    const sections = (prev.customSections || []).map(s => 
+                        s.id === sectionId ? { ...s, backgroundType: 'video' as const } : s
+                    );
+                    return { ...prev, customSections: sections };
+                });
+            } else if (type === 'bg') {
+                setLiveData(prev => {
+                    const sections = (prev.customSections || []).map(s => 
+                        s.id === sectionId ? { ...s, backgroundType: 'image' as const } : s
+                    );
+                    return { ...prev, customSections: sections };
+                });
+            }
         }
     };
 
@@ -219,6 +236,9 @@ export default function AdminDashboard() {
                 {
                     id: Math.random().toString(36).substring(7),
                     backgroundUrl: '',
+                    backgroundType: 'image',
+                    showOverlay: true,
+                    isFullBleed: false,
                     overlayType: 'text',
                     textContent: '',
                     fontFamily: 'font-serif'
@@ -235,7 +255,7 @@ export default function AdminDashboard() {
         });
     };
 
-    const handleSectionChange = (index: number, field: string, value: string) => {
+    const handleSectionChange = (index: number, field: string, value: any) => {
         setLiveData(prev => {
             const arr = [...(prev.customSections || [])];
             arr[index] = { ...arr[index], [field]: value };
@@ -251,7 +271,25 @@ export default function AdminDashboard() {
     const handleThemeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedTheme = e.target.value;
         setThemeSelection(selectedTheme);
-        setLiveData(prev => ({ ...prev, theme: THEME_PRESETS[selectedTheme] }));
+        if (selectedTheme === 'custom') {
+            setLiveData(prev => ({ 
+                ...prev, 
+                theme: { primaryText: 'text-[var(--theme-primary)]', accent: 'text-[var(--theme-accent)]', background: 'bg-[var(--theme-bg)]', name: 'custom', rawPrimary: '#1a1a1a', rawAccent: '#9ca3af', rawBackground: '#ffffff' } 
+            }));
+        } else {
+            setLiveData(prev => ({ ...prev, theme: THEME_PRESETS[selectedTheme] }));
+        }
+    };
+
+    const handleCustomThemeColorChange = (key: 'rawPrimary' | 'rawAccent' | 'rawBackground', value: string) => {
+        setLiveData(prev => ({
+            ...prev,
+            theme: {
+                ...prev.theme,
+                [key]: value,
+                name: 'custom'
+            }
+        }));
     };
 
     const handleSaveInvitation = async () => {
@@ -811,18 +849,31 @@ export default function AdminDashboard() {
                                                 </div>
 
                                                 <div className="flex items-center justify-between mt-6">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Hero Graphics Rendering</label>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            name="showHeroLogo"
-                                                            className="sr-only peer"
-                                                            checked={liveData.showHeroLogo || false}
-                                                            onChange={(e) => setLiveData(prev => ({ ...prev, showHeroLogo: e.target.checked }))}
-                                                        />
-                                                        <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                                        <span className="ms-3 text-[0.75rem] font-label uppercase text-primary font-bold">Graphic Toggle</span>
-                                                    </label>
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Hero Render Customization</label>
+                                                    <div className="flex gap-4">
+                                                        <label className="relative inline-flex items-center cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                name="showHeroLogo"
+                                                                className="sr-only peer"
+                                                                checked={liveData.showHeroLogo || false}
+                                                                onChange={(e) => setLiveData(prev => ({ ...prev, showHeroLogo: e.target.checked }))}
+                                                            />
+                                                            <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                                            <span className="ms-3 text-[0.75rem] font-label uppercase text-primary font-bold">Graphic Overlay</span>
+                                                        </label>
+                                                        <label className="relative inline-flex items-center cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                name="showHeroDate"
+                                                                className="sr-only peer"
+                                                                checked={liveData.showHeroDate !== false}
+                                                                onChange={(e) => setLiveData(prev => ({ ...prev, showHeroDate: e.target.checked }))}
+                                                            />
+                                                            <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                                            <span className="ms-3 text-[0.75rem] font-label uppercase text-primary font-bold">Date Ribbon</span>
+                                                        </label>
+                                                    </div>
                                                 </div>
 
                                                 {liveData.showHeroLogo && (
@@ -843,7 +894,24 @@ export default function AdminDashboard() {
                                                         <option value="emerald">Emerald & Stone (Default Pattern)</option>
                                                         <option value="slate">Slate & Monochrome</option>
                                                         <option value="rose">Rose & Blush</option>
+                                                        <option value="custom">Custom Brand Colors</option>
                                                     </select>
+                                                    {themeSelection === 'custom' && (
+                                                        <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-outline-variant/10">
+                                                            <div className="space-y-1.5 flex flex-col">
+                                                                <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Primary Text</label>
+                                                                <input type="color" value={(liveData.theme as any)?.rawPrimary || '#1a1a1a'} onChange={(e) => handleCustomThemeColorChange('rawPrimary', e.target.value)} className="w-full h-10 rounded-md cursor-pointer" />
+                                                            </div>
+                                                            <div className="space-y-1.5 flex flex-col">
+                                                                <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Accent / Brand</label>
+                                                                <input type="color" value={(liveData.theme as any)?.rawAccent || '#9ca3af'} onChange={(e) => handleCustomThemeColorChange('rawAccent', e.target.value)} className="w-full h-10 rounded-md cursor-pointer" />
+                                                            </div>
+                                                            <div className="space-y-1.5 flex flex-col">
+                                                                <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Global Background</label>
+                                                                <input type="color" value={(liveData.theme as any)?.rawBackground || '#ffffff'} onChange={(e) => handleCustomThemeColorChange('rawBackground', e.target.value)} className="w-full h-10 rounded-md cursor-pointer" />
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </section>
@@ -967,11 +1035,10 @@ export default function AdminDashboard() {
                                             </div>
                                         </section>
 
-                                        {/* Section 05: Reception Block */}
                                         <section>
                                             <div className="flex justify-between items-center mb-8">
                                                 <h2 className="text-2xl font-headline text-primary">Formal Reception</h2>
-                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 05</span>
+                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 06</span>
                                             </div>
                                             <div className="bg-surface-container-lowest border border-outline-variant/20 p-8 rounded-xl space-y-6">
                                                 <div className="grid grid-cols-2 gap-8">
@@ -985,7 +1052,11 @@ export default function AdminDashboard() {
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception Address</label>
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception Physical Address</label>
+                                                    <input type="text" name="receptionAddress" value={liveData.receptionAddress || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception Google Maps Link</label>
                                                     <input type="text" name="receptionLocation" value={liveData.receptionLocation || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
                                                 </div>
                                                 <div className="space-y-1.5">
@@ -1007,7 +1078,7 @@ export default function AdminDashboard() {
                                                     >
                                                         <Plus className="w-3 h-3" /> Append Block
                                                     </button>
-                                                    <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest ml-4">Section 06</span>
+                                                    <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest ml-4">Section 07</span>
                                                 </div>
                                             </div>
 
@@ -1028,26 +1099,53 @@ export default function AdminDashboard() {
 
                                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-surface-container-high pb-4 gap-4 pr-20">
                                                                 <span className="text-[0.75rem] font-label font-bold text-primary uppercase tracking-[0.1em]">Editorial Block 0{idx + 1}</span>
-                                                                <select
-                                                                    value={section.overlayType}
-                                                                    onChange={(e) => handleSectionChange(idx, 'overlayType', e.target.value)}
-                                                                    className="text-[0.75rem] font-label uppercase tracking-widest font-medium border border-outline-variant/30 rounded-md px-3 py-1.5 text-on-surface focus:outline-none focus:border-primary bg-surface"
-                                                                >
-                                                                    <option value="text">Textual Mode</option>
-                                                                    <option value="image">Graphic Mode</option>
-                                                                </select>
+                                                                <div className="flex flex-wrap items-center gap-4">
+                                                                    <label className="flex items-center gap-2 cursor-pointer">
+                                                                        <input 
+                                                                            type="checkbox" 
+                                                                            checked={section.showOverlay !== false} 
+                                                                            onChange={(e) => handleSectionChange(idx, 'showOverlay', e.target.checked)}
+                                                                            className="sr-only peer"
+                                                                        />
+                                                                        <div className="w-8 h-4 bg-surface-container-highest rounded-full peer peer-checked:bg-primary relative transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+                                                                        <span className="text-[0.65rem] font-label uppercase text-secondary font-bold">Overlay</span>
+                                                                    </label>
+                                                                    <label className="flex items-center gap-2 cursor-pointer">
+                                                                        <input 
+                                                                            type="checkbox" 
+                                                                            checked={section.isFullBleed === true} 
+                                                                            onChange={(e) => handleSectionChange(idx, 'isFullBleed', e.target.checked)}
+                                                                            className="sr-only peer"
+                                                                        />
+                                                                        <div className="w-8 h-4 bg-surface-container-highest rounded-full peer peer-checked:bg-primary relative transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+                                                                        <span className="text-[0.65rem] font-label uppercase text-secondary font-bold">Full Bleed</span>
+                                                                    </label>
+                                                                    <select
+                                                                        value={section.overlayType}
+                                                                        onChange={(e) => handleSectionChange(idx, 'overlayType', e.target.value)}
+                                                                        className="text-[0.75rem] font-label uppercase tracking-widest font-medium border border-outline-variant/30 rounded-md px-3 py-1.5 text-on-surface focus:outline-none focus:border-primary bg-surface"
+                                                                    >
+                                                                        <option value="text">Textual Mode</option>
+                                                                        <option value="image">Graphic Mode</option>
+                                                                        <option value="none">No Content (Clean Media)</option>
+                                                                    </select>
+                                                                </div>
                                                             </div>
 
                                                             <div className="space-y-1.5">
-                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Cinematic Background Image</label>
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Cinematic Background Media (Image/Video)</label>
                                                                 {customFiles[section.id]?.bgPreview || section.backgroundUrl ? (
-                                                                    <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block bg-black">
-                                                                        <img src={customFiles[section.id]?.bgPreview || section.backgroundUrl} alt={`Custom bg ${idx}`} className="h-24 w-auto object-cover opacity-80" />
+                                                                    <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block bg-black relative">
+                                                                        {section.backgroundType === 'video' || (section.backgroundUrl || '').match(/\.(mp4|webm|ogg|mov)$/i) || customFiles[section.id]?.bgFile?.type.startsWith('video/') ? (
+                                                                            <video src={customFiles[section.id]?.bgPreview || section.backgroundUrl} className="h-24 w-auto object-cover opacity-80" muted playsInline />
+                                                                        ) : (
+                                                                            <img src={customFiles[section.id]?.bgPreview || section.backgroundUrl} alt={`Custom bg ${idx}`} className="h-24 w-auto object-cover opacity-80" />
+                                                                        )}
                                                                     </div>
                                                                 ) : null}
                                                                 <input
                                                                     type="file"
-                                                                    accept="image/*"
+                                                                    accept="image/*,video/*"
                                                                     onChange={(e) => handleCustomFileChange(e, section.id, 'bg')}
                                                                     className="w-full bg-surface border-outline-variant/30 border rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90"
                                                                 />
@@ -1103,7 +1201,7 @@ export default function AdminDashboard() {
                                         <section>
                                             <div className="flex justify-between items-center mb-8">
                                                 <h2 className="text-2xl font-headline text-primary">Registry Details</h2>
-                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 07</span>
+                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 08</span>
                                             </div>
                                             <div className="bg-surface-container-latest p-8 space-y-6">
                                                 <div className="space-y-1.5">

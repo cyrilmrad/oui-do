@@ -13,6 +13,7 @@ export const invitations = pgTable('invitations', {
     receptionTime: varchar('reception_time', { length: 255 }),
     receptionVenue: varchar('reception_venue', { length: 255 }),
     receptionLocation: varchar('reception_location', { length: 255 }),
+    receptionAddress: varchar('reception_address', { length: 255 }),
     mapLink: text('map_link'),
     heroImage: text('hero_image'),
     heroVideo: text('hero_video'),
@@ -26,6 +27,7 @@ export const invitations = pgTable('invitations', {
     theme: jsonb('theme'), // Store Theme object here
     heroLogoUrl: text('hero_logo_url'),
     showHeroLogo: boolean('show_hero_logo').default(false),
+    showHeroDate: boolean('show_hero_date').default(true),
     showFormalInvitation: boolean('show_formal_invitation').default(false),
     formalInvitationImage: text('formal_invitation_image'),
     preCeremonyMedia: text('pre_ceremony_media'),
