@@ -17,7 +17,10 @@ export interface Theme {
 export interface CustomSection {
     id: string;
     backgroundUrl: string;
-    overlayType: 'text' | 'image';
+    backgroundType?: 'image' | 'video';
+    showOverlay?: boolean;
+    isFullBleed?: boolean;
+    overlayType: 'text' | 'image' | 'none';
     textContent?: string;
     fontFamily?: string;
     overlayImageUrl?: string;
@@ -631,41 +634,69 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                         </motion.section>
 
                         {/* Custom Modular Sections */}
-                        {data.customSections?.map((section, index) => (
-                            <motion.section
-                                key={section.id || index}
-                                className={`relative flex items-center justify-center overflow-hidden py-24 ${h60Class}`}
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={{ once: true, margin: "-100px" }}
-                                variants={sectionVariants}
-                            >
-                                {/* Background with Overlay */}
-                                <div
-                                    className="absolute inset-0 z-0 bg-cover bg-center"
-                                    style={{ backgroundImage: `url(${section.backgroundUrl})` }}
+                        {data.customSections?.map((section, index) => {
+                            const sectionIsVideo = section.backgroundType === 'video' || (section.backgroundUrl || '').split('?')[0].match(/\.(mp4|webm|ogg|mov)$/i);
+                            const showOverlay = section.showOverlay !== false;
+                            const isFullBleed = section.isFullBleed === true;
+                            
+                            return (
+                                <motion.section
+                                    key={section.id || index}
+                                    className={`relative flex items-center justify-center overflow-hidden ${isFullBleed ? screenClass : `py-24 ${h60Class}`}`}
+                                    initial="hidden"
+                                    whileInView="visible"
+                                    viewport={{ once: true, margin: "-100px" }}
+                                    variants={sectionVariants}
+                                    onViewportEnter={() => {
+                                        if (sectionIsVideo) {
+                                            const vid = document.getElementById(`vid-custom-${section.id}`) as HTMLVideoElement;
+                                            vid?.play().catch(() => {});
+                                        }
+                                    }}
                                 >
-                                    <div className="absolute inset-0 bg-stone-950/40 z-10" />
-                                </div>
+                                    {/* Background Media */}
+                                    <div className="absolute inset-0 z-0 overflow-hidden bg-stone-900">
+                                        {sectionIsVideo ? (
+                                            <video 
+                                                id={`vid-custom-${section.id}`}
+                                                src={section.backgroundUrl} 
+                                                className="w-full h-full object-cover" 
+                                                playsInline 
+                                                muted 
+                                                loop 
+                                            />
+                                        ) : (
+                                            <div
+                                                className="w-full h-full bg-cover bg-center"
+                                                style={{ backgroundImage: `url(${section.backgroundUrl})` }}
+                                            />
+                                        )}
+                                        {showOverlay && (
+                                            <div className="absolute inset-0 bg-stone-950/40 z-10" />
+                                        )}
+                                    </div>
 
-                                {/* Content */}
-                                <div className="relative z-20 text-center px-6 w-full max-w-4xl mx-auto flex flex-col items-center">
-                                    {section.overlayType === 'text' && section.textContent && (
-                                        <h2 className={`text-4xl md:text-5xl lg:text-6xl text-white drop-shadow-md leading-relaxed ${section.fontFamily || 'font-sans'}`}>
-                                            {section.textContent}
-                                        </h2>
-                                    )}
+                                    {/* Content */}
+                                    {section.overlayType !== 'none' && (
+                                        <div className={`relative z-20 text-center px-6 w-full ${isFullBleed ? '' : 'max-w-4xl'} mx-auto flex flex-col items-center`}>
+                                            {section.overlayType === 'text' && section.textContent && (
+                                                <h2 className={`text-4xl md:text-5xl lg:text-6xl text-white drop-shadow-md leading-relaxed ${section.fontFamily || 'font-sans'}`}>
+                                                    {section.textContent}
+                                                </h2>
+                                            )}
 
-                                    {section.overlayType === 'image' && section.overlayImageUrl && (
-                                        <img
-                                            src={section.overlayImageUrl}
-                                            alt="Custom Section Overlay"
-                                            className="w-full max-w-xs md:max-w-md lg:max-w-lg object-contain drop-shadow-xl"
-                                        />
+                                            {section.overlayType === 'image' && section.overlayImageUrl && (
+                                                <img
+                                                    src={section.overlayImageUrl}
+                                                    alt="Custom Section Overlay"
+                                                    className="w-full max-w-xs md:max-w-md lg:max-w-lg object-contain drop-shadow-xl"
+                                                />
+                                            )}
+                                        </div>
                                     )}
-                                </div>
-                            </motion.section>
-                        ))}
+                                </motion.section>
+                            );
+                        })}
 
                         {/* Gifts Section */}
                         {hasGiftsSection && (

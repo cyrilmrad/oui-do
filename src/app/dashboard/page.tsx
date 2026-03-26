@@ -280,6 +280,9 @@ export default function DashboardPage() {
                 {
                     id: Math.random().toString(36).substring(7),
                     backgroundUrl: '',
+                    backgroundType: 'image',
+                    showOverlay: true,
+                    isFullBleed: false,
                     overlayType: 'text',
                     textContent: '',
                     fontFamily: 'font-serif'
@@ -296,7 +299,7 @@ export default function DashboardPage() {
         });
     };
 
-    const handleSectionChange = (index: number, field: string, value: string) => {
+    const handleSectionChange = (index: number, field: string, value: any) => {
         setWeddingDetails(prev => {
             const arr = [...(prev.customSections || [])];
             arr[index] = { ...arr[index], [field]: value };
@@ -843,8 +846,30 @@ export default function DashboardPage() {
                                         ✕
                                     </button>
 
-                                    <div className="flex items-center justify-between border-b border-stone-200 pb-3">
-                                        <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">Block {idx + 1}</span>
+                                    <div className="flex flex-wrap items-center justify-between border-b border-stone-200 pb-3 gap-4">
+                                        <div className="flex items-center gap-4">
+                                            <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">Block {idx + 1}</span>
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={section.showOverlay !== false} 
+                                                    onChange={(e) => handleSectionChange(idx, 'showOverlay', e.target.checked)}
+                                                    className="sr-only peer"
+                                                />
+                                                <div className="w-8 h-4 bg-stone-200 rounded-full peer peer-checked:bg-emerald-600 relative transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+                                                <span className="text-[10px] uppercase font-bold text-stone-400">Overlay</span>
+                                            </label>
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={section.isFullBleed === true} 
+                                                    onChange={(e) => handleSectionChange(idx, 'isFullBleed', e.target.checked)}
+                                                    className="sr-only peer"
+                                                />
+                                                <div className="w-8 h-4 bg-stone-200 rounded-full peer peer-checked:bg-emerald-600 relative transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+                                                <span className="text-[10px] uppercase font-bold text-stone-400">Full Bleed</span>
+                                            </label>
+                                        </div>
                                         <select
                                             value={section.overlayType}
                                             onChange={(e) => handleSectionChange(idx, 'overlayType', e.target.value)}
@@ -852,18 +877,30 @@ export default function DashboardPage() {
                                         >
                                             <option value="text">Text Overlay Mode</option>
                                             <option value="image">Image Overlay Mode</option>
+                                            <option value="none">No Content (Clean Media)</option>
                                         </select>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Background Image URL *</label>
-                                        <input
-                                            type="text"
-                                            value={section.backgroundUrl}
-                                            onChange={(e) => handleSectionChange(idx, 'backgroundUrl', e.target.value)}
-                                            placeholder="https://.../bg.jpg"
-                                            className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm bg-white"
-                                        />
+                                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Background Media URL (Image or Video) *</label>
+                                        <div className="flex gap-4">
+                                            <input
+                                                type="text"
+                                                value={section.backgroundUrl}
+                                                onChange={(e) => handleSectionChange(idx, 'backgroundUrl', e.target.value)}
+                                                placeholder="https://.../bg.jpg"
+                                                className="flex-1 border border-stone-200 rounded-md p-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm bg-white"
+                                            />
+                                            <select
+                                                value={section.backgroundType || 'image'}
+                                                onChange={(e) => handleSectionChange(idx, 'backgroundType', e.target.value)}
+                                                className="border border-stone-200 rounded-md px-3 text-xs font-medium text-stone-600 bg-white focus:outline-none"
+                                            >
+                                                <option value="image">Image</option>
+                                                <option value="video">Video</option>
+                                            </select>
+                                        </div>
+                                        <p className="text-[10px] text-stone-400 italic">For videos, use a direct .mp4 link. Full Bleed recommended for clean cinematic videos.</p>
                                     </div>
 
                                     {section.overlayType === 'text' ? (

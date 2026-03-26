@@ -97,6 +97,7 @@ export default function AdminDashboard() {
     ) => {
         const file = e.target.files?.[0];
         if (file) {
+            const isVideo = type === 'bg' && file.type.startsWith('video/');
             setCustomFiles(prev => {
                 const currentSection = prev[sectionId] || {};
                 const prevPreview = type === 'bg' ? currentSection.bgPreview : currentSection.overlayPreview;
@@ -111,6 +112,22 @@ export default function AdminDashboard() {
                     }
                 };
             });
+
+            if (isVideo) {
+                setLiveData(prev => {
+                    const sections = (prev.customSections || []).map(s => 
+                        s.id === sectionId ? { ...s, backgroundType: 'video' as const } : s
+                    );
+                    return { ...prev, customSections: sections };
+                });
+            } else if (type === 'bg') {
+                setLiveData(prev => {
+                    const sections = (prev.customSections || []).map(s => 
+                        s.id === sectionId ? { ...s, backgroundType: 'image' as const } : s
+                    );
+                    return { ...prev, customSections: sections };
+                });
+            }
         }
     };
 
@@ -219,6 +236,9 @@ export default function AdminDashboard() {
                 {
                     id: Math.random().toString(36).substring(7),
                     backgroundUrl: '',
+                    backgroundType: 'image',
+                    showOverlay: true,
+                    isFullBleed: false,
                     overlayType: 'text',
                     textContent: '',
                     fontFamily: 'font-serif'
@@ -235,7 +255,7 @@ export default function AdminDashboard() {
         });
     };
 
-    const handleSectionChange = (index: number, field: string, value: string) => {
+    const handleSectionChange = (index: number, field: string, value: any) => {
         setLiveData(prev => {
             const arr = [...(prev.customSections || [])];
             arr[index] = { ...arr[index], [field]: value };
@@ -1079,26 +1099,53 @@ export default function AdminDashboard() {
 
                                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-surface-container-high pb-4 gap-4 pr-20">
                                                                 <span className="text-[0.75rem] font-label font-bold text-primary uppercase tracking-[0.1em]">Editorial Block 0{idx + 1}</span>
-                                                                <select
-                                                                    value={section.overlayType}
-                                                                    onChange={(e) => handleSectionChange(idx, 'overlayType', e.target.value)}
-                                                                    className="text-[0.75rem] font-label uppercase tracking-widest font-medium border border-outline-variant/30 rounded-md px-3 py-1.5 text-on-surface focus:outline-none focus:border-primary bg-surface"
-                                                                >
-                                                                    <option value="text">Textual Mode</option>
-                                                                    <option value="image">Graphic Mode</option>
-                                                                </select>
+                                                                <div className="flex flex-wrap items-center gap-4">
+                                                                    <label className="flex items-center gap-2 cursor-pointer">
+                                                                        <input 
+                                                                            type="checkbox" 
+                                                                            checked={section.showOverlay !== false} 
+                                                                            onChange={(e) => handleSectionChange(idx, 'showOverlay', e.target.checked)}
+                                                                            className="sr-only peer"
+                                                                        />
+                                                                        <div className="w-8 h-4 bg-surface-container-highest rounded-full peer peer-checked:bg-primary relative transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+                                                                        <span className="text-[0.65rem] font-label uppercase text-secondary font-bold">Overlay</span>
+                                                                    </label>
+                                                                    <label className="flex items-center gap-2 cursor-pointer">
+                                                                        <input 
+                                                                            type="checkbox" 
+                                                                            checked={section.isFullBleed === true} 
+                                                                            onChange={(e) => handleSectionChange(idx, 'isFullBleed', e.target.checked)}
+                                                                            className="sr-only peer"
+                                                                        />
+                                                                        <div className="w-8 h-4 bg-surface-container-highest rounded-full peer peer-checked:bg-primary relative transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+                                                                        <span className="text-[0.65rem] font-label uppercase text-secondary font-bold">Full Bleed</span>
+                                                                    </label>
+                                                                    <select
+                                                                        value={section.overlayType}
+                                                                        onChange={(e) => handleSectionChange(idx, 'overlayType', e.target.value)}
+                                                                        className="text-[0.75rem] font-label uppercase tracking-widest font-medium border border-outline-variant/30 rounded-md px-3 py-1.5 text-on-surface focus:outline-none focus:border-primary bg-surface"
+                                                                    >
+                                                                        <option value="text">Textual Mode</option>
+                                                                        <option value="image">Graphic Mode</option>
+                                                                        <option value="none">No Content (Clean Media)</option>
+                                                                    </select>
+                                                                </div>
                                                             </div>
 
                                                             <div className="space-y-1.5">
-                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Cinematic Background Image</label>
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Cinematic Background Media (Image/Video)</label>
                                                                 {customFiles[section.id]?.bgPreview || section.backgroundUrl ? (
-                                                                    <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block bg-black">
-                                                                        <img src={customFiles[section.id]?.bgPreview || section.backgroundUrl} alt={`Custom bg ${idx}`} className="h-24 w-auto object-cover opacity-80" />
+                                                                    <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block bg-black relative">
+                                                                        {section.backgroundType === 'video' || (section.backgroundUrl || '').match(/\.(mp4|webm|ogg|mov)$/i) || customFiles[section.id]?.bgFile?.type.startsWith('video/') ? (
+                                                                            <video src={customFiles[section.id]?.bgPreview || section.backgroundUrl} className="h-24 w-auto object-cover opacity-80" muted playsInline />
+                                                                        ) : (
+                                                                            <img src={customFiles[section.id]?.bgPreview || section.backgroundUrl} alt={`Custom bg ${idx}`} className="h-24 w-auto object-cover opacity-80" />
+                                                                        )}
                                                                     </div>
                                                                 ) : null}
                                                                 <input
                                                                     type="file"
-                                                                    accept="image/*"
+                                                                    accept="image/*,video/*"
                                                                     onChange={(e) => handleCustomFileChange(e, section.id, 'bg')}
                                                                     className="w-full bg-surface border-outline-variant/30 border rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90"
                                                                 />
