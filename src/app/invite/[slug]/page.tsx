@@ -104,6 +104,7 @@ export default async function InvitePage({
         mobileTransferNumber: dbData.mobileTransferNumber || "",
         showFormalInvitation: dbData.showFormalInvitation || false,
         formalInvitationImage: dbData.formalInvitationImage || "",
+        preCeremonyMedia: dbData.preCeremonyMedia || "",
         theme: (dbData.theme as Theme) || {
             primaryText: "text-stone-800",
             accent: "text-emerald-700",
