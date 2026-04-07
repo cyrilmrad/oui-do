@@ -20,7 +20,9 @@ import {
     Copy,
     Plus,
     Calculator,
-    Armchair
+    Armchair,
+    Edit2,
+    Trash2
 } from 'lucide-react';
 import InvitationPreview, { InvitationData, Theme } from '@/components/InvitationPreview';
 import BudgetTracker from '@/components/BudgetTracker';
@@ -69,6 +71,7 @@ export default function DashboardPage() {
         bankAccountName: "",
         bankAccountNumber: "",
         mobileTransferNumber: "",
+        giftOptions: [],
         theme: "classic" as unknown as Theme,
         showFormalInvitation: false,
         formalInvitationImage: "",
@@ -84,6 +87,47 @@ export default function DashboardPage() {
     // Guests State & Handlers
     const [isAddingGuest, setIsAddingGuest] = useState(false);
     const [newGuestData, setNewGuestData] = useState({ firstName: '', lastName: '', pax: 1 });
+    const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
+    const [editGuestData, setEditGuestData] = useState<any>({});
+
+    const handleEditGuest = (guest: any) => {
+        setEditingGuestId(guest.id);
+        setEditGuestData(guest);
+    };
+
+    const handleSaveEditGuest = async () => {
+        try {
+            const res = await fetch('/api/guests', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(editGuestData)
+            });
+            if (res.ok) {
+                const updatedRes = await fetch(`/api/guests?slug=${userSlug}`);
+                setRsvps(await updatedRes.json());
+                setEditingGuestId(null);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Failed to update guest.");
+        }
+    };
+
+    const handleDeleteGuest = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this guest?")) return;
+        try {
+            const res = await fetch(`/api/guests?id=${id}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                const updatedRes = await fetch(`/api/guests?slug=${userSlug}`);
+                setRsvps(await updatedRes.json());
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Failed to delete guest.");
+        }
+    };
 
     const handleAddGuest = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -201,6 +245,7 @@ export default function DashboardPage() {
                                 bankAccountName: dbData.bankAccountName || "",
                                 bankAccountNumber: dbData.bankAccountNumber || "",
                                 mobileTransferNumber: dbData.mobileTransferNumber || "",
+                                giftOptions: dbData.giftOptions || [],
                                 theme: dbData.theme || undefined,
                                 showFormalInvitation: dbData.showFormalInvitation || false,
                                 formalInvitationImage: dbData.formalInvitationImage || "",
@@ -312,6 +357,40 @@ export default function DashboardPage() {
     const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setWeddingDetails((prev: InvitationData) => ({ ...prev, [name]: value }));
+    };
+
+    const handleAddGiftOption = (type: 'bank' | 'mobile') => {
+        setWeddingDetails(prev => ({
+            ...prev,
+            giftOptions: [
+                ...(prev.giftOptions || []),
+                {
+                    id: Math.random().toString(36).substring(7),
+                    type,
+                    bankName: '',
+                    accountName: '',
+                    accountNumber: '',
+                    mobileNumber: '',
+                    serviceName: ''
+                }
+            ]
+        }));
+    };
+
+    const handleRemoveGiftOption = (index: number) => {
+        setWeddingDetails(prev => {
+            const arr = [...(prev.giftOptions || [])];
+            arr.splice(index, 1);
+            return { ...prev, giftOptions: arr };
+        });
+    };
+
+    const handleGiftOptionChange = (index: number, field: string, value: string) => {
+        setWeddingDetails(prev => {
+            const arr = [...(prev.giftOptions || [])];
+            arr[index] = { ...arr[index], [field]: value };
+            return { ...prev, giftOptions: arr };
+        });
     };
 
     const handleSaveSettings = async (e: React.FormEvent) => {
@@ -500,23 +579,61 @@ export default function DashboardPage() {
                         <tbody className="divide-y divide-stone-100">
                             {filteredRsvps.length > 0 ? (
                                 filteredRsvps.map((rsvp) => (
-                                    <tr key={rsvp.id} className="hover:bg-stone-50/50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-stone-900">{rsvp.firstName} {rsvp.lastName}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(rsvp.status)}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <div className="text-sm text-stone-600 font-serif">{rsvp.pax}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-stone-500 truncate max-w-[150px]">{rsvp.message || "-"}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                                            <button onClick={() => copyGuestLink(rsvp.id)} className="text-stone-400 hover:text-stone-700 transition-colors p-2" title="Copy Personalized Link">
-                                                <Copy className="w-4 h-4 inline" />
-                                            </button>
-                                        </td>
-                                    </tr>
+                                    editingGuestId === rsvp.id ? (
+                                        <tr key={rsvp.id} className="bg-stone-50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex gap-2">
+                                                    <input type="text" value={editGuestData.firstName || ""} onChange={e => setEditGuestData({...editGuestData, firstName: e.target.value})} className="w-full border border-stone-200 p-1.5 rounded text-sm outline-none" placeholder="First" />
+                                                    <input type="text" value={editGuestData.lastName || ""} onChange={e => setEditGuestData({...editGuestData, lastName: e.target.value})} className="w-full border border-stone-200 p-1.5 rounded text-sm outline-none" placeholder="Last" />
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <select value={editGuestData.status} onChange={e => setEditGuestData({...editGuestData, status: e.target.value})} className="border border-stone-200 p-1.5 rounded text-sm outline-none">
+                                                    <option value="pending">Pending</option>
+                                                    <option value="attending">Attending</option>
+                                                    <option value="declined">Declined</option>
+                                                </select>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                <input type="number" min="1" value={editGuestData.pax || 1} onChange={e => setEditGuestData({...editGuestData, pax: parseInt(e.target.value) || 1})} className="w-16 border border-stone-200 p-1.5 rounded text-sm outline-none mx-auto block text-center" />
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <input type="text" value={editGuestData.message || ""} onChange={e => setEditGuestData({...editGuestData, message: e.target.value})} className="w-full border border-stone-200 p-1.5 rounded text-sm outline-none" placeholder="No message" />
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                <div className="flex items-center gap-3 justify-end">
+                                                    <button onClick={handleSaveEditGuest} className="text-emerald-600 hover:text-emerald-700 font-medium text-sm transition-colors">Save</button>
+                                                    <button onClick={() => setEditingGuestId(null)} className="text-stone-500 hover:text-stone-700 font-medium text-sm transition-colors">Cancel</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        <tr key={rsvp.id} className="hover:bg-stone-50/50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm font-medium text-stone-900">{rsvp.firstName} {rsvp.lastName}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(rsvp.status)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                <div className="text-sm text-stone-600 font-serif">{rsvp.pax}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-stone-500 truncate max-w-[150px]">{rsvp.message || "-"}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                <div className="flex items-center justify-end gap-3">
+                                                    <button onClick={() => copyGuestLink(rsvp.id)} className="text-stone-400 hover:text-stone-700 transition-colors" title="Copy Personalized Link">
+                                                        <Copy className="w-4 h-4" />
+                                                    </button>
+                                                    <button onClick={() => handleEditGuest(rsvp)} className="text-stone-400 hover:text-stone-700 transition-colors" title="Edit Guest">
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                    <button onClick={() => handleDeleteGuest(rsvp.id)} className="text-stone-400 hover:text-rose-600 transition-colors" title="Delete Guest">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
                                 ))
                             ) : (
                                 <tr>
@@ -595,104 +712,6 @@ export default function DashboardPage() {
                                     className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 />
                             </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2 mb-6 flex items-center">
-                            Hero Media
-                        </h3>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between border-b border-stone-200 pb-2">
-                                <label className="text-xs font-semibold text-stone-600 uppercase tracking-wider">Hero Section Graphics</label>
-                                <div className="flex gap-4">
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            name="showHeroLogo"
-                                            className="sr-only peer"
-                                            checked={weddingDetails.showHeroLogo || false}
-                                            onChange={(e) => setWeddingDetails(prev => ({ ...prev, showHeroLogo: e.target.checked }))}
-                                        />
-                                        <div className="w-9 h-5 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                                        <span className="ml-3 text-xs font-medium text-stone-500 hover:text-stone-700 transition-colors">Logo</span>
-                                    </label>
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            name="showHeroDate"
-                                            className="sr-only peer"
-                                            checked={weddingDetails.showHeroDate !== false}
-                                            onChange={(e) => setWeddingDetails(prev => ({ ...prev, showHeroDate: e.target.checked }))}
-                                        />
-                                        <div className="w-9 h-5 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                                        <span className="ml-3 text-xs font-medium text-stone-500 hover:text-stone-700 transition-colors">Date Ribbon</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            {weddingDetails.showHeroLogo && (
-                                <div className="space-y-2 pb-2">
-                                    <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Hero Logo URL (PNG)</label>
-                                    <input type="text" name="heroLogoUrl" value={weddingDetails.heroLogoUrl || ''} onChange={handleSettingsChange} placeholder="https://.../logo.png" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm" />
-                                </div>
-                            )}
-
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Background Video URL (MP4)</label>
-                                <input type="text" name="heroVideo" value={weddingDetails.heroVideo || ''} onChange={handleSettingsChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm" />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Fallback Image URL</label>
-                                <input type="text" name="heroImage" value={weddingDetails.heroImage || ''} onChange={handleSettingsChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm" />
-                            </div>
-                            <div className="space-y-2 pt-2">
-                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Welcome Audio Soundtrack URL</label>
-                                <input type="text" name="audioUrl" value={weddingDetails.audioUrl || ''} onChange={handleSettingsChange} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2 mb-6 flex items-center">
-                            Styling & Theme
-                        </h3>
-                        <div className="space-y-4">
-                            <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Theme Profile</label>
-                            <select 
-                                value={typeof weddingDetails.theme === 'string' ? weddingDetails.theme : weddingDetails.theme?.name || 'emerald'} 
-                                onChange={(e) => {
-                                    if (e.target.value === 'custom') {
-                                        setWeddingDetails(prev => ({ ...prev, theme: { primaryText: 'text-[var(--theme-primary)]', accent: 'text-[var(--theme-accent)]', background: 'bg-[var(--theme-bg)]', name: 'custom', rawPrimary: '#1a1a1a', rawAccent: '#9ca3af', rawBackground: '#ffffff' } }));
-                                    } else {
-                                        const THEME_PRESETS: any = { emerald: { primaryText: 'text-stone-800', accent: 'text-emerald-700', background: 'bg-stone-50' }, slate: { primaryText: 'text-slate-900', accent: 'text-slate-500', background: 'bg-slate-50' }, rose: { primaryText: 'text-rose-950', accent: 'text-rose-400', background: 'bg-rose-50' } };
-                                        setWeddingDetails(prev => ({ ...prev, theme: THEME_PRESETS[e.target.value] || 'emerald' }));
-                                    }
-                                }} 
-                                className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-                            >
-                                <option value="emerald">Emerald & Stone (Default Pattern)</option>
-                                <option value="slate">Slate & Monochrome</option>
-                                <option value="rose">Rose & Blush</option>
-                                <option value="custom">Custom Brand Colors</option>
-                            </select>
-
-                            {weddingDetails.theme?.name === 'custom' && (
-                                <div className="grid grid-cols-3 gap-4 pt-4 border-t border-stone-100 mt-2">
-                                    <div className="space-y-2 flex flex-col">
-                                        <label className="text-[10px] uppercase tracking-wider text-stone-500">Primary</label>
-                                        <input type="color" value={(weddingDetails.theme as any).rawPrimary || '#1a1a1a'} onChange={(e) => setWeddingDetails(prev => ({ ...prev, theme: { ...prev.theme, rawPrimary: e.target.value, name: 'custom' } as any }))} className="w-full h-10 rounded-md cursor-pointer" />
-                                    </div>
-                                    <div className="space-y-2 flex flex-col">
-                                        <label className="text-[10px] uppercase tracking-wider text-stone-500">Accent</label>
-                                        <input type="color" value={(weddingDetails.theme as any).rawAccent || '#9ca3af'} onChange={(e) => setWeddingDetails(prev => ({ ...prev, theme: { ...prev.theme, rawAccent: e.target.value, name: 'custom' } as any }))} className="w-full h-10 rounded-md cursor-pointer" />
-                                    </div>
-                                    <div className="space-y-2 flex flex-col">
-                                        <label className="text-[10px] uppercase tracking-wider text-stone-500">Background</label>
-                                        <input type="color" value={(weddingDetails.theme as any).rawBackground || '#ffffff'} onChange={(e) => setWeddingDetails(prev => ({ ...prev, theme: { ...prev.theme, rawBackground: e.target.value, name: 'custom' } as any }))} className="w-full h-10 rounded-md cursor-pointer" />
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     </div>
 
@@ -859,176 +878,21 @@ export default function DashboardPage() {
                     </div>
 
                     <div>
-                        <h3 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2 mb-6 flex items-center justify-between">
-                            Formal Invitation Section
-                            <label className="relative inline-flex items-center cursor-pointer scale-90 origin-right">
-                                <input
-                                    type="checkbox"
-                                    name="showFormalInvitation"
-                                    className="sr-only peer"
-                                    checked={weddingDetails.showFormalInvitation || false}
-                                    onChange={(e) => setWeddingDetails(prev => ({ ...prev, showFormalInvitation: e.target.checked }))}
-                                />
-                                <div className="w-9 h-5 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                                <span className="ml-3 text-xs font-medium text-stone-500 hover:text-stone-700 transition-colors">Enable</span>
-                            </label>
-                        </h3>
-
-                        {weddingDetails.showFormalInvitation && (
-                            <div className="p-5 bg-stone-50 rounded-xl border border-stone-100 space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Formal Invitation Image URL</label>
-                                    <input type="text" name="formalInvitationImage" value={weddingDetails.formalInvitationImage || ''} onChange={handleSettingsChange} placeholder="https://.../formal-invitation.jpg" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm bg-white" />
-                                    <p className="text-[10px] text-stone-400">Provide a high-quality image of the formal invitation. It will be displayed full-size.</p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div>
-                        <h3 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2 mb-6 flex items-center justify-between">
-                            Pre-Ceremony Full-Bleed Media
-                        </h3>
-                        <div className="p-5 bg-stone-50 rounded-xl border border-stone-100 space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Pre-Ceremony Media URL (Image or MP4)</label>
-                                <input type="text" name="preCeremonyMedia" value={weddingDetails.preCeremonyMedia || ''} onChange={handleSettingsChange} placeholder="https://.../video.mp4" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm bg-white" />
-                                <p className="text-[10px] text-stone-400">Provide an image or .MP4 video. It will autoplay full-screen right before the ceremony details.</p>
+                        <div className="flex justify-between items-center mb-6 border-b border-stone-100 pb-2">
+                            <h3 className="text-sm font-semibold uppercase tracking-widest text-stone-400 flex items-center">
+                                <MapPin className="w-4 h-4 mr-2" />
+                                Welcome Message & Gifts
+                            </h3>
+                            <div className="flex gap-2">
+                                <button type="button" onClick={() => handleAddGiftOption('bank')} className="text-xs uppercase bg-stone-100 text-stone-600 hover:bg-stone-200 px-3 py-1.5 rounded transition-colors tracking-widest">
+                                    + Bank
+                                </button>
+                                <button type="button" onClick={() => handleAddGiftOption('mobile')} className="text-xs uppercase bg-stone-100 text-stone-600 hover:bg-stone-200 px-3 py-1.5 rounded transition-colors tracking-widest">
+                                    + Mobile
+                                </button>
                             </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <h3 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2 mb-6 flex items-center justify-between">
-                            Custom Sections
-                            <button
-                                type="button"
-                                onClick={handleAddSection}
-                                className="text-xs font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded transition-colors flex items-center gap-1"
-                            >
-                                <Plus className="w-3 h-3" /> Add Section
-                            </button>
-                        </h3>
-
-                        {weddingDetails.customSections?.length === 0 && (
-                            <p className="text-sm text-stone-400 italic text-center py-4">No custom sections added yet. Use these blocks to add image & text banners to your invite.</p>
-                        )}
-
-                        <div className="space-y-6">
-                            {weddingDetails.customSections?.map((section, idx) => (
-                                <div key={section.id} className="p-5 border border-stone-200 rounded-xl bg-stone-50/50 space-y-4 relative group">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveSection(idx)}
-                                        className="absolute top-4 right-4 text-stone-300 hover:text-red-500 transition-colors"
-                                        title="Remove Section"
-                                    >
-                                        ✕
-                                    </button>
-
-                                    <div className="flex flex-wrap items-center justify-between border-b border-stone-200 pb-3 gap-4">
-                                        <div className="flex items-center gap-4">
-                                            <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">Block {idx + 1}</span>
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={section.showOverlay !== false} 
-                                                    onChange={(e) => handleSectionChange(idx, 'showOverlay', e.target.checked)}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-8 h-4 bg-stone-200 rounded-full peer peer-checked:bg-emerald-600 relative transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
-                                                <span className="text-[10px] uppercase font-bold text-stone-400">Overlay</span>
-                                            </label>
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={section.isFullBleed === true} 
-                                                    onChange={(e) => handleSectionChange(idx, 'isFullBleed', e.target.checked)}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-8 h-4 bg-stone-200 rounded-full peer peer-checked:bg-emerald-600 relative transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
-                                                <span className="text-[10px] uppercase font-bold text-stone-400">Full Bleed</span>
-                                            </label>
-                                        </div>
-                                        <select
-                                            value={section.overlayType}
-                                            onChange={(e) => handleSectionChange(idx, 'overlayType', e.target.value)}
-                                            className="text-xs font-medium border border-stone-200 rounded px-2 py-1 text-stone-600 focus:outline-none focus:ring-emerald-500 bg-white"
-                                        >
-                                            <option value="text">Text Overlay Mode</option>
-                                            <option value="image">Image Overlay Mode</option>
-                                            <option value="none">No Content (Clean Media)</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Background Media URL (Image or Video) *</label>
-                                        <div className="flex gap-4">
-                                            <input
-                                                type="text"
-                                                value={section.backgroundUrl}
-                                                onChange={(e) => handleSectionChange(idx, 'backgroundUrl', e.target.value)}
-                                                placeholder="https://.../bg.jpg"
-                                                className="flex-1 border border-stone-200 rounded-md p-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm bg-white"
-                                            />
-                                            <select
-                                                value={section.backgroundType || 'image'}
-                                                onChange={(e) => handleSectionChange(idx, 'backgroundType', e.target.value)}
-                                                className="border border-stone-200 rounded-md px-3 text-xs font-medium text-stone-600 bg-white focus:outline-none"
-                                            >
-                                                <option value="image">Image</option>
-                                                <option value="video">Video</option>
-                                            </select>
-                                        </div>
-                                        <p className="text-[10px] text-stone-400 italic">For videos, use a direct .mp4 link. Full Bleed recommended for clean cinematic videos.</p>
-                                    </div>
-
-                                    {section.overlayType === 'text' ? (
-                                        <div className="grid grid-cols-1 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Text Content</label>
-                                                <textarea
-                                                    value={section.textContent || ''}
-                                                    onChange={(e) => handleSectionChange(idx, 'textContent', e.target.value)}
-                                                    rows={2}
-                                                    className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm resize-none bg-white"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Typography</label>
-                                                <select
-                                                    value={section.fontFamily || 'font-sans'}
-                                                    onChange={(e) => handleSectionChange(idx, 'fontFamily', e.target.value)}
-                                                    className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm bg-white"
-                                                >
-                                                    <option value="font-sans">Modern Sans</option>
-                                                    <option value="font-serif">Elegant Serif</option>
-                                                    <option value="font-script">Signature Script</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Foreground Image URL (PNG Typography)</label>
-                                            <input
-                                                type="text"
-                                                value={section.overlayImageUrl || ''}
-                                                onChange={(e) => handleSectionChange(idx, 'overlayImageUrl', e.target.value)}
-                                                placeholder="https://.../text-graphic.png"
-                                                className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm bg-white"
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2 mb-6 flex items-center">
-                            <MapPin className="w-4 h-4 mr-2" />
-                            Welcome Message & Gifts
-                        </h3>
                         <div className="space-y-6">
                             <div className="space-y-2">
                                 <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Greeting to Guests</label>
@@ -1041,16 +905,53 @@ export default function DashboardPage() {
                             <div className="space-y-4 pt-4 border-t border-stone-100">
                                 <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Registry & Monetary Gifts Message</label>
                                 <textarea name="giftMessage" value={weddingDetails.giftMessage} onChange={handleSettingsChange} rows={2} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none" />
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <input type="text" name="bankAccountName" value={weddingDetails.bankAccountName} onChange={handleSettingsChange} placeholder="Bank Account Name" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <input type="text" name="bankAccountNumber" value={weddingDetails.bankAccountNumber} onChange={handleSettingsChange} placeholder="Account / IBAN Number" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <input type="text" name="mobileTransferNumber" value={weddingDetails.mobileTransferNumber} onChange={handleSettingsChange} placeholder="Mobile Transfer Number" className="w-full border border-stone-200 rounded-md p-3 text-stone-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
+
+                                {(weddingDetails.giftOptions || []).length === 0 && (
+                                    <p className="text-sm text-stone-500 italic py-4 text-center">No transfer options added yet.</p>
+                                )}
+
+                                <div className="space-y-4">
+                                    {(weddingDetails.giftOptions || []).map((option, idx) => (
+                                        <div key={option.id} className="p-5 border border-stone-200 rounded-xl relative group bg-stone-50/50">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveGiftOption(idx)}
+                                                className="absolute top-4 right-4 text-stone-400 hover:text-red-500 transition-colors"
+                                            >
+                                                ✕
+                                            </button>
+                                            <h4 className="text-xs font-bold text-stone-500 uppercase tracking-widest mb-4">
+                                                {option.type === 'bank' ? 'Bank Transfer' : 'Mobile Transfer'}
+                                            </h4>
+                                            {option.type === 'bank' ? (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-bold uppercase text-stone-400 tracking-[0.1em]">Bank Name</label>
+                                                        <input type="text" value={option.bankName || ''} onChange={(e) => handleGiftOptionChange(idx, 'bankName', e.target.value)} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Chase Bank" />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-bold uppercase text-stone-400 tracking-[0.1em]">Account Name</label>
+                                                        <input type="text" value={option.accountName || ''} onChange={(e) => handleGiftOptionChange(idx, 'accountName', e.target.value)} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. John Doe" />
+                                                    </div>
+                                                    <div className="space-y-2 md:col-span-2">
+                                                        <label className="text-[10px] font-bold uppercase text-stone-400 tracking-[0.1em]">Account Number / IBAN *</label>
+                                                        <input type="text" value={option.accountNumber || ''} onChange={(e) => handleGiftOptionChange(idx, 'accountNumber', e.target.value)} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-bold uppercase text-stone-400 tracking-[0.1em]">Service Name</label>
+                                                        <input type="text" value={option.serviceName || ''} onChange={(e) => handleGiftOptionChange(idx, 'serviceName', e.target.value)} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Venmo, Zelle" />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-bold uppercase text-stone-400 tracking-[0.1em]">Mobile Number / Handle *</label>
+                                                        <input type="text" value={option.mobileNumber || ''} onChange={(e) => handleGiftOptionChange(idx, 'mobileNumber', e.target.value)} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="@johndoe or Phone" />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>

@@ -24,6 +24,7 @@ export const invitations = pgTable('invitations', {
     bankAccountName: varchar('bank_account_name', { length: 255 }),
     bankAccountNumber: varchar('bank_account_number', { length: 255 }),
     mobileTransferNumber: varchar('mobile_transfer_number', { length: 255 }),
+    giftOptions: jsonb('gift_options').default([]),
     theme: jsonb('theme'), // Store Theme object here
     heroLogoUrl: text('hero_logo_url'),
     showHeroLogo: boolean('show_hero_logo').default(false),
