@@ -26,6 +26,19 @@ export interface CustomSection {
     overlayImageUrl?: string;
 }
 
+export interface HousesData {
+    brideLabel?: string;
+    brideName?: string;
+    brideAddress?: string;
+    brideTime?: string;
+    brideMapLink?: string;
+    groomLabel?: string;
+    groomName?: string;
+    groomAddress?: string;
+    groomTime?: string;
+    groomMapLink?: string;
+}
+
 export interface InvitationData {
     slug: string;
     bride: string;
@@ -58,6 +71,8 @@ export interface InvitationData {
     formalInvitationIsVideo?: boolean;
     preCeremonyMedia?: string;
     preCeremonyMediaIsVideo?: boolean;
+    showHouses?: boolean;
+    housesData?: HousesData;
 }
 
 interface InvitationPreviewProps {
@@ -550,6 +565,106 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
 
                             {/* Inner Stationery Frame */}
                             <div className="relative z-20 w-full max-w-2xl bg-white/40 backdrop-blur-md border border-stone-200 shadow-2xl p-16 md:p-24 rounded-sm flex flex-col items-center text-center">
+
+                                {/* The Houses Block */}
+                                {data.showHouses && (
+                                    <motion.div variants={itemVariants} className="flex flex-col items-center w-full mb-16">
+                                        <h4 className="text-3xl md:text-5xl font-serif text-stone-800 tracking-[0.2em] uppercase mb-10 font-light drop-shadow-sm">
+                                            The Houses
+                                        </h4>
+                                        <div className={`w-12 h-[1px] ${cleanTheme.accent} opacity-40 mb-16 mx-auto`} />
+
+                                        <div className="w-full flex flex-col gap-16 md:px-8 text-center">
+                                            {/* Bride's House */}
+                                            <div className="flex flex-col items-center gap-4">
+                                                {data.housesData?.brideLabel && (
+                                                    <p className="text-[10px] md:text-xs font-sans text-stone-400 uppercase tracking-[0.25em] mb-[-12px]">
+                                                        {data.housesData.brideLabel}
+                                                    </p>
+                                                )}
+                                                <h5 className={`text-2xl md:text-3xl font-serif ${cleanTheme.primaryText} uppercase tracking-widest mb-4`}>
+                                                    {data.housesData?.brideName || "The Bride's House"}
+                                                </h5>
+                                                
+                                                {data.housesData?.brideAddress && (
+                                                    <div className="flex flex-col items-center gap-2 text-stone-700">
+                                                        <p className="font-sans font-light leading-relaxed whitespace-pre-line text-sm md:text-base">
+                                                            {data.housesData.brideAddress}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                
+                                                {data.housesData?.brideTime && (
+                                                    <div className="flex flex-col items-center gap-2 text-stone-700">
+                                                        <p className="font-sans font-light text-sm md:text-base">
+                                                            Arrival from <span className="font-medium">{data.housesData.brideTime}</span>
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                
+                                                {data.housesData?.brideMapLink && (
+                                                    <a
+                                                        href={data.housesData.brideMapLink}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className={`inline-flex items-center mt-6 text-[10px] uppercase tracking-widest ${cleanTheme.accent} hover:opacity-70 transition-opacity pb-1 shadow-sm`}
+                                                    >
+                                                        View Map <ExternalLink className="w-3 h-3 ml-2" />
+                                                    </a>
+                                                )}
+                                            </div>
+
+                                            {/* Divider */}
+                                            <div className="w-16 h-[1px] bg-stone-200 mx-auto" />
+
+                                            {/* Groom's House */}
+                                            <div className="flex flex-col items-center gap-4">
+                                                {data.housesData?.groomLabel && (
+                                                    <p className="text-[10px] md:text-xs font-sans text-stone-400 uppercase tracking-[0.25em] mb-[-12px]">
+                                                        {data.housesData.groomLabel}
+                                                    </p>
+                                                )}
+                                                <h5 className={`text-2xl md:text-3xl font-serif ${cleanTheme.primaryText} uppercase tracking-widest mb-4`}>
+                                                    {data.housesData?.groomName || "The Groom's House"}
+                                                </h5>
+                                                
+                                                {data.housesData?.groomAddress && (
+                                                    <div className="flex flex-col items-center gap-2 text-stone-700">
+                                                        <p className="font-sans font-light leading-relaxed whitespace-pre-line text-sm md:text-base">
+                                                            {data.housesData.groomAddress}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                
+                                                {data.housesData?.groomTime && (
+                                                    <div className="flex flex-col items-center gap-2 text-stone-700">
+                                                        <p className="font-sans font-light text-sm md:text-base">
+                                                            Arrival from <span className="font-medium">{data.housesData.groomTime}</span>
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                
+                                                {data.housesData?.groomMapLink && (
+                                                    <a
+                                                        href={data.housesData.groomMapLink}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className={`inline-flex items-center mt-6 text-[10px] uppercase tracking-widest ${cleanTheme.accent} hover:opacity-70 transition-opacity pb-1 shadow-sm`}
+                                                    >
+                                                        View Map <ExternalLink className="w-3 h-3 ml-2" />
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {/* Divider (if houses and ceremony exist) */}
+                                {data.showHouses && (data.venue || data.time) && (
+                                    <motion.div variants={itemVariants} className="flex justify-center w-full mb-16 mt-8 opacity-40">
+                                        <div className="w-48 h-[1px] bg-gradient-to-r from-transparent via-stone-800 to-transparent" />
+                                    </motion.div>
+                                )}
 
                                 {/* Ceremony Block */}
                                 {(data.venue || data.time) && (

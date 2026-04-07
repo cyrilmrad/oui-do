@@ -73,7 +73,9 @@ export default function DashboardPage() {
         showFormalInvitation: false,
         formalInvitationImage: "",
         preCeremonyMedia: "",
-        showHeroDate: true
+        showHeroDate: true,
+        showHouses: false,
+        housesData: {}
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -693,6 +695,84 @@ export default function DashboardPage() {
                             )}
                         </div>
                     </div>
+
+                        <div>
+                            <h3 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2 mb-6 flex items-center justify-between">
+                                The Houses
+                                <label className="relative inline-flex items-center cursor-pointer scale-90 origin-right">
+                                    <input
+                                        type="checkbox"
+                                        checked={weddingDetails.showHouses || false}
+                                        onChange={(e) => setWeddingDetails(prev => ({ ...prev, showHouses: e.target.checked }))}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-9 h-5 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                                    <span className="ml-3 text-xs font-medium text-stone-500 hover:text-stone-700 transition-colors">Enable</span>
+                                </label>
+                            </h3>
+                            
+                            {weddingDetails.showHouses && (
+                                <div className="space-y-10">
+                                    {/* Bride's House */}
+                                    <div className="space-y-4">
+                                        <h4 className="text-xs font-bold uppercase tracking-widest text-stone-600 mb-2 border-b border-stone-100 pb-2">The Bride's House</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-medium text-stone-400 uppercase tracking-wider">Top Label (Optional)</label>
+                                                <input type="text" value={weddingDetails.housesData?.brideLabel || ''} onChange={(e) => setWeddingDetails(prev => ({ ...prev, housesData: { ...prev.housesData, brideLabel: e.target.value } }))} className="w-full border border-stone-200 rounded-md p-2.5 text-sm focus:ring-2 focus:ring-emerald-500" placeholder="e.g. THE ESTATE OF..." />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-medium text-stone-400 uppercase tracking-wider">Heading Override</label>
+                                                <input type="text" value={weddingDetails.housesData?.brideName || ''} onChange={(e) => setWeddingDetails(prev => ({ ...prev, housesData: { ...prev.housesData, brideName: e.target.value } }))} className="w-full border border-stone-200 rounded-md p-2.5 text-sm focus:ring-2 focus:ring-emerald-500" placeholder="Defaults to The Bride's House" />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-medium text-stone-400 uppercase tracking-wider">Address</label>
+                                            <textarea value={weddingDetails.housesData?.brideAddress || ''} onChange={(e) => setWeddingDetails(prev => ({ ...prev, housesData: { ...prev.housesData, brideAddress: e.target.value } }))} className="w-full border border-stone-200 rounded-md p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 min-h-[60px]" placeholder="128 Willow Creek Road..." />
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-medium text-stone-400 uppercase tracking-wider">Arrival Time</label>
+                                                <input type="text" value={weddingDetails.housesData?.brideTime || ''} onChange={(e) => setWeddingDetails(prev => ({ ...prev, housesData: { ...prev.housesData, brideTime: e.target.value } }))} className="w-full border border-stone-200 rounded-md p-2.5 text-sm focus:ring-2 focus:ring-emerald-500" placeholder="e.g. 2:30 PM" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-medium text-stone-400 uppercase tracking-wider">Map Link</label>
+                                                <input type="text" value={weddingDetails.housesData?.brideMapLink || ''} onChange={(e) => setWeddingDetails(prev => ({ ...prev, housesData: { ...prev.housesData, brideMapLink: e.target.value } }))} className="w-full border border-stone-200 rounded-md p-2.5 text-sm focus:ring-2 focus:ring-emerald-500" placeholder="Google Maps URL" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Groom's House */}
+                                    <div className="space-y-4 pt-4 border-t border-stone-100">
+                                        <h4 className="text-xs font-bold uppercase tracking-widest text-stone-600 mb-2 border-b border-stone-100 pb-2">The Groom's House</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-medium text-stone-400 uppercase tracking-wider">Top Label (Optional)</label>
+                                                <input type="text" value={weddingDetails.housesData?.groomLabel || ''} onChange={(e) => setWeddingDetails(prev => ({ ...prev, housesData: { ...prev.housesData, groomLabel: e.target.value } }))} className="w-full border border-stone-200 rounded-md p-2.5 text-sm focus:ring-2 focus:ring-emerald-500" placeholder="e.g. THE ESTATE OF..." />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-medium text-stone-400 uppercase tracking-wider">Heading Override</label>
+                                                <input type="text" value={weddingDetails.housesData?.groomName || ''} onChange={(e) => setWeddingDetails(prev => ({ ...prev, housesData: { ...prev.housesData, groomName: e.target.value } }))} className="w-full border border-stone-200 rounded-md p-2.5 text-sm focus:ring-2 focus:ring-emerald-500" placeholder="Defaults to The Groom's House" />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-medium text-stone-400 uppercase tracking-wider">Address</label>
+                                            <textarea value={weddingDetails.housesData?.groomAddress || ''} onChange={(e) => setWeddingDetails(prev => ({ ...prev, housesData: { ...prev.housesData, groomAddress: e.target.value } }))} className="w-full border border-stone-200 rounded-md p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 min-h-[60px]" placeholder="42 Pine Crest Ridge..." />
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-medium text-stone-400 uppercase tracking-wider">Arrival Time</label>
+                                                <input type="text" value={weddingDetails.housesData?.groomTime || ''} onChange={(e) => setWeddingDetails(prev => ({ ...prev, housesData: { ...prev.housesData, groomTime: e.target.value } }))} className="w-full border border-stone-200 rounded-md p-2.5 text-sm focus:ring-2 focus:ring-emerald-500" placeholder="e.g. 6:00 PM" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-medium text-stone-400 uppercase tracking-wider">Map Link</label>
+                                                <input type="text" value={weddingDetails.housesData?.groomMapLink || ''} onChange={(e) => setWeddingDetails(prev => ({ ...prev, housesData: { ...prev.housesData, groomMapLink: e.target.value } }))} className="w-full border border-stone-200 rounded-md p-2.5 text-sm focus:ring-2 focus:ring-emerald-500" placeholder="Google Maps URL" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                     <div>
                         <h3 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2 mb-6 flex items-center">

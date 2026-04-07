@@ -31,6 +31,8 @@ export const invitations = pgTable('invitations', {
     showFormalInvitation: boolean('show_formal_invitation').default(false),
     formalInvitationImage: text('formal_invitation_image'),
     preCeremonyMedia: text('pre_ceremony_media'),
+    showHouses: boolean('show_houses').default(false),
+    housesData: jsonb('houses_data'),
     customSections: jsonb('custom_sections').default([]),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),

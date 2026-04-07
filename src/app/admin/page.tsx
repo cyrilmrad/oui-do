@@ -29,6 +29,8 @@ const defaultData: InvitationData = {
     showHeroLogo: false,
     showFormalInvitation: false,
     formalInvitationImage: "",
+    showHouses: false,
+    housesData: {},
     customSections: [],
     theme: THEME_PRESETS.emerald
 };
@@ -1001,6 +1003,87 @@ export default function AdminDashboard() {
                                                     <p className="text-[10px] text-secondary/70 mt-2 font-label tracking-widest uppercase">Displays a full-bleed border-to-border image or video before the Ceremony Details block.</p>
                                                 </div>
                                             </div>
+                                        </section>
+
+                                        {/* Section 04.5: The Houses */}
+                                        <section>
+                                            <div className="flex justify-between items-center mb-8">
+                                                <div className="flex items-center gap-4">
+                                                    <h2 className="text-2xl font-headline text-primary">The Houses</h2>
+                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={liveData.showHouses || false}
+                                                            onChange={(e) => setLiveData(prev => ({ ...prev, showHouses: e.target.checked }))}
+                                                            className="sr-only peer"
+                                                        />
+                                                        <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                                        <span className="ms-3 text-[0.75rem] font-label uppercase text-primary tracking-widest font-bold">Enable Section</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            
+                                            {liveData.showHouses && (
+                                                <div className="space-y-12">
+                                                    {/* Bride's House */}
+                                                    <div className="space-y-6">
+                                                        <h3 className="font-headline text-lg text-primary mb-4 pb-2 border-b border-outline-variant/20">The Bride's House</h3>
+                                                        <div className="grid grid-cols-2 gap-8">
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Top Label (Optional)</label>
+                                                                <input type="text" value={liveData.housesData?.brideLabel || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, brideLabel: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="e.g. THE ESTATE OF..." />
+                                                            </div>
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Heading Override</label>
+                                                                <input type="text" value={liveData.housesData?.brideName || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, brideName: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="Defaults to The Bride's House" />
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Address / Location</label>
+                                                            <textarea value={liveData.housesData?.brideAddress || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, brideAddress: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 min-h-[100px] focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="128 Willow Creek Road..." />
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-8">
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Arrival Time</label>
+                                                                <input type="text" value={liveData.housesData?.brideTime || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, brideTime: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="e.g. 2:30 PM" />
+                                                            </div>
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Map URL</label>
+                                                                <input type="url" value={liveData.housesData?.brideMapLink || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, brideMapLink: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="https://maps.google.com/..." />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Groom's House */}
+                                                    <div className="space-y-6 pt-6 border-t border-outline-variant/20">
+                                                        <h3 className="font-headline text-lg text-primary mb-4 pb-2 border-b border-outline-variant/20">The Groom's House</h3>
+                                                        <div className="grid grid-cols-2 gap-8">
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Top Label (Optional)</label>
+                                                                <input type="text" value={liveData.housesData?.groomLabel || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, groomLabel: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="e.g. THE ESTATE OF..." />
+                                                            </div>
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Heading Override</label>
+                                                                <input type="text" value={liveData.housesData?.groomName || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, groomName: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="Defaults to The Groom's House" />
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Address / Location</label>
+                                                            <textarea value={liveData.housesData?.groomAddress || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, groomAddress: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 min-h-[100px] focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="42 Pine Crest Ridge..." />
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-8">
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Arrival Time</label>
+                                                                <input type="text" value={liveData.housesData?.groomTime || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, groomTime: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="e.g. 6:00 PM" />
+                                                            </div>
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Map URL</label>
+                                                                <input type="url" value={liveData.housesData?.groomMapLink || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, groomMapLink: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="https://maps.google.com/..." />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </section>
 
                                         {/* Section 05: Ceremony Details */}
