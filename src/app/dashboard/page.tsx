@@ -78,7 +78,8 @@ export default function DashboardPage() {
         preCeremonyMedia: "",
         showHeroDate: true,
         showHouses: false,
-        housesData: {}
+        housesData: {},
+        showNavigation: false
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -250,7 +251,10 @@ export default function DashboardPage() {
                                 showFormalInvitation: dbData.showFormalInvitation || false,
                                 formalInvitationImage: dbData.formalInvitationImage || "",
                                 preCeremonyMedia: dbData.preCeremonyMedia || "",
-                                showHeroDate: dbData.showHeroDate !== false
+                                showHeroDate: dbData.showHeroDate !== false,
+                                showHouses: dbData.showHouses || false,
+                                housesData: dbData.housesData || {},
+                                showNavigation: dbData.showNavigation || false
                             });
                         }
                     }
@@ -955,6 +959,25 @@ export default function DashboardPage() {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-stone-100 mt-8">
+                        <label className="flex items-center space-x-3 cursor-pointer group">
+                            <div className="relative">
+                                <input
+                                    type="checkbox"
+                                    checked={weddingDetails.showNavigation}
+                                    onChange={(e) => setWeddingDetails({ ...weddingDetails, showNavigation: e.target.checked })}
+                                    className="sr-only"
+                                />
+                                <div className={`block w-10 h-6 pl-1 pr-1 py-1 rounded-full bg-stone-200 transition-colors ${weddingDetails.showNavigation ? 'bg-emerald-500' : 'bg-stone-200'}`}>
+                                    <div className={`w-4 h-4 bg-white rounded-full transition-transform ${weddingDetails.showNavigation ? 'transform translate-x-4' : ''}`}></div>
+                                </div>
+                            </div>
+                            <span className="text-sm font-medium text-stone-700 group-hover:text-stone-900 transition-colors">
+                                Enable Multi-Page Navigation (Lodging & Exploring)
+                            </span>
+                        </label>
                     </div>
 
                     <div className="pt-8 flex justify-end">

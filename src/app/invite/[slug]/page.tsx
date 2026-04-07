@@ -107,6 +107,8 @@ export default async function InvitePage({
         preCeremonyMedia: dbData.preCeremonyMedia || "",
         showHouses: dbData.showHouses || false,
         housesData: (dbData.housesData as any) || {},
+        showNavigation: dbData.showNavigation || false,
+        giftOptions: (dbData.giftOptions as any[]) || [],
         theme: (dbData.theme as Theme) || {
             primaryText: "text-stone-800",
             accent: "text-emerald-700",

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, MapPin, Music, VolumeX, Gift, ExternalLink, Landmark, Smartphone, Heart, MailOpen, CheckCircle2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, Music, VolumeX, Gift, ExternalLink, Landmark, Smartphone, Heart, MailOpen, CheckCircle2, Menu, X } from 'lucide-react';
 
 export interface Theme {
     primaryText: string;
@@ -86,6 +86,7 @@ export interface InvitationData {
     preCeremonyMediaIsVideo?: boolean;
     showHouses?: boolean;
     housesData?: HousesData;
+    showNavigation?: boolean;
 }
 
 interface InvitationPreviewProps {
@@ -121,6 +122,8 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
     const [submitError, setSubmitError] = useState('');
 
     const [hasOpened, setHasOpened] = useState(false);
+    const [activeTab, setActiveTab] = useState<'main' | 'lodging' | 'exploring'>('main');
+    const [isNavOpen, setIsNavOpen] = useState(false);
 
     const handleOpenInvitation = async () => {
         setHasOpened(true);
@@ -393,14 +396,79 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                     </motion.div>
                 ) : (
                     <motion.div
-                        key="main-content"
+                        key="main-app"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 1.2 }}
                         className="w-full flex flex-col relative"
                     >
-                        {/* Hero Section */}
-                        <section className={`relative flex items-center justify-center overflow-hidden ${isVideo ? 'w-full' : screenClass}`}>
+                        {/* Floating Nav Button */}
+                        {data.showNavigation && (
+                            <motion.button
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 1, duration: 0.5 }}
+                                onClick={() => setIsNavOpen(true)}
+                                className="fixed top-6 right-6 z-[60] w-12 h-12 bg-white/90 backdrop-blur-md rounded-full shadow-[0_4px_20px_rgb(0,0,0,0.1)] flex items-center justify-center text-stone-800 hover:scale-105 transition-all"
+                                aria-label="Open menu"
+                            >
+                                <Menu className="w-5 h-5" />
+                            </motion.button>
+                        )}
+
+                        {/* Navigation Overlay */}
+                        <AnimatePresence>
+                            {isNavOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className={`fixed inset-0 z-[70] ${cleanTheme.bgAccent} backdrop-blur-xl flex flex-col items-center justify-center`}
+                                    style={data.theme?.name === 'custom' ? { backgroundColor: 'var(--theme-accent)' } : undefined}
+                                >
+                                    <button
+                                        onClick={() => setIsNavOpen(false)}
+                                        className="absolute top-6 right-6 w-12 h-12 flex items-center justify-center text-white/70 hover:text-white transition-colors hover:scale-105"
+                                        aria-label="Close menu"
+                                    >
+                                        <X className="w-8 h-8" />
+                                    </button>
+                                    
+                                    <nav className="flex flex-col items-center space-y-10">
+                                        <button 
+                                            onClick={() => { setActiveTab('main'); setIsNavOpen(false); }}
+                                            className={`text-4xl md:text-5xl font-serif transition-all ${activeTab === 'main' ? 'text-white scale-110 drop-shadow-md' : 'text-white/60 hover:text-white/90 hover:scale-105'}`}
+                                        >
+                                            The Wedding
+                                        </button>
+                                        <button 
+                                            onClick={() => { setActiveTab('lodging'); setIsNavOpen(false); }}
+                                            className={`text-4xl md:text-5xl font-serif transition-all ${activeTab === 'lodging' ? 'text-white scale-110 drop-shadow-md' : 'text-white/60 hover:text-white/90 hover:scale-105'}`}
+                                        >
+                                            Lodging
+                                        </button>
+                                        <button 
+                                            onClick={() => { setActiveTab('exploring'); setIsNavOpen(false); }}
+                                            className={`text-4xl md:text-5xl font-serif transition-all ${activeTab === 'exploring' ? 'text-white scale-110 drop-shadow-md' : 'text-white/60 hover:text-white/90 hover:scale-105'}`}
+                                        >
+                                            Exploring
+                                        </button>
+                                    </nav>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {activeTab === 'main' ? (
+                            <motion.div
+                                key="main-content"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.5 }}
+                                className="w-full flex flex-col relative"
+                            >
+                                {/* Hero Section */}
+                                <section className={`relative flex items-center justify-center overflow-hidden ${isVideo ? 'w-full' : screenClass}`}>
                             <div className={`${isVideo ? 'relative w-full' : 'absolute inset-0'} z-0 overflow-hidden bg-stone-900`}>
                                 <div className="absolute inset-0 bg-stone-950/40 z-10" />
                                 {isVideo ? (
@@ -1078,8 +1146,94 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                 )}
                             </div>
                         </motion.section>
+                    </motion.div>
+                ) : activeTab === 'lodging' ? (
+                    <motion.div
+                        key="lodging-content"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.5 }}
+                        className={`w-full flex flex-col relative ${cleanTheme.background} min-h-screen pt-24`}
+                    >
+                        <section className="py-20 px-6 md:px-12 text-center flex flex-col items-center justify-center">
+                            <h2 className={`text-5xl md:text-6xl font-serif mb-6 ${cleanTheme.primaryText}`}>Where to Stay</h2>
+                            <p className={`max-w-2xl text-lg font-light ${cleanTheme.primaryText} opacity-80 leading-relaxed mb-16`}>
+                                We've arranged room blocks at our favorite local spots. Please book early to secure the special rates!
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto w-full">
+                                <div className="bg-white p-10 border border-stone-100 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-left hover:-translate-y-1 transition-transform">
+                                    <div className={`w-12 h-12 rounded-full ${cleanTheme.bgAccent} text-white flex items-center justify-center mb-6`}>
+                                        <Heart className="w-5 h-5"/>
+                                    </div>
+                                    <h3 className="text-2xl font-serif text-stone-800 mb-2">The Grand Hotel</h3>
+                                    <p className="text-stone-500 text-sm uppercase tracking-widest font-semibold mb-6">15 mins from venue</p>
+                                    <p className="text-stone-600 font-light mb-8 leading-relaxed">Use code WEDDING24 for a 15% discount on your stay. Shuttles will be provided from this location.</p>
+                                    <a href="#" className={`text-sm uppercase tracking-widest font-bold ${cleanTheme.accent} hover:opacity-70 transition-opacity`}>Book Room <ExternalLink className="w-4 h-4 inline ml-1 mb-1"/></a>
+                                </div>
+                                <div className="bg-white p-10 border border-stone-100 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-left hover:-translate-y-1 transition-transform">
+                                    <div className={`w-12 h-12 rounded-full ${cleanTheme.bgAccent} text-white flex items-center justify-center mb-6`}>
+                                        <MapPin className="w-5 h-5"/>
+                                    </div>
+                                    <h3 className="text-2xl font-serif text-stone-800 mb-2">Boutique Inn</h3>
+                                    <p className="text-stone-500 text-sm uppercase tracking-widest font-semibold mb-6">Downtown • 20 mins from venue</p>
+                                    <p className="text-stone-600 font-light mb-8 leading-relaxed">A charming option in the heart of the city, surrounded by local cafes and shops.</p>
+                                    <a href="#" className={`text-sm uppercase tracking-widest font-bold ${cleanTheme.accent} hover:opacity-70 transition-opacity`}>View Website <ExternalLink className="w-4 h-4 inline ml-1 mb-1"/></a>
+                                </div>
+                            </div>
+                        </section>
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="exploring-content"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.5 }}
+                        className={`w-full flex flex-col relative ${cleanTheme.background} min-h-screen pt-24 pb-20`}
+                    >
+                        <section className="py-20 px-6 md:px-12 text-center flex flex-col items-center justify-center">
+                            <h2 className={`text-5xl md:text-6xl font-serif mb-6 ${cleanTheme.primaryText}`}>Things to Do</h2>
+                            <p className={`max-w-2xl text-lg font-light ${cleanTheme.primaryText} opacity-80 leading-relaxed mb-16`}>
+                                Make the most of your weekend! Here are a few places we love to eat, drink, and explore.
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto w-full text-left">
+                                <div className="bg-white rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] group hover:-translate-y-2 transition-all duration-300 border border-stone-50">
+                                    <div className="h-48 overflow-hidden bg-stone-100">
+                                        <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=2047&auto=format&fit=crop" alt="Cafe" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                    </div>
+                                    <div className="p-8">
+                                        <h3 className="text-xl font-serif text-stone-800 mb-2">Local Cafe</h3>
+                                        <p className="text-stone-500 text-xs tracking-widest uppercase font-semibold mb-4">Coffee & Pastries</p>
+                                        <p className="text-stone-600 font-light text-sm">Best pour-over coffee and homemade sourdough pastries in town.</p>
+                                    </div>
+                                </div>
+                                <div className="bg-white rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] group hover:-translate-y-2 transition-all duration-300 border border-stone-50">
+                                    <div className="h-48 overflow-hidden bg-stone-100">
+                                        <img src="https://images.unsplash.com/photo-1496664444929-8c75efb9546f?q=80&w=2070&auto=format&fit=crop" alt="Park" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                    </div>
+                                    <div className="p-8">
+                                        <h3 className="text-xl font-serif text-stone-800 mb-2">City Botanical Garden</h3>
+                                        <p className="text-stone-500 text-xs tracking-widest uppercase font-semibold mb-4">Nature & Relax</p>
+                                        <p className="text-stone-600 font-light text-sm">Great for a morning stroll or a relaxing afternoon picnic.</p>
+                                    </div>
+                                </div>
+                                <div className="bg-white rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] group hover:-translate-y-2 transition-all duration-300 border border-stone-50">
+                                    <div className="h-48 overflow-hidden bg-stone-100">
+                                        <img src="https://images.unsplash.com/photo-1579027989536-b7b1f875659b?q=80&w=2070&auto=format&fit=crop" alt="Restaurant" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                    </div>
+                                    <div className="p-8">
+                                        <h3 className="text-xl font-serif text-stone-800 mb-2">The Ocean Bistro</h3>
+                                        <p className="text-stone-500 text-xs tracking-widest uppercase font-semibold mb-4">Dinner & Drinks</p>
+                                        <p className="text-stone-600 font-light text-sm">Our favorite spot for dinner with a stunning sunset view.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </motion.div>
+                )}
 
-                        {/* Footer */}
+                        {/* Shared Footer System (Outside the Switch) */}
                         < footer className="py-20 text-center border-t border-stone-200/60 bg-white" >
                             <p className="text-stone-400 font-serif italic text-xl tracking-wide">
                                 {data.bride || "Bride"} & {data.groom || "Groom"}

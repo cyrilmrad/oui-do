@@ -1383,6 +1383,32 @@ export default function AdminDashboard() {
                                                 </div>
                                             </div>
                                         </section>
+
+
+                                        {/* Section 08: Extensibility & Navigation */}
+                                        <section>
+                                            <div className="flex justify-between items-center mb-8">
+                                                <div className="flex items-center gap-4">
+                                                    <h2 className="text-2xl font-headline text-primary">Multi-Page Navigation (Beta)</h2>
+                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={liveData.showNavigation || false}
+                                                            onChange={(e) => setLiveData(prev => ({ ...prev, showNavigation: e.target.checked }))}
+                                                            className="sr-only peer"
+                                                        />
+                                                        <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                                        <span className="ms-3 text-[0.75rem] font-label uppercase text-primary tracking-widest font-bold">Enable Navigation</span>
+                                                    </label>
+                                                </div>
+                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 08</span>
+                                            </div>
+                                            <div className="bg-surface-container-latest p-8 space-y-6">
+                                                <p className="text-sm text-secondary">
+                                                    Activating this toggle enables the floating Hamburger Menu at the top right of the invitation, allowing guests to switch between "The Wedding", "Lodging", and "Exploring" pages.
+                                                </p>
+                                            </div>
+                                        </section>
                                     </div>
                                 </div>
                                 {/* Right Column - Live Preview */}
