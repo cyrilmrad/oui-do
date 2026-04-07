@@ -7,6 +7,8 @@ import { Calendar, Clock, MapPin, Music, VolumeX, Gift, ExternalLink, Landmark, 
 export interface Theme {
     primaryText: string;
     accent: string;
+    bgAccent: string;
+    borderAccent: string;
     background: string;
     name?: string;
     rawPrimary?: string;
@@ -293,13 +295,24 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
     const hasGiftsSection = !!(data.giftMessage || data.bankAccountNumber || data.mobileTransferNumber);
 
     const sanitizeTheme = (theme: Theme | undefined) => {
-        if (!theme) return { primaryText: 'text-stone-800', accent: 'text-emerald-700', background: 'bg-stone-50' };
+        if (!theme) return { 
+            primaryText: 'text-stone-800', 
+            accent: 'text-emerald-700', 
+            bgAccent: 'bg-emerald-700', 
+            borderAccent: 'border-emerald-700',
+            background: 'bg-stone-50' 
+        };
         // Ensure we only use text-related classes for typography to avoid "box" issues
         const cleanText = (s: string) => s.split(' ').filter(c => c.startsWith('text-') || c.startsWith('font-')).join(' ');
+        
+        const accentStr = theme.name === 'custom' ? cleanText(theme.accent) : theme.accent;
+        
         return {
             ...theme,
             primaryText: theme.name === 'custom' ? cleanText(theme.primaryText) : theme.primaryText,
-            accent: theme.name === 'custom' ? cleanText(theme.accent) : theme.accent,
+            accent: accentStr,
+            bgAccent: accentStr.replace('text-', 'bg-'),
+            borderAccent: accentStr.replace('text-', 'border-'),
             background: theme.background // Background is fine to have bg-
         };
     };
@@ -308,13 +321,13 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
 
     return (
         <div 
-            className={`${screenClass} ${cleanTheme.background || 'bg-stone-50'} ${cleanTheme.primaryText || 'text-stone-800'} font-sans selection:bg-emerald-100/30 selection:text-emerald-900 w-full flex flex-col`}
-            style={data.theme?.name === 'custom' ? {
-                '--theme-primary': data.theme.rawPrimary || '#1a1a1a',
-                '--theme-accent': data.theme.rawAccent || '#9ca3af',
-                '--theme-bg': data.theme.rawBackground || '#ffffff',
-                backgroundColor: 'var(--theme-bg)'
-            } as React.CSSProperties : undefined}
+            className={`${screenClass} ${cleanTheme.background || 'bg-stone-50'} ${cleanTheme.primaryText || 'text-stone-800'} font-sans selection:bg-emerald-100/30 selection:text-emerald-900 w-full flex flex-col transition-colors duration-700`}
+            style={{
+                '--theme-primary': data.theme?.rawPrimary || '#1a1a1a',
+                '--theme-accent': data.theme?.rawAccent || (data.theme?.name === 'emerald' ? '#047857' : data.theme?.name === 'rose' ? '#fb7185' : '#9ca3af'),
+                '--theme-bg': data.theme?.rawBackground || '#ffffff',
+                backgroundColor: data.theme?.name === 'custom' ? 'var(--theme-bg)' : undefined
+            } as React.CSSProperties}
         >
             {data.audioUrl && (
                 <audio ref={audioRef} src={data.audioUrl} preload="auto" />
@@ -893,8 +906,10 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                                         className="text-center py-12 md:py-16"
                                     >
-                                        <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-8">
-                                            <MapPin className={`w-8 h-8 ${cleanTheme.accent}`} />
+                                        <div className={`relative w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8 overflow-hidden ${cleanTheme.accent}`}>
+                                            <div className="absolute inset-0 bg-current opacity-10" 
+                                                 style={data.theme?.name === 'custom' ? { backgroundColor: 'var(--theme-accent)' } : {}} />
+                                            <CheckCircle2 className="relative z-10 w-8 h-8" />
                                         </div>
                                         <h4 className="text-3xl font-serif mb-4 text-stone-800 font-light">Thank You for your RSVP!</h4>
                                         <p className="text-stone-500 font-light text-lg">We look forward to celebrating with you.</p>
@@ -902,13 +917,17 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                 ) : (
                                     <form onSubmit={handleSubmit} className="space-y-12">
                                         {guestData && guestData.status !== 'pending' && (
-                                            <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-2xl flex flex-col sm:flex-row items-center gap-4 text-emerald-800 mb-4 shadow-sm">
-                                                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                                                    <CheckCircle2 className="w-5 h-5 text-emerald-700" />
-                                                </div>
-                                                <div className="text-center sm:text-left">
-                                                    <p className="font-medium text-base mb-1 tracking-wide">RSVP Already Submitted</p>
-                                                    <p className="opacity-80 font-light text-sm">You have responded as <strong>{guestData.status === 'attending' ? 'Attending' : 'Declined'}</strong>.</p>
+                                            <div className={`relative p-6 rounded-2xl mb-4 shadow-sm border overflow-hidden ${cleanTheme.accent}`}>
+                                                <div className="absolute inset-0 bg-current opacity-5" 
+                                                     style={data.theme?.name === 'custom' ? { backgroundColor: 'var(--theme-accent)' } : {}} />
+                                                <div className="relative z-10 flex flex-col sm:flex-row items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-full bg-current/10 flex items-center justify-center flex-shrink-0">
+                                                        <CheckCircle2 className="w-5 h-5 shadow-sm" />
+                                                    </div>
+                                                    <div className="text-center sm:text-left text-stone-800">
+                                                        <p className="font-medium text-base mb-1 tracking-wide">RSVP Already Submitted</p>
+                                                        <p className="opacity-80 font-light text-sm">You have responded as <strong>{guestData.status === 'attending' ? 'Attending' : 'Declined'}</strong>.</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
@@ -957,8 +976,10 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                             disabled={!!guestData && guestData.status !== 'pending'}
                                                             className={`peer sr-only ${guestData && guestData.status !== 'pending' ? 'cursor-not-allowed' : ''}`}
                                                         />
-                                                        <div className="w-6 h-6 rounded-full border border-stone-300 peer-checked:border-emerald-700 transition-colors"></div>
-                                                        <div className="w-3 h-3 rounded-full bg-emerald-700 absolute opacity-0 peer-checked:opacity-100 transition-opacity transform scale-50 peer-checked:scale-100"></div>
+                                                        <div className={`w-6 h-6 rounded-full border transition-colors ${cleanTheme.borderAccent && formData.attending === 'yes' ? cleanTheme.borderAccent : 'border-stone-300'}`}
+                                                             style={data.theme?.name === 'custom' && formData.attending === 'yes' ? { borderColor: 'var(--theme-accent)' } : {}}></div>
+                                                        <div className={`w-3 h-3 rounded-full absolute opacity-0 peer-checked:opacity-100 transition-opacity transform scale-50 peer-checked:scale-100 ${cleanTheme.bgAccent}`}
+                                                             style={data.theme?.name === 'custom' ? { backgroundColor: 'var(--theme-accent)' } : {}}></div>
                                                     </div>
                                                     <span className="text-stone-600 group-hover:text-stone-900 transition-colors font-serif text-lg">Joyfully Accept</span>
                                                 </label>
@@ -973,8 +994,10 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                             disabled={!!guestData && guestData.status !== 'pending'}
                                                             className={`peer sr-only ${guestData && guestData.status !== 'pending' ? 'cursor-not-allowed' : ''}`}
                                                         />
-                                                        <div className="w-6 h-6 rounded-full border border-stone-300 peer-checked:border-stone-800 transition-colors"></div>
-                                                        <div className="w-3 h-3 rounded-full bg-stone-800 absolute opacity-0 peer-checked:opacity-100 transition-opacity transform scale-50 peer-checked:scale-100"></div>
+                                                        <div className={`w-6 h-6 rounded-full border transition-colors ${cleanTheme.borderAccent && formData.attending === 'no' ? cleanTheme.borderAccent : 'border-stone-300'}`}
+                                                             style={data.theme?.name === 'custom' && formData.attending === 'no' ? { borderColor: 'var(--theme-accent)' } : {}}></div>
+                                                        <div className={`w-3 h-3 rounded-full absolute opacity-0 peer-checked:opacity-100 transition-opacity transform scale-50 peer-checked:scale-100 ${cleanTheme.bgAccent}`}
+                                                             style={data.theme?.name === 'custom' ? { backgroundColor: 'var(--theme-accent)' } : {}}></div>
                                                     </div>
                                                     <span className="text-stone-600 group-hover:text-stone-900 transition-colors font-serif text-lg">Regretfully Decline</span>
                                                 </label>
@@ -1062,7 +1085,8 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: 2, duration: 1 }}
                                     onClick={toggleMusic}
-                                    className={`fixed bottom-8 right-8 z-50 p-4 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-all duration-500 hover:scale-110 focus:outline-none ${isPlaying ? 'bg-emerald-700 text-white' : 'bg-white/90 text-stone-600 border border-stone-200'}`}
+                                    className={`fixed bottom-8 right-8 z-50 p-4 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-all duration-500 hover:scale-110 focus:outline-none ${isPlaying ? `${cleanTheme.bgAccent} text-white` : 'bg-white/90 text-stone-600 border border-stone-200'}`}
+                                     style={isPlaying && data.theme?.name === 'custom' ? { backgroundColor: 'var(--theme-accent)' } : {}}
                                     aria-label="Toggle background music"
                                 >
                                     {isPlaying ? <Music className="w-6 h-6 animate-pulse" /> : <VolumeX className="w-6 h-6" />}
