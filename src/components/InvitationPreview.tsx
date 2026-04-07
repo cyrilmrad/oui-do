@@ -7,6 +7,8 @@ import { Calendar, Clock, MapPin, Music, VolumeX, Gift, ExternalLink, Landmark, 
 export interface Theme {
     primaryText: string;
     accent: string;
+    bgAccent: string;
+    borderAccent: string;
     background: string;
     name?: string;
     rawPrimary?: string;
@@ -24,6 +26,29 @@ export interface CustomSection {
     textContent?: string;
     fontFamily?: string;
     overlayImageUrl?: string;
+}
+
+export interface GiftOption {
+    id: string;
+    type: 'bank' | 'mobile';
+    bankName?: string;
+    accountName?: string;
+    accountNumber?: string;
+    mobileNumber?: string;
+    serviceName?: string; // e.g. Venmo, Zelle, PayNow
+}
+
+export interface HousesData {
+    brideLabel?: string;
+    brideName?: string;
+    brideAddress?: string;
+    brideTime?: string;
+    brideMapLink?: string;
+    groomLabel?: string;
+    groomName?: string;
+    groomAddress?: string;
+    groomTime?: string;
+    groomMapLink?: string;
 }
 
 export interface InvitationData {
@@ -51,6 +76,7 @@ export interface InvitationData {
     bankAccountName?: string;
     bankAccountNumber?: string;
     mobileTransferNumber?: string;
+    giftOptions?: GiftOption[];
     theme: Theme;
     showHeroDate?: boolean;
     showFormalInvitation?: boolean;
@@ -58,6 +84,8 @@ export interface InvitationData {
     formalInvitationIsVideo?: boolean;
     preCeremonyMedia?: string;
     preCeremonyMediaIsVideo?: boolean;
+    showHouses?: boolean;
+    housesData?: HousesData;
 }
 
 interface InvitationPreviewProps {
@@ -278,13 +306,24 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
     const hasGiftsSection = !!(data.giftMessage || data.bankAccountNumber || data.mobileTransferNumber);
 
     const sanitizeTheme = (theme: Theme | undefined) => {
-        if (!theme) return { primaryText: 'text-stone-800', accent: 'text-emerald-700', background: 'bg-stone-50' };
+        if (!theme) return { 
+            primaryText: 'text-stone-800', 
+            accent: 'text-emerald-700', 
+            bgAccent: 'bg-emerald-700', 
+            borderAccent: 'border-emerald-700',
+            background: 'bg-stone-50' 
+        };
         // Ensure we only use text-related classes for typography to avoid "box" issues
         const cleanText = (s: string) => s.split(' ').filter(c => c.startsWith('text-') || c.startsWith('font-')).join(' ');
+        
+        const accentStr = theme.name === 'custom' ? cleanText(theme.accent) : theme.accent;
+        
         return {
             ...theme,
             primaryText: theme.name === 'custom' ? cleanText(theme.primaryText) : theme.primaryText,
-            accent: theme.name === 'custom' ? cleanText(theme.accent) : theme.accent,
+            accent: accentStr,
+            bgAccent: accentStr.replace('text-', 'bg-'),
+            borderAccent: accentStr.replace('text-', 'border-'),
             background: theme.background // Background is fine to have bg-
         };
     };
@@ -293,13 +332,13 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
 
     return (
         <div 
-            className={`${screenClass} ${cleanTheme.background || 'bg-stone-50'} ${cleanTheme.primaryText || 'text-stone-800'} font-sans selection:bg-emerald-100/30 selection:text-emerald-900 w-full flex flex-col`}
-            style={data.theme?.name === 'custom' ? {
-                '--theme-primary': data.theme.rawPrimary || '#1a1a1a',
-                '--theme-accent': data.theme.rawAccent || '#9ca3af',
-                '--theme-bg': data.theme.rawBackground || '#ffffff',
-                backgroundColor: 'var(--theme-bg)'
-            } as React.CSSProperties : undefined}
+            className={`${screenClass} ${cleanTheme.background || 'bg-stone-50'} ${cleanTheme.primaryText || 'text-stone-800'} font-sans selection:bg-emerald-100/30 selection:text-emerald-900 w-full flex flex-col transition-colors duration-700`}
+            style={{
+                '--theme-primary': data.theme?.rawPrimary || '#1a1a1a',
+                '--theme-accent': data.theme?.rawAccent || (data.theme?.name === 'emerald' ? '#047857' : data.theme?.name === 'rose' ? '#fb7185' : '#9ca3af'),
+                '--theme-bg': data.theme?.rawBackground || '#ffffff',
+                backgroundColor: data.theme?.name === 'custom' ? 'var(--theme-bg)' : undefined
+            } as React.CSSProperties}
         >
             {data.audioUrl && (
                 <audio ref={audioRef} src={data.audioUrl} preload="auto" />
@@ -551,6 +590,106 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                             {/* Inner Stationery Frame */}
                             <div className="relative z-20 w-full max-w-2xl bg-white/40 backdrop-blur-md border border-stone-200 shadow-2xl p-16 md:p-24 rounded-sm flex flex-col items-center text-center">
 
+                                {/* The Houses Block */}
+                                {data.showHouses && (
+                                    <motion.div variants={itemVariants} className="flex flex-col items-center w-full mb-16">
+                                        <h4 className="text-3xl md:text-5xl font-serif text-stone-800 tracking-[0.2em] uppercase mb-10 font-light drop-shadow-sm">
+                                            The Houses
+                                        </h4>
+                                        <div className={`w-12 h-[1px] ${cleanTheme.accent} opacity-40 mb-16 mx-auto`} />
+
+                                        <div className="w-full flex flex-col gap-16 md:px-8 text-center">
+                                            {/* Bride's House */}
+                                            <div className="flex flex-col items-center gap-4">
+                                                {data.housesData?.brideLabel && (
+                                                    <p className="text-[10px] md:text-xs font-sans text-stone-400 uppercase tracking-[0.25em] mb-[-12px]">
+                                                        {data.housesData.brideLabel}
+                                                    </p>
+                                                )}
+                                                <h5 className={`text-2xl md:text-3xl font-serif ${cleanTheme.primaryText} uppercase tracking-widest mb-4`}>
+                                                    {data.housesData?.brideName || "The Bride's House"}
+                                                </h5>
+                                                
+                                                {data.housesData?.brideAddress && (
+                                                    <div className="flex flex-col items-center gap-2 text-stone-700">
+                                                        <p className="font-sans font-light leading-relaxed whitespace-pre-line text-sm md:text-base">
+                                                            {data.housesData.brideAddress}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                
+                                                {data.housesData?.brideTime && (
+                                                    <div className="flex flex-col items-center gap-2 text-stone-700">
+                                                        <p className="font-sans font-light text-sm md:text-base">
+                                                            Arrival from <span className="font-medium">{data.housesData.brideTime}</span>
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                
+                                                {data.housesData?.brideMapLink && (
+                                                    <a
+                                                        href={data.housesData.brideMapLink}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className={`inline-flex items-center mt-6 text-[10px] uppercase tracking-widest ${cleanTheme.accent} hover:opacity-70 transition-opacity pb-1 shadow-sm`}
+                                                    >
+                                                        View Map <ExternalLink className="w-3 h-3 ml-2" />
+                                                    </a>
+                                                )}
+                                            </div>
+
+                                            {/* Divider */}
+                                            <div className="w-16 h-[1px] bg-stone-200 mx-auto" />
+
+                                            {/* Groom's House */}
+                                            <div className="flex flex-col items-center gap-4">
+                                                {data.housesData?.groomLabel && (
+                                                    <p className="text-[10px] md:text-xs font-sans text-stone-400 uppercase tracking-[0.25em] mb-[-12px]">
+                                                        {data.housesData.groomLabel}
+                                                    </p>
+                                                )}
+                                                <h5 className={`text-2xl md:text-3xl font-serif ${cleanTheme.primaryText} uppercase tracking-widest mb-4`}>
+                                                    {data.housesData?.groomName || "The Groom's House"}
+                                                </h5>
+                                                
+                                                {data.housesData?.groomAddress && (
+                                                    <div className="flex flex-col items-center gap-2 text-stone-700">
+                                                        <p className="font-sans font-light leading-relaxed whitespace-pre-line text-sm md:text-base">
+                                                            {data.housesData.groomAddress}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                
+                                                {data.housesData?.groomTime && (
+                                                    <div className="flex flex-col items-center gap-2 text-stone-700">
+                                                        <p className="font-sans font-light text-sm md:text-base">
+                                                            Arrival from <span className="font-medium">{data.housesData.groomTime}</span>
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                
+                                                {data.housesData?.groomMapLink && (
+                                                    <a
+                                                        href={data.housesData.groomMapLink}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className={`inline-flex items-center mt-6 text-[10px] uppercase tracking-widest ${cleanTheme.accent} hover:opacity-70 transition-opacity pb-1 shadow-sm`}
+                                                    >
+                                                        View Map <ExternalLink className="w-3 h-3 ml-2" />
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {/* Divider (if houses and ceremony exist) */}
+                                {data.showHouses && (data.venue || data.time) && (
+                                    <motion.div variants={itemVariants} className="flex justify-center w-full mb-16 mt-8 opacity-40">
+                                        <div className="w-48 h-[1px] bg-gradient-to-r from-transparent via-stone-800 to-transparent" />
+                                    </motion.div>
+                                )}
+
                                 {/* Ceremony Block */}
                                 {(data.venue || data.time) && (
                                     <motion.div variants={itemVariants} className="flex flex-col items-center w-full">
@@ -718,40 +857,38 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     )}
 
                                     {/* Interactive Bank/Mobile Transfer Info */}
-                                    {(data.bankAccountNumber || data.mobileTransferNumber) && (
-                                        <div className="max-w-lg mx-auto bg-white p-8 rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-stone-100 text-left">
-                                            {data.bankAccountNumber && (
-                                                <div className="mb-8 last:mb-0">
-                                                    <div className="flex items-center mb-4">
-                                                        <div className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center mr-3">
-                                                            <Landmark className={`w-4 h-4 ${cleanTheme.accent}`} />
+                                    {data.giftOptions && data.giftOptions.length > 0 && (
+                                        <div className="max-w-lg mx-auto bg-white p-8 rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-stone-100 text-left space-y-8">
+                                            {/* Dynamic Gift Options Array */}
+                                            {data.giftOptions.map((option, idx) => (
+                                                <React.Fragment key={option.id || idx}>
+                                                    {idx > 0 && (
+                                                        <div className="w-full h-[1px] bg-stone-100"></div>
+                                                    )}
+                                                    <div>
+                                                        <div className="flex items-center mb-4">
+                                                            <div className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center mr-3">
+                                                                {option.type === 'bank' ? <Landmark className={`w-4 h-4 ${cleanTheme.accent}`} /> : <Smartphone className={`w-4 h-4 ${cleanTheme.accent}`} />}
+                                                            </div>
+                                                            <h4 className="text-xs font-semibold uppercase tracking-widest text-stone-400">
+                                                                {option.type === 'bank' ? (option.bankName || 'Bank Transfer') : (option.serviceName || 'Mobile Transfer')}
+                                                            </h4>
                                                         </div>
-                                                        <h4 className="text-xs font-semibold uppercase tracking-widest text-stone-400">Bank Transfer</h4>
-                                                    </div>
-                                                    <div className="pl-11 space-y-1">
-                                                        {data.bankAccountName && <p className="text-stone-800 font-serif text-lg">{data.bankAccountName}</p>}
-                                                        <p className="text-stone-600 font-mono text-sm tracking-wide bg-stone-50 inline-block px-3 py-1 rounded border border-stone-100">{data.bankAccountNumber}</p>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {data.bankAccountNumber && data.mobileTransferNumber && (
-                                                <div className="w-full h-[1px] bg-stone-100 my-8"></div>
-                                            )}
-
-                                            {data.mobileTransferNumber && (
-                                                <div className="mb-8 last:mb-0">
-                                                    <div className="flex items-center mb-4">
-                                                        <div className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center mr-3">
-                                                            <Smartphone className={`w-4 h-4 ${cleanTheme.accent}`} />
+                                                        <div className="pl-11 space-y-1">
+                                                            {option.type === 'bank' ? (
+                                                                <>
+                                                                    {option.accountName && <p className="text-stone-800 font-serif text-lg">{option.accountName}</p>}
+                                                                    <p className="text-stone-600 font-mono text-sm tracking-wide bg-stone-50 inline-block px-3 py-1 rounded border border-stone-100">{option.accountNumber}</p>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <p className="text-stone-600 font-mono text-sm tracking-wide bg-stone-50 inline-block px-3 py-1 rounded border border-stone-100">{option.mobileNumber}</p>
+                                                                </>
+                                                            )}
                                                         </div>
-                                                        <h4 className="text-xs font-semibold uppercase tracking-widest text-stone-400">Mobile Transfer</h4>
                                                     </div>
-                                                    <div className="pl-11 space-y-1">
-                                                        <p className="text-stone-600 font-mono text-sm tracking-wide bg-stone-50 inline-block px-3 py-1 rounded border border-stone-100">{data.mobileTransferNumber}</p>
-                                                    </div>
-                                                </div>
-                                            )}
+                                                </React.Fragment>
+                                            ))}
                                         </div>
                                     )}
                                 </div>
@@ -778,8 +915,10 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                                         className="text-center py-12 md:py-16"
                                     >
-                                        <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-8">
-                                            <MapPin className={`w-8 h-8 ${cleanTheme.accent}`} />
+                                        <div className={`relative w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8 overflow-hidden ${cleanTheme.accent}`}>
+                                            <div className="absolute inset-0 bg-current opacity-10" 
+                                                 style={data.theme?.name === 'custom' ? { backgroundColor: 'var(--theme-accent)' } : {}} />
+                                            <CheckCircle2 className="relative z-10 w-8 h-8" />
                                         </div>
                                         <h4 className="text-3xl font-serif mb-4 text-stone-800 font-light">Thank You for your RSVP!</h4>
                                         <p className="text-stone-500 font-light text-lg">We look forward to celebrating with you.</p>
@@ -787,13 +926,17 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                 ) : (
                                     <form onSubmit={handleSubmit} className="space-y-12">
                                         {guestData && guestData.status !== 'pending' && (
-                                            <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-2xl flex flex-col sm:flex-row items-center gap-4 text-emerald-800 mb-4 shadow-sm">
-                                                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                                                    <CheckCircle2 className="w-5 h-5 text-emerald-700" />
-                                                </div>
-                                                <div className="text-center sm:text-left">
-                                                    <p className="font-medium text-base mb-1 tracking-wide">RSVP Already Submitted</p>
-                                                    <p className="opacity-80 font-light text-sm">You have responded as <strong>{guestData.status === 'attending' ? 'Attending' : 'Declined'}</strong>.</p>
+                                            <div className={`relative p-6 rounded-2xl mb-4 shadow-sm border overflow-hidden ${cleanTheme.accent}`}>
+                                                <div className="absolute inset-0 bg-current opacity-5" 
+                                                     style={data.theme?.name === 'custom' ? { backgroundColor: 'var(--theme-accent)' } : {}} />
+                                                <div className="relative z-10 flex flex-col sm:flex-row items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-full bg-current/10 flex items-center justify-center flex-shrink-0">
+                                                        <CheckCircle2 className="w-5 h-5 shadow-sm" />
+                                                    </div>
+                                                    <div className="text-center sm:text-left text-stone-800">
+                                                        <p className="font-medium text-base mb-1 tracking-wide">RSVP Already Submitted</p>
+                                                        <p className="opacity-80 font-light text-sm">You have responded as <strong>{guestData.status === 'attending' ? 'Attending' : 'Declined'}</strong>.</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
@@ -842,8 +985,10 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                             disabled={!!guestData && guestData.status !== 'pending'}
                                                             className={`peer sr-only ${guestData && guestData.status !== 'pending' ? 'cursor-not-allowed' : ''}`}
                                                         />
-                                                        <div className="w-6 h-6 rounded-full border border-stone-300 peer-checked:border-emerald-700 transition-colors"></div>
-                                                        <div className="w-3 h-3 rounded-full bg-emerald-700 absolute opacity-0 peer-checked:opacity-100 transition-opacity transform scale-50 peer-checked:scale-100"></div>
+                                                        <div className={`w-6 h-6 rounded-full border transition-colors ${cleanTheme.borderAccent && formData.attending === 'yes' ? cleanTheme.borderAccent : 'border-stone-300'}`}
+                                                             style={data.theme?.name === 'custom' && formData.attending === 'yes' ? { borderColor: 'var(--theme-accent)' } : {}}></div>
+                                                        <div className={`w-3 h-3 rounded-full absolute opacity-0 peer-checked:opacity-100 transition-opacity transform scale-50 peer-checked:scale-100 ${cleanTheme.bgAccent}`}
+                                                             style={data.theme?.name === 'custom' ? { backgroundColor: 'var(--theme-accent)' } : {}}></div>
                                                     </div>
                                                     <span className="text-stone-600 group-hover:text-stone-900 transition-colors font-serif text-lg">Joyfully Accept</span>
                                                 </label>
@@ -858,8 +1003,10 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                             disabled={!!guestData && guestData.status !== 'pending'}
                                                             className={`peer sr-only ${guestData && guestData.status !== 'pending' ? 'cursor-not-allowed' : ''}`}
                                                         />
-                                                        <div className="w-6 h-6 rounded-full border border-stone-300 peer-checked:border-stone-800 transition-colors"></div>
-                                                        <div className="w-3 h-3 rounded-full bg-stone-800 absolute opacity-0 peer-checked:opacity-100 transition-opacity transform scale-50 peer-checked:scale-100"></div>
+                                                        <div className={`w-6 h-6 rounded-full border transition-colors ${cleanTheme.borderAccent && formData.attending === 'no' ? cleanTheme.borderAccent : 'border-stone-300'}`}
+                                                             style={data.theme?.name === 'custom' && formData.attending === 'no' ? { borderColor: 'var(--theme-accent)' } : {}}></div>
+                                                        <div className={`w-3 h-3 rounded-full absolute opacity-0 peer-checked:opacity-100 transition-opacity transform scale-50 peer-checked:scale-100 ${cleanTheme.bgAccent}`}
+                                                             style={data.theme?.name === 'custom' ? { backgroundColor: 'var(--theme-accent)' } : {}}></div>
                                                     </div>
                                                     <span className="text-stone-600 group-hover:text-stone-900 transition-colors font-serif text-lg">Regretfully Decline</span>
                                                 </label>
@@ -947,7 +1094,8 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: 2, duration: 1 }}
                                     onClick={toggleMusic}
-                                    className={`fixed bottom-8 right-8 z-50 p-4 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-all duration-500 hover:scale-110 focus:outline-none ${isPlaying ? 'bg-emerald-700 text-white' : 'bg-white/90 text-stone-600 border border-stone-200'}`}
+                                    className={`fixed bottom-8 right-8 z-50 p-4 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-all duration-500 hover:scale-110 focus:outline-none ${isPlaying ? `${cleanTheme.bgAccent} text-white` : 'bg-white/90 text-stone-600 border border-stone-200'}`}
+                                     style={isPlaying && data.theme?.name === 'custom' ? { backgroundColor: 'var(--theme-accent)' } : {}}
                                     aria-label="Toggle background music"
                                 >
                                     {isPlaying ? <Music className="w-6 h-6 animate-pulse" /> : <VolumeX className="w-6 h-6" />}

@@ -24,6 +24,7 @@ export const invitations = pgTable('invitations', {
     bankAccountName: varchar('bank_account_name', { length: 255 }),
     bankAccountNumber: varchar('bank_account_number', { length: 255 }),
     mobileTransferNumber: varchar('mobile_transfer_number', { length: 255 }),
+    giftOptions: jsonb('gift_options').default([]),
     theme: jsonb('theme'), // Store Theme object here
     heroLogoUrl: text('hero_logo_url'),
     showHeroLogo: boolean('show_hero_logo').default(false),
@@ -31,6 +32,8 @@ export const invitations = pgTable('invitations', {
     showFormalInvitation: boolean('show_formal_invitation').default(false),
     formalInvitationImage: text('formal_invitation_image'),
     preCeremonyMedia: text('pre_ceremony_media'),
+    showHouses: boolean('show_houses').default(false),
+    housesData: jsonb('houses_data'),
     customSections: jsonb('custom_sections').default([]),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),

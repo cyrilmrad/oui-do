@@ -12,9 +12,9 @@ import { getSeatingData } from '@/app/actions/seating';
 import type { SelectSeatingTable, SelectGuest } from '@/app/actions/seating';
 
 const THEME_PRESETS: Record<string, Theme> = {
-    emerald: { primaryText: "text-stone-800", accent: "text-emerald-700", background: "bg-stone-50" },
-    slate: { primaryText: "text-slate-900", accent: "text-slate-600", background: "bg-slate-50" },
-    rose: { primaryText: "text-rose-950", accent: "text-rose-600", background: "bg-rose-50" }
+    emerald: { primaryText: "text-stone-800", accent: "text-emerald-700", bgAccent: "bg-emerald-700/10", borderAccent: "border-emerald-700", background: "bg-stone-50" },
+    slate: { primaryText: "text-slate-900", accent: "text-slate-600", bgAccent: "bg-slate-600/10", borderAccent: "border-slate-600", background: "bg-slate-50" },
+    rose: { primaryText: "text-rose-950", accent: "text-rose-600", bgAccent: "bg-rose-600/10", borderAccent: "border-rose-600", background: "bg-rose-50" }
 };
 
 const defaultData: InvitationData = {
@@ -29,7 +29,10 @@ const defaultData: InvitationData = {
     showHeroLogo: false,
     showFormalInvitation: false,
     formalInvitationImage: "",
+    showHouses: false,
+    housesData: {},
     customSections: [],
+    giftOptions: [],
     theme: THEME_PRESETS.emerald
 };
 
@@ -263,6 +266,40 @@ export default function AdminDashboard() {
         });
     };
 
+    const handleAddGiftOption = (type: 'bank' | 'mobile') => {
+        setLiveData(prev => ({
+            ...prev,
+            giftOptions: [
+                ...(prev.giftOptions || []),
+                {
+                    id: Math.random().toString(36).substring(7),
+                    type,
+                    bankName: '',
+                    accountName: '',
+                    accountNumber: '',
+                    mobileNumber: '',
+                    serviceName: ''
+                }
+            ]
+        }));
+    };
+
+    const handleRemoveGiftOption = (index: number) => {
+        setLiveData(prev => {
+            const arr = [...(prev.giftOptions || [])];
+            arr.splice(index, 1);
+            return { ...prev, giftOptions: arr };
+        });
+    };
+
+    const handleGiftOptionChange = (index: number, field: string, value: string) => {
+        setLiveData(prev => {
+            const arr = [...(prev.giftOptions || [])];
+            arr[index] = { ...arr[index], [field]: value };
+            return { ...prev, giftOptions: arr };
+        });
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setLiveData(prev => ({ ...prev, [name]: value }));
@@ -274,7 +311,7 @@ export default function AdminDashboard() {
         if (selectedTheme === 'custom') {
             setLiveData(prev => ({ 
                 ...prev, 
-                theme: { primaryText: 'text-[var(--theme-primary)]', accent: 'text-[var(--theme-accent)]', background: 'bg-[var(--theme-bg)]', name: 'custom', rawPrimary: '#1a1a1a', rawAccent: '#9ca3af', rawBackground: '#ffffff' } 
+                theme: { primaryText: 'text-[var(--theme-primary)]', accent: 'text-[var(--theme-accent)]', bgAccent: 'bg-[var(--theme-accent-light)]', borderAccent: 'border-[var(--theme-accent)]', background: 'bg-[var(--theme-bg)]', name: 'custom', rawPrimary: '#1a1a1a', rawAccent: '#9ca3af', rawBackground: '#ffffff' } 
             }));
         } else {
             setLiveData(prev => ({ ...prev, theme: THEME_PRESETS[selectedTheme] }));
@@ -1003,6 +1040,87 @@ export default function AdminDashboard() {
                                             </div>
                                         </section>
 
+                                        {/* Section 04.5: The Houses */}
+                                        <section>
+                                            <div className="flex justify-between items-center mb-8">
+                                                <div className="flex items-center gap-4">
+                                                    <h2 className="text-2xl font-headline text-primary">The Houses</h2>
+                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={liveData.showHouses || false}
+                                                            onChange={(e) => setLiveData(prev => ({ ...prev, showHouses: e.target.checked }))}
+                                                            className="sr-only peer"
+                                                        />
+                                                        <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                                        <span className="ms-3 text-[0.75rem] font-label uppercase text-primary tracking-widest font-bold">Enable Section</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            
+                                            {liveData.showHouses && (
+                                                <div className="space-y-12">
+                                                    {/* Bride's House */}
+                                                    <div className="space-y-6">
+                                                        <h3 className="font-headline text-lg text-primary mb-4 pb-2 border-b border-outline-variant/20">The Bride's House</h3>
+                                                        <div className="grid grid-cols-2 gap-8">
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Top Label (Optional)</label>
+                                                                <input type="text" value={liveData.housesData?.brideLabel || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, brideLabel: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="e.g. THE ESTATE OF..." />
+                                                            </div>
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Heading Override</label>
+                                                                <input type="text" value={liveData.housesData?.brideName || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, brideName: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="Defaults to The Bride's House" />
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Address / Location</label>
+                                                            <textarea value={liveData.housesData?.brideAddress || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, brideAddress: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 min-h-[100px] focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="128 Willow Creek Road..." />
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-8">
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Arrival Time</label>
+                                                                <input type="text" value={liveData.housesData?.brideTime || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, brideTime: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="e.g. 2:30 PM" />
+                                                            </div>
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Map URL</label>
+                                                                <input type="url" value={liveData.housesData?.brideMapLink || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, brideMapLink: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="https://maps.google.com/..." />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Groom's House */}
+                                                    <div className="space-y-6 pt-6 border-t border-outline-variant/20">
+                                                        <h3 className="font-headline text-lg text-primary mb-4 pb-2 border-b border-outline-variant/20">The Groom's House</h3>
+                                                        <div className="grid grid-cols-2 gap-8">
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Top Label (Optional)</label>
+                                                                <input type="text" value={liveData.housesData?.groomLabel || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, groomLabel: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="e.g. THE ESTATE OF..." />
+                                                            </div>
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Heading Override</label>
+                                                                <input type="text" value={liveData.housesData?.groomName || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, groomName: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="Defaults to The Groom's House" />
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Address / Location</label>
+                                                            <textarea value={liveData.housesData?.groomAddress || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, groomAddress: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 min-h-[100px] focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="42 Pine Crest Ridge..." />
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-8">
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Arrival Time</label>
+                                                                <input type="text" value={liveData.housesData?.groomTime || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, groomTime: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="e.g. 6:00 PM" />
+                                                            </div>
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Map URL</label>
+                                                                <input type="url" value={liveData.housesData?.groomMapLink || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, groomMapLink: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="https://maps.google.com/..." />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </section>
+
                                         {/* Section 05: Ceremony Details */}
                                         <section>
                                             <div className="flex justify-between items-center mb-8">
@@ -1201,22 +1319,67 @@ export default function AdminDashboard() {
                                         <section>
                                             <div className="flex justify-between items-center mb-8">
                                                 <h2 className="text-2xl font-headline text-primary">Registry Details</h2>
-                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 08</span>
+                                                <div className="flex gap-2">
+                                                    <button type="button" onClick={() => handleAddGiftOption('bank')} className="text-[0.75rem] bg-surface-container font-label uppercase text-primary hover:bg-surface-container-high px-3 py-1.5 rounded transition-colors flex items-center gap-1">
+                                                        <Plus className="w-3 h-3" /> Bank
+                                                    </button>
+                                                    <button type="button" onClick={() => handleAddGiftOption('mobile')} className="text-[0.75rem] bg-surface-container font-label uppercase text-primary hover:bg-surface-container-high px-3 py-1.5 rounded transition-colors flex items-center gap-1">
+                                                        <Plus className="w-3 h-3" /> Mobile
+                                                    </button>
+                                                </div>
                                             </div>
                                             <div className="bg-surface-container-latest p-8 space-y-6">
                                                 <div className="space-y-1.5">
                                                     <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Message & Gratitude Tone</label>
                                                     <textarea name="giftMessage" value={liveData.giftMessage || ''} onChange={handleInputChange} rows={2} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body resize-none" />
                                                 </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Bank Account Beneficiary</label>
-                                                        <input type="text" name="bankAccountName" value={liveData.bankAccountName || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                    </div>
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Electronic Code / IBAN</label>
-                                                        <input type="text" name="bankAccountNumber" value={liveData.bankAccountNumber || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                    </div>
+
+                                                {(liveData.giftOptions || []).length === 0 && (
+                                                    <p className="text-sm text-secondary italic text-center py-4">No transfer options added yet.</p>
+                                                )}
+
+                                                <div className="space-y-4">
+                                                    {(liveData.giftOptions || []).map((option, idx) => (
+                                                        <div key={option.id} className="p-4 border border-outline-variant/30 rounded-lg bg-surface-container-lowest relative group">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveGiftOption(idx)}
+                                                                className="absolute top-4 right-4 text-secondary hover:text-error transition-colors"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                            <h4 className="text-xs font-bold text-secondary uppercase tracking-widest mb-4">
+                                                                {option.type === 'bank' ? 'Bank Transfer' : 'Mobile Transfer'}
+                                                            </h4>
+                                                            {option.type === 'bank' ? (
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                    <div className="space-y-1.5">
+                                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Bank Name</label>
+                                                                        <input type="text" value={option.bankName || ''} onChange={(e) => handleGiftOptionChange(idx, 'bankName', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" placeholder="e.g. Chase Bank" />
+                                                                    </div>
+                                                                    <div className="space-y-1.5">
+                                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Account Name</label>
+                                                                        <input type="text" value={option.accountName || ''} onChange={(e) => handleGiftOptionChange(idx, 'accountName', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" placeholder="e.g. John Doe" />
+                                                                    </div>
+                                                                    <div className="space-y-1.5 md:col-span-2">
+                                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Account Number / IBAN *</label>
+                                                                        <input type="text" value={option.accountNumber || ''} onChange={(e) => handleGiftOptionChange(idx, 'accountNumber', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" />
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                    <div className="space-y-1.5">
+                                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Service Name</label>
+                                                                        <input type="text" value={option.serviceName || ''} onChange={(e) => handleGiftOptionChange(idx, 'serviceName', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" placeholder="e.g. Venmo, Zelle" />
+                                                                    </div>
+                                                                    <div className="space-y-1.5">
+                                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Mobile Number / Handle *</label>
+                                                                        <input type="text" value={option.mobileNumber || ''} onChange={(e) => handleGiftOptionChange(idx, 'mobileNumber', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" placeholder="@johndoe or Phone" />
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         </section>
