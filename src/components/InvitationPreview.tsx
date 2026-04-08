@@ -677,11 +677,6 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                 {/* The Houses Block */}
                                 {data.showHouses && (
                                     <motion.div variants={itemVariants} className="flex flex-col items-center w-full mb-16">
-                                        <h4 className="text-3xl md:text-5xl font-serif text-stone-800 tracking-[0.2em] uppercase mb-10 font-light drop-shadow-sm">
-                                            The Houses
-                                        </h4>
-                                        <div className={`w-12 h-[1px] ${cleanTheme.accent} opacity-40 mb-16 mx-auto`} />
-
                                         <div className="w-full flex flex-col gap-16 md:px-8 text-center">
                                             {/* Bride's House */}
                                             <div className="flex flex-col items-center gap-4">
@@ -690,7 +685,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                         {data.housesData.brideLabel}
                                                     </p>
                                                 )}
-                                                <h5 className={`text-2xl md:text-3xl font-serif ${cleanTheme.primaryText} uppercase tracking-widest mb-4`}>
+                                                <h5 className={`text-3xl md:text-5xl font-serif ${cleanTheme.primaryText} uppercase tracking-[0.2em] mb-4 font-light drop-shadow-sm`}>
                                                     {data.housesData?.brideName || "The Bride's House"}
                                                 </h5>
                                                 
@@ -705,7 +700,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                 {data.housesData?.brideTime && (
                                                     <div className="flex flex-col items-center gap-2 text-stone-700">
                                                         <p className="font-sans font-light text-sm md:text-base">
-                                                            Arrival from <span className="font-medium">{data.housesData.brideTime}</span>
+                                                            Starting <span className="font-medium">{data.housesData.brideTime}</span>
                                                         </p>
                                                     </div>
                                                 )}
@@ -732,7 +727,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                         {data.housesData.groomLabel}
                                                     </p>
                                                 )}
-                                                <h5 className={`text-2xl md:text-3xl font-serif ${cleanTheme.primaryText} uppercase tracking-widest mb-4`}>
+                                                <h5 className={`text-3xl md:text-5xl font-serif ${cleanTheme.primaryText} uppercase tracking-[0.2em] mb-4 font-light drop-shadow-sm`}>
                                                     {data.housesData?.groomName || "The Groom's House"}
                                                 </h5>
                                                 
@@ -747,7 +742,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                 {data.housesData?.groomTime && (
                                                     <div className="flex flex-col items-center gap-2 text-stone-700">
                                                         <p className="font-sans font-light text-sm md:text-base">
-                                                            Arrival from <span className="font-medium">{data.housesData.groomTime}</span>
+                                                            Starting <span className="font-medium">{data.housesData.groomTime}</span>
                                                         </p>
                                                     </div>
                                                 )}
