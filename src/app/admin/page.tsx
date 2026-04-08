@@ -13,9 +13,11 @@ import InvitationPreview, {
     NavigationLodgingHotel,
     NavigationPagesContent
 } from '@/components/InvitationPreview';
-import { LogOut, Users, Plus, LayoutDashboard, Search, ChevronRight, Copy, Link, QrCode, Download, Share, Lock, Trash2 } from 'lucide-react';
+import { LogOut, Users, Plus, LayoutDashboard, Search, ChevronRight, Copy, Link, QrCode, Download, Share, Lock, Trash2, Shield } from 'lucide-react';
 import BudgetTracker from '@/components/BudgetTracker';
 import TableSeating from '@/components/TableSeating';
+import ClientEntitlementsPanel from '@/components/admin/ClientEntitlementsPanel';
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import { getExpensesBySlug, SelectExpense } from '@/app/actions/budget';
 import { getSeatingData } from '@/app/actions/seating';
 import type { SelectSeatingTable, SelectGuest } from '@/app/actions/seating';
@@ -159,7 +161,8 @@ export default function AdminDashboard() {
     };
 
     // Budget State
-    const [activeTab, setActiveTab] = useState<'clients-list' | 'builder' | 'budget' | 'seating'>('clients-list');
+    const [activeTab, setActiveTab] = useState<'clients-list' | 'builder' | 'budget' | 'seating' | 'entitlements'>('clients-list');
+    const [accessToken, setAccessToken] = useState<string | null>(null);
     const [expenses, setExpenses] = useState<SelectExpense[]>([]);
 
     // Seating State
@@ -198,6 +201,7 @@ export default function AdminDashboard() {
                 router.push('/login'); // Not authorized as admin
                 return;
             }
+            setAccessToken(session.access_token ?? null);
             fetchClients();
             setLoadingAuth(false);
         };
@@ -511,7 +515,7 @@ export default function AdminDashboard() {
                 customSections: updatedCustomSections
             };
 
-            const response = await fetch('/api/admin/invitation', {
+            const response = await fetchWithAuth('/api/admin/invitation', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payloadToSave)
@@ -590,6 +594,23 @@ export default function AdminDashboard() {
                             <Users className="w-5 h-5" />
                             <span className="font-label uppercase tracking-[0.05em] text-[0.75rem] font-bold">Active Clients</span>
                         </button>
+                        <button
+                            className={`w-full flex items-center gap-3 py-3 px-8 rounded-r-full transition-all duration-200 ${activeTab === 'entitlements' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm scale-[0.99]' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
+                            onClick={() => {
+                                setLiveData(defaultData);
+                                setActiveTab('entitlements');
+                                setHeroImageFile(null); setHeroImagePreview(null);
+                                setHeroVideoFile(null); setHeroVideoPreview(null);
+                                setHeroLogoFile(null); setHeroLogoPreview(null);
+                                setAudioFile(null); setAudioPreview(null);
+                                setFormalImageFile(null); setFormalImagePreview(null);
+                                setDetailsBgFile(null); setDetailsBgPreview(null);
+                                setCustomFiles({});
+                            }}
+                        >
+                            <Shield className="w-5 h-5" />
+                            <span className="font-label uppercase tracking-[0.05em] text-[0.75rem] font-bold">Client Entitlements</span>
+                        </button>
                     </nav>
 
                     <div className="mt-auto px-6 mb-4">
@@ -619,7 +640,7 @@ export default function AdminDashboard() {
             <main className="flex-1 flex flex-col h-full relative bg-surface">
 
                 {/* Top Nav Tabs */}
-                {liveData.slug && activeTab !== 'clients-list' && (
+                {liveData.slug && activeTab !== 'clients-list' && activeTab !== 'entitlements' && (
                     <div className="h-14 border-b border-surface-container-highest flex items-center px-8 gap-0 shrink-0 bg-surface-container-low/50">
                         {/* Back Button + Client Name */}
                         <button
@@ -663,6 +684,12 @@ export default function AdminDashboard() {
                 )}
 
                 <div className="flex-1 flex flex-col lg:flex-row w-full overflow-hidden relative">
+
+                    {activeTab === 'entitlements' && !isCreatingClient && (
+                        <div className="w-full h-full overflow-y-auto">
+                            <ClientEntitlementsPanel />
+                        </div>
+                    )}
 
                     {activeTab === 'clients-list' && !isCreatingClient && (
                         <div className="w-full h-full overflow-y-auto w-full max-w-[1600px] mx-auto p-8 md:p-12 lg:p-16">
@@ -745,9 +772,11 @@ export default function AdminDashboard() {
                                                     setHeroVideoFile(null); setHeroVideoPreview(null);
                                                     setHeroLogoFile(null); setHeroLogoPreview(null);
                                                     setAudioFile(null); setAudioPreview(null);
-                                                    const exp = await getExpensesBySlug(client.slug);
+                                                    const { data: { session: s } } = await supabase.auth.getSession();
+                                                    const token = s?.access_token;
+                                                    const exp = await getExpensesBySlug(client.slug, token);
                                                     setExpenses(exp);
-                                                    const seatData = await getSeatingData(client.slug);
+                                                    const seatData = await getSeatingData(client.slug, token);
                                                     setSeatingTables(seatData.tables);
                                                     setSeatingGuests(seatData.guests);
                                                     setActiveTab('builder'); // Transition to Builder
@@ -1676,13 +1705,13 @@ export default function AdminDashboard() {
 
                     {activeTab === 'budget' && !isCreatingClient && (
                         <div className="w-full h-full overflow-y-auto p-8 bg-surface-container-low">
-                            <BudgetTracker slug={liveData.slug} initialExpenses={expenses} isAdmin={true} />
+                            <BudgetTracker slug={liveData.slug} initialExpenses={expenses} isAdmin={true} accessToken={accessToken} />
                         </div>
                     )}
 
                     {activeTab === 'seating' && !isCreatingClient && (
                         <div className="w-full h-full overflow-y-auto p-8 bg-surface-container-low">
-                            <TableSeating slug={liveData.slug} initialTables={seatingTables} initialGuests={seatingGuests} />
+                            <TableSeating slug={liveData.slug} initialTables={seatingTables} initialGuests={seatingGuests} accessToken={accessToken} />
                         </div>
                     )}
                 </div>

@@ -22,7 +22,8 @@ import {
     Calculator,
     Armchair,
     Edit2,
-    Trash2
+    Trash2,
+    Lock
 } from 'lucide-react';
 import InvitationPreview, {
     EMPTY_EXPLORING_SPOT,
@@ -39,9 +40,21 @@ import TableSeating from '@/components/TableSeating';
 import { getExpensesBySlug } from '@/app/actions/budget';
 import { getSeatingData } from '@/app/actions/seating';
 import type { SelectSeatingTable, SelectGuest } from '@/app/actions/seating';
-
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
+import { useEntitlements } from '@/components/entitlements/EntitlementsContext';
+import type { FeatureKey } from '@/lib/features';
 type RsvpStatus = 'all' | 'attending' | 'declined' | 'pending';
 type DashboardTab = 'overview' | 'guests' | 'messages' | 'budget' | 'seating' | 'settings';
+
+function FeatureLockedMessage({ label }: { label: string }) {
+    return (
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-12 text-center max-w-lg mx-auto">
+            <Lock className="w-10 h-10 mx-auto text-stone-400 mb-4" />
+            <p className="text-stone-800 font-medium">{label} is not enabled for your account.</p>
+            <p className="text-sm text-stone-500 mt-2">Contact your administrator if you need access.</p>
+        </div>
+    );
+}
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -94,6 +107,8 @@ export default function DashboardPage() {
 
     const [isSaving, setIsSaving] = useState(false);
     const [userSlug, setUserSlug] = useState("");
+    const [accessToken, setAccessToken] = useState<string | null>(null);
+    const { hasFeature, loading: entitlementsLoading, features } = useEntitlements();
 
     // Guests State & Handlers
     const [isAddingGuest, setIsAddingGuest] = useState(false);
@@ -108,13 +123,13 @@ export default function DashboardPage() {
 
     const handleSaveEditGuest = async () => {
         try {
-            const res = await fetch('/api/guests', {
+            const res = await fetchWithAuth('/api/guests', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(editGuestData)
             });
             if (res.ok) {
-                const updatedRes = await fetch(`/api/guests?slug=${userSlug}`);
+                const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
                 setRsvps(await updatedRes.json());
                 setEditingGuestId(null);
             }
@@ -127,11 +142,11 @@ export default function DashboardPage() {
     const handleDeleteGuest = async (id: string) => {
         if (!confirm("Are you sure you want to delete this guest?")) return;
         try {
-            const res = await fetch(`/api/guests?id=${id}`, {
+            const res = await fetchWithAuth(`/api/guests?id=${id}`, {
                 method: 'DELETE'
             });
             if (res.ok) {
-                const updatedRes = await fetch(`/api/guests?slug=${userSlug}`);
+                const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
                 setRsvps(await updatedRes.json());
             }
         } catch (error) {
@@ -143,13 +158,13 @@ export default function DashboardPage() {
     const handleAddGuest = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const res = await fetch('/api/guests', {
+            const res = await fetchWithAuth('/api/guests', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ slug: userSlug, guests: [newGuestData] })
             });
             if (res.ok) {
-                const updatedRes = await fetch(`/api/guests?slug=${userSlug}`);
+                const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
                 setRsvps(await updatedRes.json());
                 setIsAddingGuest(false);
                 setNewGuestData({ firstName: '', lastName: '', pax: 1 });
@@ -180,13 +195,13 @@ export default function DashboardPage() {
 
             if (guestsToImport.length > 0) {
                 try {
-                    const res = await fetch('/api/guests', {
+                    const res = await fetchWithAuth('/api/guests', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ slug: userSlug, guests: guestsToImport })
                     });
                     if (res.ok) {
-                        const updatedRes = await fetch(`/api/guests?slug=${userSlug}`);
+                        const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
                         setRsvps(await updatedRes.json());
                         alert('Guests imported successfully!');
                     }
@@ -224,6 +239,7 @@ export default function DashboardPage() {
 
             const slug = session.user.app_metadata?.slug || '';
             setUserSlug(slug);
+            setAccessToken(session.access_token ?? null);
 
             if (slug) {
                 try {
@@ -270,17 +286,13 @@ export default function DashboardPage() {
                         }
                     }
 
-                    const rsvpsRes = await fetch(`/api/guests?slug=${slug}`);
+                    const rsvpsRes = await fetchWithAuth(`/api/guests?slug=${slug}`);
                     if (rsvpsRes.ok) {
                         const rsvpsData = await rsvpsRes.json();
                         setRsvps(rsvpsData);
+                    } else {
+                        console.warn('Guest list fetch failed', rsvpsRes.status, await rsvpsRes.text().catch(() => ''));
                     }
-
-                    const expData = await getExpensesBySlug(slug);
-                    setExpenses(expData);
-
-                    const seatData = await getSeatingData(slug);
-                    setSeatingData(seatData);
                 } catch (e) {
                     console.error("Failed to load settings or RSVPs or expenses", e);
                 }
@@ -290,6 +302,71 @@ export default function DashboardPage() {
         };
         loadDashboardData();
     }, [router]);
+
+    /** Re-fetch RSVPs after entitlements resolve — avoids an early fetch before auth/session is stable. */
+    useEffect(() => {
+        if (entitlementsLoading || !userSlug || !features.guests) return;
+        let cancelled = false;
+        (async () => {
+            const rsvpsRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
+            if (cancelled || !rsvpsRes.ok) return;
+            const rsvpsData = await rsvpsRes.json();
+            if (!cancelled) setRsvps(rsvpsData);
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [entitlementsLoading, userSlug, features.guests]);
+
+    /** Load budget / seating only after entitlements are known — avoids server actions when features are off. */
+    useEffect(() => {
+        if (entitlementsLoading || !userSlug) return;
+        let cancelled = false;
+        (async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!features.budget) {
+                if (!cancelled) setExpenses([]);
+            } else {
+                try {
+                    const expData = await getExpensesBySlug(userSlug, token);
+                    if (!cancelled) setExpenses(expData);
+                } catch (e) {
+                    console.warn('Budget data not loaded', e);
+                    if (!cancelled) setExpenses([]);
+                }
+            }
+            if (!features.seating) {
+                if (!cancelled) setSeatingData({ tables: [], guests: [] });
+            } else {
+                try {
+                    const seatData = await getSeatingData(userSlug, token);
+                    if (!cancelled) setSeatingData(seatData);
+                } catch (e) {
+                    console.warn('Seating data not loaded', e);
+                    if (!cancelled) setSeatingData({ tables: [], guests: [] });
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [entitlementsLoading, userSlug, features.budget, features.seating]);
+
+    useEffect(() => {
+        if (entitlementsLoading) return;
+        const tabFeature: Partial<Record<DashboardTab, FeatureKey>> = {
+            guests: 'guests',
+            messages: 'messages',
+            budget: 'budget',
+            seating: 'seating',
+            settings: 'settings'
+        };
+        const f = tabFeature[activeTab];
+        if (f && !hasFeature(f)) {
+            setActiveTab('overview');
+        }
+    }, [entitlementsLoading, activeTab, hasFeature]);
 
     // Derived State for Summary Cards
     const summaryStats = useMemo(() => {
@@ -502,7 +579,7 @@ export default function DashboardPage() {
 
         setIsSaving(true);
         try {
-            const response = await fetch('/api/admin/invitation', { // Reusing the same save endpoint
+            const response = await fetchWithAuth('/api/admin/invitation', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...weddingDetails, slug: userSlug })
@@ -600,7 +677,11 @@ export default function DashboardPage() {
         </>
     );
 
-    const renderGuests = () => (
+    const renderGuests = () => {
+        if (!hasFeature('guests')) {
+            return <FeatureLockedMessage label="Guests" />;
+        }
+        return (
         <>
             <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
@@ -744,9 +825,14 @@ export default function DashboardPage() {
                 </div>
             </div>
         </>
-    );
+        );
+    };
 
-    const renderMessages = () => (
+    const renderMessages = () => {
+        if (!hasFeature('messages')) {
+            return <FeatureLockedMessage label="Messages" />;
+        }
+        return (
         <>
             <div className="mb-10">
                 <h2 className="text-3xl font-serif text-stone-900">Guest Messages</h2>
@@ -765,17 +851,35 @@ export default function DashboardPage() {
                 ))}
             </div>
         </>
-    );
+        );
+    };
 
-    const renderBudget = () => (
-        <BudgetTracker slug={userSlug} initialExpenses={expenses} />
-    );
+    const renderBudget = () => {
+        if (!hasFeature('budget')) {
+            return <FeatureLockedMessage label="Budget" />;
+        }
+        return <BudgetTracker slug={userSlug} initialExpenses={expenses} accessToken={accessToken} />;
+    };
 
-    const renderSeating = () => (
-        <TableSeating slug={userSlug} initialTables={seatingData.tables} initialGuests={seatingData.guests} />
-    );
+    const renderSeating = () => {
+        if (!hasFeature('seating')) {
+            return <FeatureLockedMessage label="Seating" />;
+        }
+        return (
+            <TableSeating
+                slug={userSlug}
+                initialTables={seatingData.tables}
+                initialGuests={seatingData.guests}
+                accessToken={accessToken}
+            />
+        );
+    };
 
-    const renderSettings = () => (
+    const renderSettings = () => {
+        if (!hasFeature('settings')) {
+            return <FeatureLockedMessage label="Settings" />;
+        }
+        return (
         <div className="flex h-[calc(100vh-2rem)] rounded-xl overflow-hidden bg-white shadow-sm border border-stone-200">
             <div className="w-full lg:w-1/2 overflow-y-auto">
                 <form onSubmit={handleSaveSettings} className="p-8 md:p-10 space-y-10">
@@ -1218,7 +1322,8 @@ export default function DashboardPage() {
                 </div>
             </div>
         </div>
-    );
+        );
+    };
 
     return (
         <div className="min-h-screen bg-stone-50 flex font-sans text-stone-800 selection:bg-stone-200 selection:text-stone-900">
@@ -1238,6 +1343,7 @@ export default function DashboardPage() {
                         <LayoutDashboard className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'overview' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
                         Overview
                     </button>
+                    {hasFeature('guests') && (
                     <button
                         onClick={() => setActiveTab('guests')}
                         className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'guests' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
@@ -1245,6 +1351,8 @@ export default function DashboardPage() {
                         <Users className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'guests' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
                         Guests
                     </button>
+                    )}
+                    {hasFeature('messages') && (
                     <button
                         onClick={() => setActiveTab('messages')}
                         className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'messages' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
@@ -1253,6 +1361,8 @@ export default function DashboardPage() {
                         Messages
                         <span className="ml-auto bg-stone-200 text-stone-600 py-0.5 px-2 rounded-full text-xs font-semibold">{guestMessages.length}</span>
                     </button>
+                    )}
+                    {hasFeature('budget') && (
                     <button
                         onClick={() => setActiveTab('budget')}
                         className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'budget' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
@@ -1260,6 +1370,8 @@ export default function DashboardPage() {
                         <Calculator className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'budget' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
                         Budget
                     </button>
+                    )}
+                    {hasFeature('seating') && (
                     <button
                         onClick={() => setActiveTab('seating')}
                         className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'seating' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
@@ -1267,6 +1379,8 @@ export default function DashboardPage() {
                         <Armchair className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'seating' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
                         Seating
                     </button>
+                    )}
+                    {hasFeature('settings') && (
                     <button
                         onClick={() => setActiveTab('settings')}
                         className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'settings' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
@@ -1274,6 +1388,7 @@ export default function DashboardPage() {
                         <Settings className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'settings' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
                         Settings
                     </button>
+                    )}
                 </nav>
 
                 <div className="p-4 border-t border-stone-100">
@@ -1291,21 +1406,31 @@ export default function DashboardPage() {
                     <button onClick={() => setActiveTab('overview')} className={`p-2 rounded-md ${activeTab === 'overview' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <LayoutDashboard className="w-5 h-5" />
                     </button>
+                    {hasFeature('guests') && (
                     <button onClick={() => setActiveTab('guests')} className={`p-2 rounded-md ${activeTab === 'guests' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <Users className="w-5 h-5" />
                     </button>
+                    )}
+                    {hasFeature('messages') && (
                     <button onClick={() => setActiveTab('messages')} className={`p-2 rounded-md ${activeTab === 'messages' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <Mail className="w-5 h-5" />
                     </button>
+                    )}
+                    {hasFeature('budget') && (
                     <button onClick={() => setActiveTab('budget')} className={`p-2 rounded-md ${activeTab === 'budget' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <Calculator className="w-5 h-5" />
                     </button>
+                    )}
+                    {hasFeature('seating') && (
                     <button onClick={() => setActiveTab('seating')} className={`p-2 rounded-md ${activeTab === 'seating' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <Armchair className="w-5 h-5" />
                     </button>
+                    )}
+                    {hasFeature('settings') && (
                     <button onClick={() => setActiveTab('settings')} className={`p-2 rounded-md ${activeTab === 'settings' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <Settings className="w-5 h-5" />
                     </button>
+                    )}
                 </div>
             </div>
 

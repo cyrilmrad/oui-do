@@ -2,29 +2,21 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { invitations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-const supabaseAdmin = supabaseUrl && supabaseUrl.startsWith('http')
-    ? createClient(supabaseUrl, serviceRoleKey, {
-        auth: { autoRefreshToken: false, persistSession: false }
-    })
-    : null;
+import { requireFeatureForSlug } from '@/lib/entitlements/guard';
 
 export async function POST(request: Request) {
-    if (!supabaseAdmin) return NextResponse.json({ error: 'Database uninitialized' }, { status: 500 });
-
     try {
         const body = await request.json();
 
-        // MVP: We assume the Admin is the one hitting this endpoint
-        // A full implementation would inspect request headers to verify the JWT
         const { slug, id, createdAt, updatedAt, ...updateData } = body;
 
         if (!slug) {
             return NextResponse.json({ error: 'Missing client slug' }, { status: 400 });
+        }
+
+        const guard = await requireFeatureForSlug(request, slug, 'settings');
+        if (!guard.ok) {
+            return NextResponse.json({ error: guard.message }, { status: guard.status });
         }
 
         // Check if invitation already exists for this slug
@@ -47,3 +39,4 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+

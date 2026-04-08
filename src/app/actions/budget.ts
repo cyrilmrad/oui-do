@@ -4,35 +4,40 @@ import { db } from '@/db';
 import { expenses } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { enforceSlugFeature } from '@/lib/entitlements/guard';
 
 export type InsertExpense = typeof expenses.$inferInsert;
 export type SelectExpense = typeof expenses.$inferSelect;
 
-/**
- * Fetches all expenses for a specific event, ordered by creation date.
- */
-export async function getExpensesBySlug(slug: string) {
+export async function getExpensesBySlug(slug: string, accessToken?: string) {
     try {
-        const data = await db.select()
+        await enforceSlugFeature(slug, 'budget', accessToken);
+        const data = await db
+            .select()
             .from(expenses)
             .where(eq(expenses.slug, slug))
             .orderBy(expenses.createdAt);
         return data;
     } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        if (msg.startsWith('FEATURE_DISABLED:')) {
+            return [];
+        }
         console.error("Error fetching expenses:", error);
         throw new Error("Failed to fetch expenses from the database.");
     }
 }
 
-/**
- * Inserts a new expense row for a given event.
- */
-export async function addExpense(slug: string, payload: Partial<InsertExpense>) {
+export async function addExpense(slug: string, payload: Partial<InsertExpense>, accessToken?: string) {
     try {
-        const [newExpense] = await db.insert(expenses).values({
-            ...payload,
-            slug,
-        } as InsertExpense).returning();
+        await enforceSlugFeature(slug, 'budget', accessToken);
+        const [newExpense] = await db
+            .insert(expenses)
+            .values({
+                ...payload,
+                slug
+            } as InsertExpense)
+            .returning();
 
         revalidatePath(`/dashboard`);
         revalidatePath(`/admin`);
@@ -43,12 +48,16 @@ export async function addExpense(slug: string, payload: Partial<InsertExpense>) 
     }
 }
 
-/**
- * Updates an existing expense row (e.g., actualCost or supplier).
- */
-export async function updateExpense(id: string, payload: Partial<InsertExpense>) {
+export async function updateExpense(id: string, payload: Partial<InsertExpense>, accessToken?: string) {
     try {
-        const [updatedExpense] = await db.update(expenses)
+        const [existing] = await db.select().from(expenses).where(eq(expenses.id, id)).limit(1);
+        if (!existing) {
+            throw new Error("Expense not found.");
+        }
+        await enforceSlugFeature(existing.slug, 'budget', accessToken);
+
+        const [updatedExpense] = await db
+            .update(expenses)
             .set({ ...payload, updatedAt: new Date() })
             .where(eq(expenses.id, id))
             .returning();
@@ -62,11 +71,14 @@ export async function updateExpense(id: string, payload: Partial<InsertExpense>)
     }
 }
 
-/**
- * Deletes an expense entirely.
- */
-export async function deleteExpense(id: string) {
+export async function deleteExpense(id: string, accessToken?: string) {
     try {
+        const [existing] = await db.select().from(expenses).where(eq(expenses.id, id)).limit(1);
+        if (!existing) {
+            throw new Error("Expense not found.");
+        }
+        await enforceSlugFeature(existing.slug, 'budget', accessToken);
+
         await db.delete(expenses).where(eq(expenses.id, id));
         revalidatePath(`/dashboard`);
         revalidatePath(`/admin`);

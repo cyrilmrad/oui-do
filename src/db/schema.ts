@@ -117,6 +117,19 @@ export const expenses = pgTable('expenses', {
     })
 ]).enableRLS();
 
+/** Feature flags per client slug (matches Supabase Auth app_metadata.slug). */
+export const clientEntitlements = pgTable('client_entitlements', {
+    id: serial('id').primaryKey(),
+    slug: varchar('slug', { length: 255 }).references(() => invitations.slug).notNull().unique(),
+    guestsEnabled: boolean('guests_enabled').notNull().default(true),
+    messagesEnabled: boolean('messages_enabled').notNull().default(true),
+    budgetEnabled: boolean('budget_enabled').notNull().default(false),
+    seatingEnabled: boolean('seating_enabled').notNull().default(false),
+    settingsEnabled: boolean('settings_enabled').notNull().default(false),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow()
+});
+
 export const payments = pgTable('payments', {
     id: uuid('id').defaultRandom().primaryKey(),
     expenseId: uuid('expense_id').references(() => expenses.id, { onDelete: 'cascade' }).notNull(),

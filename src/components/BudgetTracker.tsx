@@ -10,9 +10,10 @@ interface BudgetTrackerProps {
     slug: string;
     initialExpenses: SelectExpense[];
     isAdmin?: boolean;
+    accessToken?: string | null;
 }
 
-export default function BudgetTracker({ slug, initialExpenses, isAdmin = false }: BudgetTrackerProps) {
+export default function BudgetTracker({ slug, initialExpenses, isAdmin = false, accessToken }: BudgetTrackerProps) {
     const [expenses, setExpenses] = useState<SelectExpense[]>(initialExpenses);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -65,7 +66,7 @@ export default function BudgetTracker({ slug, initialExpenses, isAdmin = false }
     const handleBlur = async (id: string, field: keyof SelectExpense, value: any) => {
         setIsSaving(true);
         try {
-            await updateExpense(id, { [field]: value });
+            await updateExpense(id, { [field]: value }, accessToken ?? undefined);
         } catch (error) {
             console.error("Failed to update expense", error);
         } finally {
@@ -79,7 +80,7 @@ export default function BudgetTracker({ slug, initialExpenses, isAdmin = false }
         handleChange(id, 'isIncluded', newValue);
         setIsSaving(true);
         try {
-            await updateExpense(id, { isIncluded: newValue });
+            await updateExpense(id, { isIncluded: newValue }, accessToken ?? undefined);
         } catch (error) {
             console.error("Failed to toggle inclusion", error);
             // Revert on fail
@@ -101,7 +102,7 @@ export default function BudgetTracker({ slug, initialExpenses, isAdmin = false }
                 actualCost: 0,
                 notes: '',
                 isIncluded: true,
-            });
+            }, accessToken ?? undefined);
             setExpenses(prev => [...prev, newExpense]);
         } catch (error) {
             console.error("Failed to add expense", error);
@@ -120,7 +121,7 @@ export default function BudgetTracker({ slug, initialExpenses, isAdmin = false }
         setExpenses(prev => prev.filter(e => e.id !== id));
 
         try {
-            await deleteExpense(id);
+            await deleteExpense(id, accessToken ?? undefined);
         } catch (error) {
             console.error("Failed to delete expense", error);
             // Revert on fail
@@ -339,6 +340,7 @@ export default function BudgetTracker({ slug, initialExpenses, isAdmin = false }
                 actualCost={paymentModal.actualCost}
                 slug={slug}
                 isAdmin={isAdmin}
+                accessToken={accessToken}
             />
         </div>
     );

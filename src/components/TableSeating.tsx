@@ -50,6 +50,7 @@ interface TableSeatingProps {
     slug: string;
     initialTables: SelectSeatingTable[];
     initialGuests: SelectGuest[];
+    accessToken?: string | null;
 }
 
 // ─── Transform DB records to local state ────────────────────────────
@@ -291,7 +292,7 @@ function TableCard({
 }
 
 // ─── Main Component ─────────────────────────────────────────────────
-export default function TableSeating({ slug, initialTables, initialGuests }: TableSeatingProps) {
+export default function TableSeating({ slug, initialTables, initialGuests, accessToken }: TableSeatingProps) {
     const [localTables, setLocalTables] = useState<LocalTable[]>(() => toLocalTables(initialTables));
     const [localGuests, setLocalGuests] = useState<LocalGuest[]>(() => toLocalGuests(initialGuests));
     const [activeGuest, setActiveGuest] = useState<LocalGuest | null>(null);
@@ -333,7 +334,7 @@ export default function TableSeating({ slug, initialTables, initialGuests }: Tab
         // Server persistence
         startTransition(async () => {
             try {
-                await assignGuestToTable(guestId, newTableId);
+                await assignGuestToTable(guestId, newTableId, accessToken ?? undefined);
             } catch (error) {
                 console.error('Failed to assign guest:', error);
                 // Revert
@@ -346,7 +347,7 @@ export default function TableSeating({ slug, initialTables, initialGuests }: Tab
         setLocalTables(prev => prev.map(t => t.id === tableId ? { ...t, shape } : t));
         startTransition(async () => {
             try {
-                await updateTable(tableId, { shape });
+                await updateTable(tableId, { shape }, accessToken ?? undefined);
             } catch (error) {
                 console.error('Failed to update table shape:', error);
             }
@@ -360,7 +361,7 @@ export default function TableSeating({ slug, initialTables, initialGuests }: Tab
                 const newTable = await createTable(slug, {
                     name: newTableName.trim(),
                     capacity: newTableCapacity,
-                });
+                }, accessToken ?? undefined);
                 setLocalTables(prev => [...prev, {
                     id: newTable.id,
                     name: newTable.name,
@@ -383,7 +384,7 @@ export default function TableSeating({ slug, initialTables, initialGuests }: Tab
 
         startTransition(async () => {
             try {
-                await deleteTable(tableId);
+                await deleteTable(tableId, accessToken ?? undefined);
             } catch (error) {
                 console.error('Failed to delete table:', error);
             }

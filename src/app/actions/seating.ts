@@ -1,21 +1,19 @@
 "use server";
 
 import { db } from '@/db';
-import { seatingTables, guests } from '@/db/schema';
+import { seatingTables, guests, invitations } from '@/db/schema';
 import { eq, and, ne } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { enforceSlugFeature } from '@/lib/entitlements/guard';
 
 export type SelectSeatingTable = typeof seatingTables.$inferSelect;
 export type InsertSeatingTable = typeof seatingTables.$inferInsert;
 export type SelectGuest = typeof guests.$inferSelect;
 
-/**
- * Fetches all seating tables and non-declined guests for a given slug.
- */
-export async function getSeatingData(slug: string) {
+export async function getSeatingData(slug: string, accessToken?: string) {
     try {
-        // Get the invitation ID for this slug
-        const { invitations } = await import('@/db/schema');
+        await enforceSlugFeature(slug, 'seating', accessToken);
+
         const [invitation] = await db.select({ id: invitations.id })
             .from(invitations)
             .where(eq(invitations.slug, slug));
@@ -29,7 +27,6 @@ export async function getSeatingData(slug: string) {
             .where(eq(seatingTables.slug, slug))
             .orderBy(seatingTables.createdAt);
 
-        // Only fetch attending or pending guests (exclude declined)
         const guestsData = await db.select()
             .from(guests)
             .where(and(
@@ -40,16 +37,22 @@ export async function getSeatingData(slug: string) {
 
         return { tables: tablesData, guests: guestsData };
     } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        if (msg.startsWith('FEATURE_DISABLED:')) {
+            return { tables: [], guests: [] };
+        }
         console.error("Error fetching seating data:", error);
         throw new Error("Failed to fetch seating data.");
     }
 }
 
-/**
- * Creates a new seating table for a given event.
- */
-export async function createTable(slug: string, payload: { name: string; capacity: number; shape?: string }) {
+export async function createTable(
+    slug: string,
+    payload: { name: string; capacity: number; shape?: string },
+    accessToken?: string
+) {
     try {
+        await enforceSlugFeature(slug, 'seating', accessToken);
         const [newTable] = await db.insert(seatingTables).values({
             slug,
             name: payload.name,
@@ -66,11 +69,12 @@ export async function createTable(slug: string, payload: { name: string; capacit
     }
 }
 
-/**
- * Updates an existing seating table (name, capacity, shape).
- */
-export async function updateTable(id: string, payload: Partial<InsertSeatingTable>) {
+export async function updateTable(id: string, payload: Partial<InsertSeatingTable>, accessToken?: string) {
     try {
+        const [existing] = await db.select().from(seatingTables).where(eq(seatingTables.id, id)).limit(1);
+        if (!existing) throw new Error("Table not found.");
+        await enforceSlugFeature(existing.slug, 'seating', accessToken);
+
         const [updated] = await db.update(seatingTables)
             .set({ ...payload, updatedAt: new Date() })
             .where(eq(seatingTables.id, id))
@@ -85,11 +89,12 @@ export async function updateTable(id: string, payload: Partial<InsertSeatingTabl
     }
 }
 
-/**
- * Deletes a seating table. Guests' tableId will be set to null via onDelete cascade.
- */
-export async function deleteTable(id: string) {
+export async function deleteTable(id: string, accessToken?: string) {
     try {
+        const [existing] = await db.select().from(seatingTables).where(eq(seatingTables.id, id)).limit(1);
+        if (!existing) throw new Error("Table not found.");
+        await enforceSlugFeature(existing.slug, 'seating', accessToken);
+
         await db.delete(seatingTables).where(eq(seatingTables.id, id));
         revalidatePath(`/dashboard`);
         revalidatePath(`/admin`);
@@ -100,11 +105,14 @@ export async function deleteTable(id: string) {
     }
 }
 
-/**
- * Assigns a guest to a table (or un-assigns if tableId is null).
- */
-export async function assignGuestToTable(guestId: string, tableId: string | null) {
+export async function assignGuestToTable(guestId: string, tableId: string | null, accessToken?: string) {
     try {
+        const [guestRow] = await db.select().from(guests).where(eq(guests.id, guestId)).limit(1);
+        if (!guestRow) throw new Error("Guest not found.");
+        const [inv] = await db.select().from(invitations).where(eq(invitations.id, guestRow.invitationId)).limit(1);
+        if (!inv) throw new Error("Invitation not found.");
+        await enforceSlugFeature(inv.slug, 'seating', accessToken);
+
         const [updated] = await db.update(guests)
             .set({ tableId, updatedAt: new Date() })
             .where(eq(guests.id, guestId))

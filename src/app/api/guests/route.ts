@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { guests, invitations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { requireFeatureForSlug } from '@/lib/entitlements/guard';
 
 export async function GET(request: Request) {
     try {
@@ -12,6 +13,11 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Missing slug' }, { status: 400 });
         }
 
+        const guard = await requireFeatureForSlug(request, slug, 'guests');
+        if (!guard.ok) {
+            return NextResponse.json({ error: guard.message }, { status: guard.status });
+        }
+
         const invitation = await db.select().from(invitations).where(eq(invitations.slug, slug));
         if (invitation.length === 0) {
             return NextResponse.json({ error: 'Invitation not found' }, { status: 404 });
@@ -19,7 +25,6 @@ export async function GET(request: Request) {
 
         const guestList = await db.select().from(guests).where(eq(guests.invitationId, invitation[0].id));
         return NextResponse.json(guestList, { status: 200 });
-
     } catch (error: any) {
         console.error("Failed fetching guests:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -33,6 +38,11 @@ export async function POST(request: Request) {
 
         if (!slug || !newGuests) {
             return NextResponse.json({ error: 'Missing slug or guests data' }, { status: 400 });
+        }
+
+        const guard = await requireFeatureForSlug(request, slug, 'guests');
+        if (!guard.ok) {
+            return NextResponse.json({ error: guard.message }, { status: guard.status });
         }
 
         const invitation = await db.select().from(invitations).where(eq(invitations.slug, slug));
@@ -54,7 +64,6 @@ export async function POST(request: Request) {
 
         await db.insert(guests).values(insertData);
         return NextResponse.json({ message: 'Guests added successfully' }, { status: 201 });
-
     } catch (error: any) {
         console.error("Failed adding guests:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -68,6 +77,21 @@ export async function PUT(request: Request) {
 
         if (!id) {
             return NextResponse.json({ error: 'Missing guest id' }, { status: 400 });
+        }
+
+        const [guestRow] = await db.select().from(guests).where(eq(guests.id, id)).limit(1);
+        if (!guestRow) {
+            return NextResponse.json({ error: 'Guest not found' }, { status: 404 });
+        }
+
+        const [inv] = await db.select().from(invitations).where(eq(invitations.id, guestRow.invitationId)).limit(1);
+        if (!inv) {
+            return NextResponse.json({ error: 'Invitation not found' }, { status: 404 });
+        }
+
+        const guard = await requireFeatureForSlug(request, inv.slug, 'guests');
+        if (!guard.ok) {
+            return NextResponse.json({ error: guard.message }, { status: guard.status });
         }
 
         await db.update(guests)
@@ -88,6 +112,21 @@ export async function DELETE(request: Request) {
 
         if (!id) {
             return NextResponse.json({ error: 'Missing guest id' }, { status: 400 });
+        }
+
+        const [guestRow] = await db.select().from(guests).where(eq(guests.id, id)).limit(1);
+        if (!guestRow) {
+            return NextResponse.json({ error: 'Guest not found' }, { status: 404 });
+        }
+
+        const [inv] = await db.select().from(invitations).where(eq(invitations.id, guestRow.invitationId)).limit(1);
+        if (!inv) {
+            return NextResponse.json({ error: 'Invitation not found' }, { status: 404 });
+        }
+
+        const guard = await requireFeatureForSlug(request, inv.slug, 'guests');
+        if (!guard.ok) {
+            return NextResponse.json({ error: guard.message }, { status: guard.status });
         }
 
         await db.delete(guests).where(eq(guests.id, id));
