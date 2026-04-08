@@ -3,8 +3,17 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import InvitationPreview, { InvitationData, Theme } from '@/components/InvitationPreview';
-import { LogOut, Users, Plus, LayoutDashboard, Search, ChevronRight, Copy, Link, QrCode, Download, Share, Lock } from 'lucide-react';
+import InvitationPreview, {
+    EMPTY_EXPLORING_SPOT,
+    EMPTY_LODGING_HOTEL,
+    InvitationData,
+    Theme,
+    mergeNavigationPages,
+    NavigationExploringSpot,
+    NavigationLodgingHotel,
+    NavigationPagesContent
+} from '@/components/InvitationPreview';
+import { LogOut, Users, Plus, LayoutDashboard, Search, ChevronRight, Copy, Link, QrCode, Download, Share, Lock, Trash2 } from 'lucide-react';
 import BudgetTracker from '@/components/BudgetTracker';
 import TableSeating from '@/components/TableSeating';
 import { getExpensesBySlug, SelectExpense } from '@/app/actions/budget';
@@ -33,7 +42,8 @@ const defaultData: InvitationData = {
     housesData: {},
     customSections: [],
     giftOptions: [],
-    theme: THEME_PRESETS.emerald
+    theme: THEME_PRESETS.emerald,
+    navigationPages: mergeNavigationPages()
 };
 
 export default function AdminDashboard() {
@@ -303,6 +313,85 @@ export default function AdminDashboard() {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setLiveData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const np = mergeNavigationPages(liveData.navigationPages);
+
+    const updateNavigationPages = (patch: Partial<NavigationPagesContent>) => {
+        setLiveData((prev) => ({
+            ...prev,
+            navigationPages: { ...mergeNavigationPages(prev.navigationPages), ...patch }
+        }));
+    };
+
+    const updateLodgingHotel = (index: number, field: keyof NavigationLodgingHotel, value: string) => {
+        setLiveData((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            const lodgingHotels = base.lodgingHotels.map((h, i) => (i === index ? { ...h, [field]: value } : h));
+            return { ...prev, navigationPages: { ...base, lodgingHotels } };
+        });
+    };
+
+    const updateExploringSpot = (index: number, field: keyof NavigationExploringSpot, value: string) => {
+        setLiveData((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            const exploringSpots = base.exploringSpots.map((s, i) => (i === index ? { ...s, [field]: value } : s));
+            return { ...prev, navigationPages: { ...base, exploringSpots } };
+        });
+    };
+
+    const addLodgingHotel = () => {
+        setLiveData((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            return {
+                ...prev,
+                navigationPages: {
+                    ...base,
+                    lodgingHotels: [...base.lodgingHotels, { ...EMPTY_LODGING_HOTEL }]
+                }
+            };
+        });
+    };
+
+    const removeLodgingHotel = (index: number) => {
+        setLiveData((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            if (base.lodgingHotels.length <= 1) return prev;
+            return {
+                ...prev,
+                navigationPages: {
+                    ...base,
+                    lodgingHotels: base.lodgingHotels.filter((_, i) => i !== index)
+                }
+            };
+        });
+    };
+
+    const addExploringSpot = () => {
+        setLiveData((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            return {
+                ...prev,
+                navigationPages: {
+                    ...base,
+                    exploringSpots: [...base.exploringSpots, { ...EMPTY_EXPLORING_SPOT }]
+                }
+            };
+        });
+    };
+
+    const removeExploringSpot = (index: number) => {
+        setLiveData((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            if (base.exploringSpots.length <= 1) return prev;
+            return {
+                ...prev,
+                navigationPages: {
+                    ...base,
+                    exploringSpots: base.exploringSpots.filter((_, i) => i !== index)
+                }
+            };
+        });
     };
 
     const handleThemeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -643,7 +732,12 @@ export default function AdminDashboard() {
                                                     const dbData = await res.json();
                                                     if (dbData) {
                                                         setThemeSelection(dbData.theme ? Object.keys(THEME_PRESETS).find(k => THEME_PRESETS[k].accent === (dbData.theme as Theme).accent) || 'emerald' : 'emerald');
-                                                        setLiveData({ ...defaultData, ...dbData, theme: dbData.theme || THEME_PRESETS.emerald });
+                                                        setLiveData({
+                                                            ...defaultData,
+                                                            ...dbData,
+                                                            theme: dbData.theme || THEME_PRESETS.emerald,
+                                                            navigationPages: mergeNavigationPages((dbData as InvitationData).navigationPages)
+                                                        });
                                                     } else {
                                                         setLiveData({ ...defaultData, slug: client.slug, bride: client.bride, groom: client.groom });
                                                     }
@@ -1403,10 +1497,121 @@ export default function AdminDashboard() {
                                                 </div>
                                                 <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 08</span>
                                             </div>
-                                            <div className="bg-surface-container-latest p-8 space-y-6">
+                                            <div className="bg-surface-container-latest p-8 space-y-8">
                                                 <p className="text-sm text-secondary">
-                                                    Activating this toggle enables the floating Hamburger Menu at the top right of the invitation, allowing guests to switch between "The Wedding", "Lodging", and "Exploring" pages.
+                                                    Activating this toggle enables the floating Hamburger Menu at the top right of the invitation, allowing guests to switch between &quot;The Wedding&quot;, &quot;Lodging&quot;, and &quot;Exploring&quot; pages.
                                                 </p>
+
+                                                <div className="space-y-4">
+                                                    <h3 className="text-[0.7rem] font-label uppercase tracking-[0.12em] text-primary font-bold">Menu labels</h3>
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Main</label>
+                                                            <input type="text" value={np.mainNavLabel} onChange={(e) => updateNavigationPages({ mainNavLabel: e.target.value })} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" />
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Lodging</label>
+                                                            <input type="text" value={np.lodgingNavLabel} onChange={(e) => updateNavigationPages({ lodgingNavLabel: e.target.value })} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" />
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Exploring</label>
+                                                            <input type="text" value={np.exploringNavLabel} onChange={(e) => updateNavigationPages({ exploringNavLabel: e.target.value })} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-4 pt-2 border-t border-outline-variant/15">
+                                                    <h3 className="text-[0.7rem] font-label uppercase tracking-[0.12em] text-primary font-bold">Lodging page</h3>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Heading</label>
+                                                        <input type="text" value={np.lodgingTitle} onChange={(e) => updateNavigationPages({ lodgingTitle: e.target.value })} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" />
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Introduction</label>
+                                                        <textarea value={np.lodgingIntro} onChange={(e) => updateNavigationPages({ lodgingIntro: e.target.value })} rows={3} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface resize-y min-h-[4.5rem]" />
+                                                    </div>
+                                                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                                                        <span className="text-[0.65rem] font-label uppercase tracking-widest text-secondary font-bold">Hotels</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={addLodgingHotel}
+                                                            className="inline-flex items-center gap-1.5 rounded-md border border-outline-variant/30 bg-surface px-3 py-2 text-[0.65rem] font-label font-bold uppercase tracking-widest text-primary hover:bg-surface-container-high"
+                                                        >
+                                                            <Plus className="w-3.5 h-3.5" />
+                                                            Add hotel
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+                                                        {np.lodgingHotels.map((hotel, idx) => (
+                                                            <div key={idx} className="rounded-xl border border-outline-variant/20 p-5 space-y-3 bg-surface/50">
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <p className="text-[0.65rem] font-label uppercase tracking-widest text-secondary font-bold">Hotel {idx + 1}</p>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeLodgingHotel(idx)}
+                                                                        disabled={np.lodgingHotels.length <= 1}
+                                                                        className="rounded-md p-1.5 text-secondary hover:bg-error-container/30 hover:text-error disabled:pointer-events-none disabled:opacity-30"
+                                                                        title={np.lodgingHotels.length <= 1 ? 'At least one hotel required' : 'Remove hotel'}
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+                                                                <input type="text" placeholder="Title" value={hotel.title} onChange={(e) => updateLodgingHotel(idx, 'title', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
+                                                                <input type="text" placeholder="Subtitle / distance" value={hotel.subtitle} onChange={(e) => updateLodgingHotel(idx, 'subtitle', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
+                                                                <textarea placeholder="Description" value={hotel.description} onChange={(e) => updateLodgingHotel(idx, 'description', e.target.value)} rows={3} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface resize-y" />
+                                                                <div className="grid grid-cols-2 gap-2">
+                                                                    <input type="text" placeholder="Link label" value={hotel.linkText} onChange={(e) => updateLodgingHotel(idx, 'linkText', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
+                                                                    <input type="text" placeholder="URL" value={hotel.linkUrl} onChange={(e) => updateLodgingHotel(idx, 'linkUrl', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-4 pt-2 border-t border-outline-variant/15">
+                                                    <h3 className="text-[0.7rem] font-label uppercase tracking-[0.12em] text-primary font-bold">Exploring page</h3>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Heading</label>
+                                                        <input type="text" value={np.exploringTitle} onChange={(e) => updateNavigationPages({ exploringTitle: e.target.value })} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" />
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Introduction</label>
+                                                        <textarea value={np.exploringIntro} onChange={(e) => updateNavigationPages({ exploringIntro: e.target.value })} rows={3} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface resize-y min-h-[4.5rem]" />
+                                                    </div>
+                                                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                                                        <span className="text-[0.65rem] font-label uppercase tracking-widest text-secondary font-bold">Spots</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={addExploringSpot}
+                                                            className="inline-flex items-center gap-1.5 rounded-md border border-outline-variant/30 bg-surface px-3 py-2 text-[0.65rem] font-label font-bold uppercase tracking-widest text-primary hover:bg-surface-container-high"
+                                                        >
+                                                            <Plus className="w-3.5 h-3.5" />
+                                                            Add spot
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                                                        {np.exploringSpots.map((spot, idx) => (
+                                                            <div key={idx} className="rounded-xl border border-outline-variant/20 p-5 space-y-3 bg-surface/50">
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <p className="text-[0.65rem] font-label uppercase tracking-widest text-secondary font-bold">Spot {idx + 1}</p>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeExploringSpot(idx)}
+                                                                        disabled={np.exploringSpots.length <= 1}
+                                                                        className="rounded-md p-1.5 text-secondary hover:bg-error-container/30 hover:text-error disabled:pointer-events-none disabled:opacity-30"
+                                                                        title={np.exploringSpots.length <= 1 ? 'At least one spot required' : 'Remove spot'}
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+                                                                <input type="text" placeholder="Title" value={spot.title} onChange={(e) => updateExploringSpot(idx, 'title', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
+                                                                <input type="text" placeholder="Category" value={spot.category} onChange={(e) => updateExploringSpot(idx, 'category', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
+                                                                <textarea placeholder="Description" value={spot.description} onChange={(e) => updateExploringSpot(idx, 'description', e.target.value)} rows={2} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface resize-y" />
+                                                                <input type="text" placeholder="Image URL" value={spot.imageUrl} onChange={(e) => updateExploringSpot(idx, 'imageUrl', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </section>
                                     </div>

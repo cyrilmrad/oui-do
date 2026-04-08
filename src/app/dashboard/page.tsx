@@ -24,7 +24,16 @@ import {
     Edit2,
     Trash2
 } from 'lucide-react';
-import InvitationPreview, { InvitationData, Theme } from '@/components/InvitationPreview';
+import InvitationPreview, {
+    EMPTY_EXPLORING_SPOT,
+    EMPTY_LODGING_HOTEL,
+    InvitationData,
+    Theme,
+    mergeNavigationPages,
+    NavigationExploringSpot,
+    NavigationLodgingHotel,
+    NavigationPagesContent
+} from '@/components/InvitationPreview';
 import BudgetTracker from '@/components/BudgetTracker';
 import TableSeating from '@/components/TableSeating';
 import { getExpensesBySlug } from '@/app/actions/budget';
@@ -79,7 +88,8 @@ export default function DashboardPage() {
         showHeroDate: true,
         showHouses: false,
         housesData: {},
-        showNavigation: false
+        showNavigation: false,
+        navigationPages: mergeNavigationPages()
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -254,7 +264,8 @@ export default function DashboardPage() {
                                 showHeroDate: dbData.showHeroDate !== false,
                                 showHouses: dbData.showHouses || false,
                                 housesData: dbData.housesData || {},
-                                showNavigation: dbData.showNavigation || false
+                                showNavigation: dbData.showNavigation || false,
+                                navigationPages: mergeNavigationPages((dbData as InvitationData).navigationPages)
                             });
                         }
                     }
@@ -394,6 +405,85 @@ export default function DashboardPage() {
             const arr = [...(prev.giftOptions || [])];
             arr[index] = { ...arr[index], [field]: value };
             return { ...prev, giftOptions: arr };
+        });
+    };
+
+    const navDraft = mergeNavigationPages(weddingDetails.navigationPages);
+
+    const updateNavigationPages = (patch: Partial<NavigationPagesContent>) => {
+        setWeddingDetails((prev) => ({
+            ...prev,
+            navigationPages: { ...mergeNavigationPages(prev.navigationPages), ...patch }
+        }));
+    };
+
+    const updateLodgingHotel = (index: number, field: keyof NavigationLodgingHotel, value: string) => {
+        setWeddingDetails((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            const lodgingHotels = base.lodgingHotels.map((h, i) => (i === index ? { ...h, [field]: value } : h));
+            return { ...prev, navigationPages: { ...base, lodgingHotels } };
+        });
+    };
+
+    const updateExploringSpot = (index: number, field: keyof NavigationExploringSpot, value: string) => {
+        setWeddingDetails((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            const exploringSpots = base.exploringSpots.map((s, i) => (i === index ? { ...s, [field]: value } : s));
+            return { ...prev, navigationPages: { ...base, exploringSpots } };
+        });
+    };
+
+    const addLodgingHotel = () => {
+        setWeddingDetails((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            return {
+                ...prev,
+                navigationPages: {
+                    ...base,
+                    lodgingHotels: [...base.lodgingHotels, { ...EMPTY_LODGING_HOTEL }]
+                }
+            };
+        });
+    };
+
+    const removeLodgingHotel = (index: number) => {
+        setWeddingDetails((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            if (base.lodgingHotels.length <= 1) return prev;
+            return {
+                ...prev,
+                navigationPages: {
+                    ...base,
+                    lodgingHotels: base.lodgingHotels.filter((_, i) => i !== index)
+                }
+            };
+        });
+    };
+
+    const addExploringSpot = () => {
+        setWeddingDetails((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            return {
+                ...prev,
+                navigationPages: {
+                    ...base,
+                    exploringSpots: [...base.exploringSpots, { ...EMPTY_EXPLORING_SPOT }]
+                }
+            };
+        });
+    };
+
+    const removeExploringSpot = (index: number) => {
+        setWeddingDetails((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            if (base.exploringSpots.length <= 1) return prev;
+            return {
+                ...prev,
+                navigationPages: {
+                    ...base,
+                    exploringSpots: base.exploringSpots.filter((_, i) => i !== index)
+                }
+            };
         });
     };
 
@@ -967,17 +1057,137 @@ export default function DashboardPage() {
                                 <input
                                     type="checkbox"
                                     checked={weddingDetails.showNavigation}
-                                    onChange={(e) => setWeddingDetails({ ...weddingDetails, showNavigation: e.target.checked })}
+                                    onChange={(e) => setWeddingDetails((prev) => ({ ...prev, showNavigation: e.target.checked }))}
                                     className="sr-only"
                                 />
-                                <div className={`block w-10 h-6 pl-1 pr-1 py-1 rounded-full bg-stone-200 transition-colors ${weddingDetails.showNavigation ? 'bg-emerald-500' : 'bg-stone-200'}`}>
-                                    <div className={`w-4 h-4 bg-white rounded-full transition-transform ${weddingDetails.showNavigation ? 'transform translate-x-4' : ''}`}></div>
+                                <div
+                                    className={`flex h-6 w-10 shrink-0 items-center rounded-full p-1 transition-colors duration-200 ${weddingDetails.showNavigation ? 'bg-emerald-500 justify-end' : 'bg-stone-200 justify-start'}`}
+                                    aria-hidden
+                                >
+                                    <div className="h-4 w-4 rounded-full bg-white shadow-sm" />
                                 </div>
                             </div>
                             <span className="text-sm font-medium text-stone-700 group-hover:text-stone-900 transition-colors">
                                 Enable Multi-Page Navigation (Lodging & Exploring)
                             </span>
                         </label>
+                    </div>
+
+                    <div className="mt-8 pt-8 border-t border-stone-100 space-y-8">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
+                            Multi-page copy (lodging & exploring)
+                        </p>
+
+                        <div className="space-y-3">
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Menu labels</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest">Main</label>
+                                    <input type="text" value={navDraft.mainNavLabel} onChange={(e) => updateNavigationPages({ mainNavLabel: e.target.value })} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest">Lodging</label>
+                                    <input type="text" value={navDraft.lodgingNavLabel} onChange={(e) => updateNavigationPages({ lodgingNavLabel: e.target.value })} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest">Exploring</label>
+                                    <input type="text" value={navDraft.exploringNavLabel} onChange={(e) => updateNavigationPages({ exploringNavLabel: e.target.value })} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Lodging page</h3>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest">Heading</label>
+                                <input type="text" value={navDraft.lodgingTitle} onChange={(e) => updateNavigationPages({ lodgingTitle: e.target.value })} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest">Introduction</label>
+                                <textarea value={navDraft.lodgingIntro} onChange={(e) => updateNavigationPages({ lodgingIntro: e.target.value })} rows={3} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none resize-y min-h-[4.5rem]" />
+                            </div>
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Hotels</span>
+                                <button
+                                    type="button"
+                                    onClick={addLodgingHotel}
+                                    className="inline-flex items-center gap-1.5 rounded-md border border-stone-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-stone-700 hover:bg-stone-50"
+                                >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    Add hotel
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                                {navDraft.lodgingHotels.map((hotel, idx) => (
+                                    <div key={idx} className="rounded-lg border border-stone-200 p-4 space-y-2 bg-white/60">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Hotel {idx + 1}</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeLodgingHotel(idx)}
+                                                disabled={navDraft.lodgingHotels.length <= 1}
+                                                className="rounded-md p-1.5 text-stone-400 hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-30"
+                                                title={navDraft.lodgingHotels.length <= 1 ? 'At least one hotel required' : 'Remove hotel'}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <input type="text" placeholder="Title" value={hotel.title} onChange={(e) => updateLodgingHotel(idx, 'title', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <input type="text" placeholder="Subtitle" value={hotel.subtitle} onChange={(e) => updateLodgingHotel(idx, 'subtitle', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <textarea placeholder="Description" value={hotel.description} onChange={(e) => updateLodgingHotel(idx, 'description', e.target.value)} rows={3} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none resize-y" />
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <input type="text" placeholder="Link label" value={hotel.linkText} onChange={(e) => updateLodgingHotel(idx, 'linkText', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                            <input type="text" placeholder="URL" value={hotel.linkUrl} onChange={(e) => updateLodgingHotel(idx, 'linkUrl', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Exploring page</h3>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest">Heading</label>
+                                <input type="text" value={navDraft.exploringTitle} onChange={(e) => updateNavigationPages({ exploringTitle: e.target.value })} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest">Introduction</label>
+                                <textarea value={navDraft.exploringIntro} onChange={(e) => updateNavigationPages({ exploringIntro: e.target.value })} rows={3} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none resize-y min-h-[4.5rem]" />
+                            </div>
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Spots</span>
+                                <button
+                                    type="button"
+                                    onClick={addExploringSpot}
+                                    className="inline-flex items-center gap-1.5 rounded-md border border-stone-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-stone-700 hover:bg-stone-50"
+                                >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    Add spot
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {navDraft.exploringSpots.map((spot, idx) => (
+                                    <div key={idx} className="rounded-lg border border-stone-200 p-4 space-y-2 bg-white/60">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Spot {idx + 1}</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeExploringSpot(idx)}
+                                                disabled={navDraft.exploringSpots.length <= 1}
+                                                className="rounded-md p-1.5 text-stone-400 hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-30"
+                                                title={navDraft.exploringSpots.length <= 1 ? 'At least one spot required' : 'Remove spot'}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <input type="text" placeholder="Title" value={spot.title} onChange={(e) => updateExploringSpot(idx, 'title', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <input type="text" placeholder="Category" value={spot.category} onChange={(e) => updateExploringSpot(idx, 'category', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <textarea placeholder="Description" value={spot.description} onChange={(e) => updateExploringSpot(idx, 'description', e.target.value)} rows={2} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none resize-y" />
+                                        <input type="text" placeholder="Image URL" value={spot.imageUrl} onChange={(e) => updateExploringSpot(idx, 'imageUrl', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="pt-8 flex justify-end">

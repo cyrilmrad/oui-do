@@ -3,6 +3,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Clock, MapPin, Music, VolumeX, Gift, ExternalLink, Landmark, Smartphone, Heart, MailOpen, CheckCircle2, Menu, X } from 'lucide-react';
+import type { NavigationPagesContent } from '@/lib/navigationPages';
+import { mergeNavigationPages } from '@/lib/navigationPages';
+
+export type {
+    NavigationExploringSpot,
+    NavigationLodgingHotel,
+    NavigationPagesContent
+} from '@/lib/navigationPages';
+export {
+    DEFAULT_NAVIGATION_PAGES,
+    EMPTY_EXPLORING_SPOT,
+    EMPTY_LODGING_HOTEL,
+    mergeNavigationPages
+} from '@/lib/navigationPages';
 
 export interface Theme {
     primaryText: string;
@@ -87,6 +101,7 @@ export interface InvitationData {
     showHouses?: boolean;
     housesData?: HousesData;
     showNavigation?: boolean;
+    navigationPages?: Partial<NavigationPagesContent>;
 }
 
 interface InvitationPreviewProps {
@@ -332,6 +347,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
     };
 
     const cleanTheme = sanitizeTheme(data.theme);
+    const nav = mergeNavigationPages(data.navigationPages);
 
     return (
         <div 
@@ -439,19 +455,19 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                             onClick={() => { setActiveTab('main'); setIsNavOpen(false); }}
                                             className={`text-4xl md:text-5xl font-serif transition-all ${activeTab === 'main' ? 'text-white scale-110 drop-shadow-md' : 'text-white/60 hover:text-white/90 hover:scale-105'}`}
                                         >
-                                            The Wedding
+                                            {nav.mainNavLabel}
                                         </button>
                                         <button 
                                             onClick={() => { setActiveTab('lodging'); setIsNavOpen(false); }}
                                             className={`text-4xl md:text-5xl font-serif transition-all ${activeTab === 'lodging' ? 'text-white scale-110 drop-shadow-md' : 'text-white/60 hover:text-white/90 hover:scale-105'}`}
                                         >
-                                            Lodging
+                                            {nav.lodgingNavLabel}
                                         </button>
                                         <button 
                                             onClick={() => { setActiveTab('exploring'); setIsNavOpen(false); }}
                                             className={`text-4xl md:text-5xl font-serif transition-all ${activeTab === 'exploring' ? 'text-white scale-110 drop-shadow-md' : 'text-white/60 hover:text-white/90 hover:scale-105'}`}
                                         >
-                                            Exploring
+                                            {nav.exploringNavLabel}
                                         </button>
                                     </nav>
                                 </motion.div>
@@ -1157,29 +1173,29 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                         className={`w-full flex flex-col relative ${cleanTheme.background} min-h-screen pt-24`}
                     >
                         <section className="py-20 px-6 md:px-12 text-center flex flex-col items-center justify-center">
-                            <h2 className={`text-5xl md:text-6xl font-serif mb-6 ${cleanTheme.primaryText}`}>Where to Stay</h2>
+                            <h2 className={`text-5xl md:text-6xl font-serif mb-6 ${cleanTheme.primaryText}`}>{nav.lodgingTitle}</h2>
                             <p className={`max-w-2xl text-lg font-light ${cleanTheme.primaryText} opacity-80 leading-relaxed mb-16`}>
-                                We've arranged room blocks at our favorite local spots. Please book early to secure the special rates!
+                                {nav.lodgingIntro}
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto w-full">
-                                <div className="bg-white p-10 border border-stone-100 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-left hover:-translate-y-1 transition-transform">
-                                    <div className={`w-12 h-12 rounded-full ${cleanTheme.bgAccent} text-white flex items-center justify-center mb-6`}>
-                                        <Heart className="w-5 h-5"/>
+                                {nav.lodgingHotels.map((hotel, idx) => (
+                                    <div key={idx} className="bg-white p-10 border border-stone-100 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-left hover:-translate-y-1 transition-transform">
+                                        <div className={`w-12 h-12 rounded-full ${cleanTheme.bgAccent} text-white flex items-center justify-center mb-6`}>
+                                            {idx % 2 === 0 ? <Heart className="w-5 h-5" /> : <MapPin className="w-5 h-5" />}
+                                        </div>
+                                        <h3 className="text-2xl font-serif text-stone-800 mb-2">{hotel.title}</h3>
+                                        <p className="text-stone-500 text-sm uppercase tracking-widest font-semibold mb-6">{hotel.subtitle}</p>
+                                        <p className="text-stone-600 font-light mb-8 leading-relaxed">{hotel.description}</p>
+                                        <a
+                                            href={hotel.linkUrl || '#'}
+                                            target={hotel.linkUrl && hotel.linkUrl !== '#' ? '_blank' : undefined}
+                                            rel={hotel.linkUrl && hotel.linkUrl !== '#' ? 'noopener noreferrer' : undefined}
+                                            className={`text-sm uppercase tracking-widest font-bold ${cleanTheme.accent} hover:opacity-70 transition-opacity`}
+                                        >
+                                            {hotel.linkText} <ExternalLink className="w-4 h-4 inline ml-1 mb-1" />
+                                        </a>
                                     </div>
-                                    <h3 className="text-2xl font-serif text-stone-800 mb-2">The Grand Hotel</h3>
-                                    <p className="text-stone-500 text-sm uppercase tracking-widest font-semibold mb-6">15 mins from venue</p>
-                                    <p className="text-stone-600 font-light mb-8 leading-relaxed">Use code WEDDING24 for a 15% discount on your stay. Shuttles will be provided from this location.</p>
-                                    <a href="#" className={`text-sm uppercase tracking-widest font-bold ${cleanTheme.accent} hover:opacity-70 transition-opacity`}>Book Room <ExternalLink className="w-4 h-4 inline ml-1 mb-1"/></a>
-                                </div>
-                                <div className="bg-white p-10 border border-stone-100 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-left hover:-translate-y-1 transition-transform">
-                                    <div className={`w-12 h-12 rounded-full ${cleanTheme.bgAccent} text-white flex items-center justify-center mb-6`}>
-                                        <MapPin className="w-5 h-5"/>
-                                    </div>
-                                    <h3 className="text-2xl font-serif text-stone-800 mb-2">Boutique Inn</h3>
-                                    <p className="text-stone-500 text-sm uppercase tracking-widest font-semibold mb-6">Downtown • 20 mins from venue</p>
-                                    <p className="text-stone-600 font-light mb-8 leading-relaxed">A charming option in the heart of the city, surrounded by local cafes and shops.</p>
-                                    <a href="#" className={`text-sm uppercase tracking-widest font-bold ${cleanTheme.accent} hover:opacity-70 transition-opacity`}>View Website <ExternalLink className="w-4 h-4 inline ml-1 mb-1"/></a>
-                                </div>
+                                ))}
                             </div>
                         </section>
                     </motion.div>
@@ -1193,41 +1209,23 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                         className={`w-full flex flex-col relative ${cleanTheme.background} min-h-screen pt-24 pb-20`}
                     >
                         <section className="py-20 px-6 md:px-12 text-center flex flex-col items-center justify-center">
-                            <h2 className={`text-5xl md:text-6xl font-serif mb-6 ${cleanTheme.primaryText}`}>Things to Do</h2>
+                            <h2 className={`text-5xl md:text-6xl font-serif mb-6 ${cleanTheme.primaryText}`}>{nav.exploringTitle}</h2>
                             <p className={`max-w-2xl text-lg font-light ${cleanTheme.primaryText} opacity-80 leading-relaxed mb-16`}>
-                                Make the most of your weekend! Here are a few places we love to eat, drink, and explore.
+                                {nav.exploringIntro}
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto w-full text-left">
-                                <div className="bg-white rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] group hover:-translate-y-2 transition-all duration-300 border border-stone-50">
-                                    <div className="h-48 overflow-hidden bg-stone-100">
-                                        <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=2047&auto=format&fit=crop" alt="Cafe" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                {nav.exploringSpots.map((spot, idx) => (
+                                    <div key={idx} className="bg-white rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] group hover:-translate-y-2 transition-all duration-300 border border-stone-50">
+                                        <div className="h-48 overflow-hidden bg-stone-100">
+                                            <img src={spot.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                        </div>
+                                        <div className="p-8">
+                                            <h3 className="text-xl font-serif text-stone-800 mb-2">{spot.title}</h3>
+                                            <p className="text-stone-500 text-xs tracking-widest uppercase font-semibold mb-4">{spot.category}</p>
+                                            <p className="text-stone-600 font-light text-sm">{spot.description}</p>
+                                        </div>
                                     </div>
-                                    <div className="p-8">
-                                        <h3 className="text-xl font-serif text-stone-800 mb-2">Local Cafe</h3>
-                                        <p className="text-stone-500 text-xs tracking-widest uppercase font-semibold mb-4">Coffee & Pastries</p>
-                                        <p className="text-stone-600 font-light text-sm">Best pour-over coffee and homemade sourdough pastries in town.</p>
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] group hover:-translate-y-2 transition-all duration-300 border border-stone-50">
-                                    <div className="h-48 overflow-hidden bg-stone-100">
-                                        <img src="https://images.unsplash.com/photo-1496664444929-8c75efb9546f?q=80&w=2070&auto=format&fit=crop" alt="Park" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                    </div>
-                                    <div className="p-8">
-                                        <h3 className="text-xl font-serif text-stone-800 mb-2">City Botanical Garden</h3>
-                                        <p className="text-stone-500 text-xs tracking-widest uppercase font-semibold mb-4">Nature & Relax</p>
-                                        <p className="text-stone-600 font-light text-sm">Great for a morning stroll or a relaxing afternoon picnic.</p>
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] group hover:-translate-y-2 transition-all duration-300 border border-stone-50">
-                                    <div className="h-48 overflow-hidden bg-stone-100">
-                                        <img src="https://images.unsplash.com/photo-1579027989536-b7b1f875659b?q=80&w=2070&auto=format&fit=crop" alt="Restaurant" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                    </div>
-                                    <div className="p-8">
-                                        <h3 className="text-xl font-serif text-stone-800 mb-2">The Ocean Bistro</h3>
-                                        <p className="text-stone-500 text-xs tracking-widest uppercase font-semibold mb-4">Dinner & Drinks</p>
-                                        <p className="text-stone-600 font-light text-sm">Our favorite spot for dinner with a stunning sunset view.</p>
-                                    </div>
-                                </div>
+                                ))}
                             </div>
                         </section>
                     </motion.div>
