@@ -1,19 +1,24 @@
 "use server";
 
 import { db } from '@/db';
-import { payments } from '@/db/schema';
+import { expenses, payments } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { enforceSlugFeature } from '@/lib/entitlements/guard';
 
 export type SelectPayment = typeof payments.$inferSelect;
 export type InsertPayment = typeof payments.$inferInsert;
 
-/**
- * Fetches all payments for a specific expense, ordered by date.
- */
-export async function getPaymentsByExpense(expenseId: string) {
+export async function getPaymentsByExpense(expenseId: string, accessToken?: string) {
     try {
-        const data = await db.select()
+        const [exp] = await db.select().from(expenses).where(eq(expenses.id, expenseId)).limit(1);
+        if (!exp) {
+            throw new Error("Expense not found.");
+        }
+        await enforceSlugFeature(exp.slug, 'budget', accessToken);
+
+        const data = await db
+            .select()
             .from(payments)
             .where(eq(payments.expenseId, expenseId))
             .orderBy(payments.paymentDate);
@@ -24,19 +29,26 @@ export async function getPaymentsByExpense(expenseId: string) {
     }
 }
 
-/**
- * Inserts a new payment for an expense.
- */
-export async function addPayment(expenseId: string, slug: string, payload: { amount: number; paymentDate?: Date; receivedBy?: string; notes?: string }) {
+export async function addPayment(
+    expenseId: string,
+    slug: string,
+    payload: { amount: number; paymentDate?: Date; receivedBy?: string; notes?: string },
+    accessToken?: string
+) {
     try {
-        const [newPayment] = await db.insert(payments).values({
-            expenseId,
-            slug,
-            amount: payload.amount,
-            paymentDate: payload.paymentDate || new Date(),
-            receivedBy: payload.receivedBy || '',
-            notes: payload.notes || '',
-        }).returning();
+        await enforceSlugFeature(slug, 'budget', accessToken);
+
+        const [newPayment] = await db
+            .insert(payments)
+            .values({
+                expenseId,
+                slug,
+                amount: payload.amount,
+                paymentDate: payload.paymentDate || new Date(),
+                receivedBy: payload.receivedBy || '',
+                notes: payload.notes || ''
+            })
+            .returning();
 
         revalidatePath(`/dashboard`);
         revalidatePath(`/admin`);
@@ -47,11 +59,12 @@ export async function addPayment(expenseId: string, slug: string, payload: { amo
     }
 }
 
-/**
- * Deletes a payment.
- */
-export async function deletePayment(id: string) {
+export async function deletePayment(id: string, accessToken?: string) {
     try {
+        const [row] = await db.select().from(payments).where(eq(payments.id, id)).limit(1);
+        if (!row) throw new Error("Payment not found.");
+        await enforceSlugFeature(row.slug, 'budget', accessToken);
+
         await db.delete(payments).where(eq(payments.id, id));
         revalidatePath(`/dashboard`);
         revalidatePath(`/admin`);

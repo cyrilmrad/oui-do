@@ -34,6 +34,8 @@ export const invitations = pgTable('invitations', {
     preCeremonyMedia: text('pre_ceremony_media'),
     showHouses: boolean('show_houses').default(false),
     housesData: jsonb('houses_data'),
+    showNavigation: boolean('show_navigation').default(false),
+    navigationPages: jsonb('navigation_pages'),
     customSections: jsonb('custom_sections').default([]),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
@@ -114,6 +116,19 @@ export const expenses = pgTable('expenses', {
         withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'client' AND slug = (auth.jwt() -> 'app_metadata' ->> 'slug')`
     })
 ]).enableRLS();
+
+/** Feature flags per client slug (matches Supabase Auth app_metadata.slug). */
+export const clientEntitlements = pgTable('client_entitlements', {
+    id: serial('id').primaryKey(),
+    slug: varchar('slug', { length: 255 }).references(() => invitations.slug).notNull().unique(),
+    guestsEnabled: boolean('guests_enabled').notNull().default(true),
+    messagesEnabled: boolean('messages_enabled').notNull().default(true),
+    budgetEnabled: boolean('budget_enabled').notNull().default(false),
+    seatingEnabled: boolean('seating_enabled').notNull().default(false),
+    settingsEnabled: boolean('settings_enabled').notNull().default(false),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow()
+});
 
 export const payments = pgTable('payments', {
     id: uuid('id').defaultRandom().primaryKey(),

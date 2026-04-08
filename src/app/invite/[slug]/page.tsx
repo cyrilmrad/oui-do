@@ -1,4 +1,9 @@
-import InvitationPreview, { InvitationData, Theme, CustomSection } from '@/components/InvitationPreview';
+import InvitationPreview, {
+    CustomSection,
+    InvitationData,
+    Theme
+} from '@/components/InvitationPreview';
+import { mergeNavigationPages, NavigationPagesContent } from '@/lib/navigationPages';
 import { db } from '@/db';
 import { invitations, guests as guestsTable } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -107,6 +112,11 @@ export default async function InvitePage({
         preCeremonyMedia: dbData.preCeremonyMedia || "",
         showHouses: dbData.showHouses || false,
         housesData: (dbData.housesData as any) || {},
+        showNavigation: dbData.showNavigation || false,
+        navigationPages: mergeNavigationPages(
+            (dbData.navigationPages as Partial<NavigationPagesContent> | null | undefined) ?? undefined
+        ),
+        giftOptions: (dbData.giftOptions as any[]) || [],
         theme: (dbData.theme as Theme) || {
             primaryText: "text-stone-800",
             accent: "text-emerald-700",

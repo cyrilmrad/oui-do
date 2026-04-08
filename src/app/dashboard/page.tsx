@@ -22,17 +22,39 @@ import {
     Calculator,
     Armchair,
     Edit2,
-    Trash2
+    Trash2,
+    Lock
 } from 'lucide-react';
-import InvitationPreview, { InvitationData, Theme } from '@/components/InvitationPreview';
+import InvitationPreview, {
+    EMPTY_EXPLORING_SPOT,
+    EMPTY_LODGING_HOTEL,
+    InvitationData,
+    Theme,
+    mergeNavigationPages,
+    NavigationExploringSpot,
+    NavigationLodgingHotel,
+    NavigationPagesContent
+} from '@/components/InvitationPreview';
 import BudgetTracker from '@/components/BudgetTracker';
 import TableSeating from '@/components/TableSeating';
 import { getExpensesBySlug } from '@/app/actions/budget';
 import { getSeatingData } from '@/app/actions/seating';
 import type { SelectSeatingTable, SelectGuest } from '@/app/actions/seating';
-
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
+import { useEntitlements } from '@/components/entitlements/EntitlementsContext';
+import type { FeatureKey } from '@/lib/features';
 type RsvpStatus = 'all' | 'attending' | 'declined' | 'pending';
 type DashboardTab = 'overview' | 'guests' | 'messages' | 'budget' | 'seating' | 'settings';
+
+function FeatureLockedMessage({ label }: { label: string }) {
+    return (
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-12 text-center max-w-lg mx-auto">
+            <Lock className="w-10 h-10 mx-auto text-stone-400 mb-4" />
+            <p className="text-stone-800 font-medium">{label} is not enabled for your account.</p>
+            <p className="text-sm text-stone-500 mt-2">Contact your administrator if you need access.</p>
+        </div>
+    );
+}
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -78,11 +100,15 @@ export default function DashboardPage() {
         preCeremonyMedia: "",
         showHeroDate: true,
         showHouses: false,
-        housesData: {}
+        housesData: {},
+        showNavigation: false,
+        navigationPages: mergeNavigationPages()
     });
 
     const [isSaving, setIsSaving] = useState(false);
     const [userSlug, setUserSlug] = useState("");
+    const [accessToken, setAccessToken] = useState<string | null>(null);
+    const { hasFeature, loading: entitlementsLoading, features } = useEntitlements();
 
     // Guests State & Handlers
     const [isAddingGuest, setIsAddingGuest] = useState(false);
@@ -97,13 +123,13 @@ export default function DashboardPage() {
 
     const handleSaveEditGuest = async () => {
         try {
-            const res = await fetch('/api/guests', {
+            const res = await fetchWithAuth('/api/guests', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(editGuestData)
             });
             if (res.ok) {
-                const updatedRes = await fetch(`/api/guests?slug=${userSlug}`);
+                const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
                 setRsvps(await updatedRes.json());
                 setEditingGuestId(null);
             }
@@ -116,11 +142,11 @@ export default function DashboardPage() {
     const handleDeleteGuest = async (id: string) => {
         if (!confirm("Are you sure you want to delete this guest?")) return;
         try {
-            const res = await fetch(`/api/guests?id=${id}`, {
+            const res = await fetchWithAuth(`/api/guests?id=${id}`, {
                 method: 'DELETE'
             });
             if (res.ok) {
-                const updatedRes = await fetch(`/api/guests?slug=${userSlug}`);
+                const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
                 setRsvps(await updatedRes.json());
             }
         } catch (error) {
@@ -132,13 +158,13 @@ export default function DashboardPage() {
     const handleAddGuest = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const res = await fetch('/api/guests', {
+            const res = await fetchWithAuth('/api/guests', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ slug: userSlug, guests: [newGuestData] })
             });
             if (res.ok) {
-                const updatedRes = await fetch(`/api/guests?slug=${userSlug}`);
+                const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
                 setRsvps(await updatedRes.json());
                 setIsAddingGuest(false);
                 setNewGuestData({ firstName: '', lastName: '', pax: 1 });
@@ -169,13 +195,13 @@ export default function DashboardPage() {
 
             if (guestsToImport.length > 0) {
                 try {
-                    const res = await fetch('/api/guests', {
+                    const res = await fetchWithAuth('/api/guests', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ slug: userSlug, guests: guestsToImport })
                     });
                     if (res.ok) {
-                        const updatedRes = await fetch(`/api/guests?slug=${userSlug}`);
+                        const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
                         setRsvps(await updatedRes.json());
                         alert('Guests imported successfully!');
                     }
@@ -213,6 +239,7 @@ export default function DashboardPage() {
 
             const slug = session.user.app_metadata?.slug || '';
             setUserSlug(slug);
+            setAccessToken(session.access_token ?? null);
 
             if (slug) {
                 try {
@@ -250,22 +277,22 @@ export default function DashboardPage() {
                                 showFormalInvitation: dbData.showFormalInvitation || false,
                                 formalInvitationImage: dbData.formalInvitationImage || "",
                                 preCeremonyMedia: dbData.preCeremonyMedia || "",
-                                showHeroDate: dbData.showHeroDate !== false
+                                showHeroDate: dbData.showHeroDate !== false,
+                                showHouses: dbData.showHouses || false,
+                                housesData: dbData.housesData || {},
+                                showNavigation: dbData.showNavigation || false,
+                                navigationPages: mergeNavigationPages((dbData as InvitationData).navigationPages)
                             });
                         }
                     }
 
-                    const rsvpsRes = await fetch(`/api/guests?slug=${slug}`);
+                    const rsvpsRes = await fetchWithAuth(`/api/guests?slug=${slug}`);
                     if (rsvpsRes.ok) {
                         const rsvpsData = await rsvpsRes.json();
                         setRsvps(rsvpsData);
+                    } else {
+                        console.warn('Guest list fetch failed', rsvpsRes.status, await rsvpsRes.text().catch(() => ''));
                     }
-
-                    const expData = await getExpensesBySlug(slug);
-                    setExpenses(expData);
-
-                    const seatData = await getSeatingData(slug);
-                    setSeatingData(seatData);
                 } catch (e) {
                     console.error("Failed to load settings or RSVPs or expenses", e);
                 }
@@ -275,6 +302,71 @@ export default function DashboardPage() {
         };
         loadDashboardData();
     }, [router]);
+
+    /** Re-fetch RSVPs after entitlements resolve — avoids an early fetch before auth/session is stable. */
+    useEffect(() => {
+        if (entitlementsLoading || !userSlug || !features.guests) return;
+        let cancelled = false;
+        (async () => {
+            const rsvpsRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
+            if (cancelled || !rsvpsRes.ok) return;
+            const rsvpsData = await rsvpsRes.json();
+            if (!cancelled) setRsvps(rsvpsData);
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [entitlementsLoading, userSlug, features.guests]);
+
+    /** Load budget / seating only after entitlements are known — avoids server actions when features are off. */
+    useEffect(() => {
+        if (entitlementsLoading || !userSlug) return;
+        let cancelled = false;
+        (async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!features.budget) {
+                if (!cancelled) setExpenses([]);
+            } else {
+                try {
+                    const expData = await getExpensesBySlug(userSlug, token);
+                    if (!cancelled) setExpenses(expData);
+                } catch (e) {
+                    console.warn('Budget data not loaded', e);
+                    if (!cancelled) setExpenses([]);
+                }
+            }
+            if (!features.seating) {
+                if (!cancelled) setSeatingData({ tables: [], guests: [] });
+            } else {
+                try {
+                    const seatData = await getSeatingData(userSlug, token);
+                    if (!cancelled) setSeatingData(seatData);
+                } catch (e) {
+                    console.warn('Seating data not loaded', e);
+                    if (!cancelled) setSeatingData({ tables: [], guests: [] });
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [entitlementsLoading, userSlug, features.budget, features.seating]);
+
+    useEffect(() => {
+        if (entitlementsLoading) return;
+        const tabFeature: Partial<Record<DashboardTab, FeatureKey>> = {
+            guests: 'guests',
+            messages: 'messages',
+            budget: 'budget',
+            seating: 'seating',
+            settings: 'settings'
+        };
+        const f = tabFeature[activeTab];
+        if (f && !hasFeature(f)) {
+            setActiveTab('overview');
+        }
+    }, [entitlementsLoading, activeTab, hasFeature]);
 
     // Derived State for Summary Cards
     const summaryStats = useMemo(() => {
@@ -393,6 +485,85 @@ export default function DashboardPage() {
         });
     };
 
+    const navDraft = mergeNavigationPages(weddingDetails.navigationPages);
+
+    const updateNavigationPages = (patch: Partial<NavigationPagesContent>) => {
+        setWeddingDetails((prev) => ({
+            ...prev,
+            navigationPages: { ...mergeNavigationPages(prev.navigationPages), ...patch }
+        }));
+    };
+
+    const updateLodgingHotel = (index: number, field: keyof NavigationLodgingHotel, value: string) => {
+        setWeddingDetails((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            const lodgingHotels = base.lodgingHotels.map((h, i) => (i === index ? { ...h, [field]: value } : h));
+            return { ...prev, navigationPages: { ...base, lodgingHotels } };
+        });
+    };
+
+    const updateExploringSpot = (index: number, field: keyof NavigationExploringSpot, value: string) => {
+        setWeddingDetails((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            const exploringSpots = base.exploringSpots.map((s, i) => (i === index ? { ...s, [field]: value } : s));
+            return { ...prev, navigationPages: { ...base, exploringSpots } };
+        });
+    };
+
+    const addLodgingHotel = () => {
+        setWeddingDetails((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            return {
+                ...prev,
+                navigationPages: {
+                    ...base,
+                    lodgingHotels: [...base.lodgingHotels, { ...EMPTY_LODGING_HOTEL }]
+                }
+            };
+        });
+    };
+
+    const removeLodgingHotel = (index: number) => {
+        setWeddingDetails((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            if (base.lodgingHotels.length <= 1) return prev;
+            return {
+                ...prev,
+                navigationPages: {
+                    ...base,
+                    lodgingHotels: base.lodgingHotels.filter((_, i) => i !== index)
+                }
+            };
+        });
+    };
+
+    const addExploringSpot = () => {
+        setWeddingDetails((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            return {
+                ...prev,
+                navigationPages: {
+                    ...base,
+                    exploringSpots: [...base.exploringSpots, { ...EMPTY_EXPLORING_SPOT }]
+                }
+            };
+        });
+    };
+
+    const removeExploringSpot = (index: number) => {
+        setWeddingDetails((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            if (base.exploringSpots.length <= 1) return prev;
+            return {
+                ...prev,
+                navigationPages: {
+                    ...base,
+                    exploringSpots: base.exploringSpots.filter((_, i) => i !== index)
+                }
+            };
+        });
+    };
+
     const handleSaveSettings = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -408,7 +579,7 @@ export default function DashboardPage() {
 
         setIsSaving(true);
         try {
-            const response = await fetch('/api/admin/invitation', { // Reusing the same save endpoint
+            const response = await fetchWithAuth('/api/admin/invitation', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...weddingDetails, slug: userSlug })
@@ -506,7 +677,11 @@ export default function DashboardPage() {
         </>
     );
 
-    const renderGuests = () => (
+    const renderGuests = () => {
+        if (!hasFeature('guests')) {
+            return <FeatureLockedMessage label="Guests" />;
+        }
+        return (
         <>
             <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
@@ -650,9 +825,14 @@ export default function DashboardPage() {
                 </div>
             </div>
         </>
-    );
+        );
+    };
 
-    const renderMessages = () => (
+    const renderMessages = () => {
+        if (!hasFeature('messages')) {
+            return <FeatureLockedMessage label="Messages" />;
+        }
+        return (
         <>
             <div className="mb-10">
                 <h2 className="text-3xl font-serif text-stone-900">Guest Messages</h2>
@@ -671,17 +851,35 @@ export default function DashboardPage() {
                 ))}
             </div>
         </>
-    );
+        );
+    };
 
-    const renderBudget = () => (
-        <BudgetTracker slug={userSlug} initialExpenses={expenses} />
-    );
+    const renderBudget = () => {
+        if (!hasFeature('budget')) {
+            return <FeatureLockedMessage label="Budget" />;
+        }
+        return <BudgetTracker slug={userSlug} initialExpenses={expenses} accessToken={accessToken} />;
+    };
 
-    const renderSeating = () => (
-        <TableSeating slug={userSlug} initialTables={seatingData.tables} initialGuests={seatingData.guests} />
-    );
+    const renderSeating = () => {
+        if (!hasFeature('seating')) {
+            return <FeatureLockedMessage label="Seating" />;
+        }
+        return (
+            <TableSeating
+                slug={userSlug}
+                initialTables={seatingData.tables}
+                initialGuests={seatingData.guests}
+                accessToken={accessToken}
+            />
+        );
+    };
 
-    const renderSettings = () => (
+    const renderSettings = () => {
+        if (!hasFeature('settings')) {
+            return <FeatureLockedMessage label="Settings" />;
+        }
+        return (
         <div className="flex h-[calc(100vh-2rem)] rounded-xl overflow-hidden bg-white shadow-sm border border-stone-200">
             <div className="w-full lg:w-1/2 overflow-y-auto">
                 <form onSubmit={handleSaveSettings} className="p-8 md:p-10 space-y-10">
@@ -957,6 +1155,145 @@ export default function DashboardPage() {
                         </div>
                     </div>
 
+                    <div className="pt-6 border-t border-stone-100 mt-8">
+                        <label className="flex items-center space-x-3 cursor-pointer group">
+                            <div className="relative">
+                                <input
+                                    type="checkbox"
+                                    checked={weddingDetails.showNavigation}
+                                    onChange={(e) => setWeddingDetails((prev) => ({ ...prev, showNavigation: e.target.checked }))}
+                                    className="sr-only"
+                                />
+                                <div
+                                    className={`flex h-6 w-10 shrink-0 items-center rounded-full p-1 transition-colors duration-200 ${weddingDetails.showNavigation ? 'bg-emerald-500 justify-end' : 'bg-stone-200 justify-start'}`}
+                                    aria-hidden
+                                >
+                                    <div className="h-4 w-4 rounded-full bg-white shadow-sm" />
+                                </div>
+                            </div>
+                            <span className="text-sm font-medium text-stone-700 group-hover:text-stone-900 transition-colors">
+                                Enable Multi-Page Navigation (Lodging & Exploring)
+                            </span>
+                        </label>
+                    </div>
+
+                    <div className="mt-8 pt-8 border-t border-stone-100 space-y-8">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
+                            Multi-page copy (lodging & exploring)
+                        </p>
+
+                        <div className="space-y-3">
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Menu labels</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest">Main</label>
+                                    <input type="text" value={navDraft.mainNavLabel} onChange={(e) => updateNavigationPages({ mainNavLabel: e.target.value })} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest">Lodging</label>
+                                    <input type="text" value={navDraft.lodgingNavLabel} onChange={(e) => updateNavigationPages({ lodgingNavLabel: e.target.value })} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest">Exploring</label>
+                                    <input type="text" value={navDraft.exploringNavLabel} onChange={(e) => updateNavigationPages({ exploringNavLabel: e.target.value })} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Lodging page</h3>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest">Heading</label>
+                                <input type="text" value={navDraft.lodgingTitle} onChange={(e) => updateNavigationPages({ lodgingTitle: e.target.value })} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest">Introduction</label>
+                                <textarea value={navDraft.lodgingIntro} onChange={(e) => updateNavigationPages({ lodgingIntro: e.target.value })} rows={3} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none resize-y min-h-[4.5rem]" />
+                            </div>
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Hotels</span>
+                                <button
+                                    type="button"
+                                    onClick={addLodgingHotel}
+                                    className="inline-flex items-center gap-1.5 rounded-md border border-stone-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-stone-700 hover:bg-stone-50"
+                                >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    Add hotel
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                                {navDraft.lodgingHotels.map((hotel, idx) => (
+                                    <div key={idx} className="rounded-lg border border-stone-200 p-4 space-y-2 bg-white/60">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Hotel {idx + 1}</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeLodgingHotel(idx)}
+                                                disabled={navDraft.lodgingHotels.length <= 1}
+                                                className="rounded-md p-1.5 text-stone-400 hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-30"
+                                                title={navDraft.lodgingHotels.length <= 1 ? 'At least one hotel required' : 'Remove hotel'}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <input type="text" placeholder="Title" value={hotel.title} onChange={(e) => updateLodgingHotel(idx, 'title', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <input type="text" placeholder="Subtitle" value={hotel.subtitle} onChange={(e) => updateLodgingHotel(idx, 'subtitle', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <textarea placeholder="Description" value={hotel.description} onChange={(e) => updateLodgingHotel(idx, 'description', e.target.value)} rows={3} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none resize-y" />
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <input type="text" placeholder="Link label" value={hotel.linkText} onChange={(e) => updateLodgingHotel(idx, 'linkText', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                            <input type="text" placeholder="URL" value={hotel.linkUrl} onChange={(e) => updateLodgingHotel(idx, 'linkUrl', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Exploring page</h3>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest">Heading</label>
+                                <input type="text" value={navDraft.exploringTitle} onChange={(e) => updateNavigationPages({ exploringTitle: e.target.value })} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase text-stone-400 tracking-widest">Introduction</label>
+                                <textarea value={navDraft.exploringIntro} onChange={(e) => updateNavigationPages({ exploringIntro: e.target.value })} rows={3} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none resize-y min-h-[4.5rem]" />
+                            </div>
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Spots</span>
+                                <button
+                                    type="button"
+                                    onClick={addExploringSpot}
+                                    className="inline-flex items-center gap-1.5 rounded-md border border-stone-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-stone-700 hover:bg-stone-50"
+                                >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    Add spot
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {navDraft.exploringSpots.map((spot, idx) => (
+                                    <div key={idx} className="rounded-lg border border-stone-200 p-4 space-y-2 bg-white/60">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Spot {idx + 1}</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeExploringSpot(idx)}
+                                                disabled={navDraft.exploringSpots.length <= 1}
+                                                className="rounded-md p-1.5 text-stone-400 hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-30"
+                                                title={navDraft.exploringSpots.length <= 1 ? 'At least one spot required' : 'Remove spot'}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <input type="text" placeholder="Title" value={spot.title} onChange={(e) => updateExploringSpot(idx, 'title', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <input type="text" placeholder="Category" value={spot.category} onChange={(e) => updateExploringSpot(idx, 'category', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <textarea placeholder="Description" value={spot.description} onChange={(e) => updateExploringSpot(idx, 'description', e.target.value)} rows={2} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none resize-y" />
+                                        <input type="text" placeholder="Image URL" value={spot.imageUrl} onChange={(e) => updateExploringSpot(idx, 'imageUrl', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="pt-8 flex justify-end">
                         <button
                             type="submit"
@@ -985,7 +1322,8 @@ export default function DashboardPage() {
                 </div>
             </div>
         </div>
-    );
+        );
+    };
 
     return (
         <div className="min-h-screen bg-stone-50 flex font-sans text-stone-800 selection:bg-stone-200 selection:text-stone-900">
@@ -1005,6 +1343,7 @@ export default function DashboardPage() {
                         <LayoutDashboard className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'overview' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
                         Overview
                     </button>
+                    {hasFeature('guests') && (
                     <button
                         onClick={() => setActiveTab('guests')}
                         className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'guests' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
@@ -1012,6 +1351,8 @@ export default function DashboardPage() {
                         <Users className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'guests' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
                         Guests
                     </button>
+                    )}
+                    {hasFeature('messages') && (
                     <button
                         onClick={() => setActiveTab('messages')}
                         className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'messages' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
@@ -1020,6 +1361,8 @@ export default function DashboardPage() {
                         Messages
                         <span className="ml-auto bg-stone-200 text-stone-600 py-0.5 px-2 rounded-full text-xs font-semibold">{guestMessages.length}</span>
                     </button>
+                    )}
+                    {hasFeature('budget') && (
                     <button
                         onClick={() => setActiveTab('budget')}
                         className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'budget' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
@@ -1027,6 +1370,8 @@ export default function DashboardPage() {
                         <Calculator className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'budget' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
                         Budget
                     </button>
+                    )}
+                    {hasFeature('seating') && (
                     <button
                         onClick={() => setActiveTab('seating')}
                         className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'seating' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
@@ -1034,6 +1379,8 @@ export default function DashboardPage() {
                         <Armchair className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'seating' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
                         Seating
                     </button>
+                    )}
+                    {hasFeature('settings') && (
                     <button
                         onClick={() => setActiveTab('settings')}
                         className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'settings' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
@@ -1041,6 +1388,7 @@ export default function DashboardPage() {
                         <Settings className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'settings' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
                         Settings
                     </button>
+                    )}
                 </nav>
 
                 <div className="p-4 border-t border-stone-100">
@@ -1058,21 +1406,31 @@ export default function DashboardPage() {
                     <button onClick={() => setActiveTab('overview')} className={`p-2 rounded-md ${activeTab === 'overview' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <LayoutDashboard className="w-5 h-5" />
                     </button>
+                    {hasFeature('guests') && (
                     <button onClick={() => setActiveTab('guests')} className={`p-2 rounded-md ${activeTab === 'guests' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <Users className="w-5 h-5" />
                     </button>
+                    )}
+                    {hasFeature('messages') && (
                     <button onClick={() => setActiveTab('messages')} className={`p-2 rounded-md ${activeTab === 'messages' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <Mail className="w-5 h-5" />
                     </button>
+                    )}
+                    {hasFeature('budget') && (
                     <button onClick={() => setActiveTab('budget')} className={`p-2 rounded-md ${activeTab === 'budget' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <Calculator className="w-5 h-5" />
                     </button>
+                    )}
+                    {hasFeature('seating') && (
                     <button onClick={() => setActiveTab('seating')} className={`p-2 rounded-md ${activeTab === 'seating' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <Armchair className="w-5 h-5" />
                     </button>
+                    )}
+                    {hasFeature('settings') && (
                     <button onClick={() => setActiveTab('settings')} className={`p-2 rounded-md ${activeTab === 'settings' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <Settings className="w-5 h-5" />
                     </button>
+                    )}
                 </div>
             </div>
 

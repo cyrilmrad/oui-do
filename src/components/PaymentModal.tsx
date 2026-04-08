@@ -13,6 +13,7 @@ interface PaymentModalProps {
     actualCost: number;
     slug: string;
     isAdmin: boolean;
+    accessToken?: string | null;
 }
 
 export default function PaymentModal({
@@ -23,6 +24,7 @@ export default function PaymentModal({
     actualCost,
     slug,
     isAdmin,
+    accessToken,
 }: PaymentModalProps) {
     const [payments, setPayments] = useState<SelectPayment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -37,12 +39,12 @@ export default function PaymentModal({
     useEffect(() => {
         if (isOpen && expenseId) {
             setIsLoading(true);
-            getPaymentsByExpense(expenseId)
+            getPaymentsByExpense(expenseId, accessToken ?? undefined)
                 .then(data => setPayments(data))
                 .catch(err => console.error(err))
                 .finally(() => setIsLoading(false));
         }
-    }, [isOpen, expenseId]);
+    }, [isOpen, expenseId, accessToken]);
 
     if (!isOpen) return null;
 
@@ -69,7 +71,7 @@ export default function PaymentModal({
                     paymentDate: new Date(paymentDate),
                     receivedBy: receivedBy.trim(),
                     notes: notes.trim(),
-                });
+                }, accessToken ?? undefined);
                 setPayments(prev => [...prev, newPayment]);
                 setAmount('');
                 setReceivedBy('');
@@ -85,7 +87,7 @@ export default function PaymentModal({
         setPayments(prev => prev.filter(p => p.id !== paymentId));
         startTransition(async () => {
             try {
-                await deletePayment(paymentId);
+                await deletePayment(paymentId, accessToken ?? undefined);
             } catch (error) {
                 console.error('Failed to delete payment:', error);
             }
