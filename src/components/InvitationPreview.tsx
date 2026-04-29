@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, MapPin, Music, VolumeX, Gift, ExternalLink, Landmark, Smartphone, Heart, MailOpen, CheckCircle2, Menu, X } from 'lucide-react';
+import { Calendar, Clock, MapPin, Music, VolumeX, Gift, ExternalLink, Landmark, Smartphone, Heart, MailOpen, CheckCircle2, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { NavigationPagesContent } from '@/lib/navigationPages';
 import { mergeNavigationPages } from '@/lib/navigationPages';
 
@@ -33,7 +33,11 @@ export interface Theme {
 export interface CustomSection {
     id: string;
     backgroundUrl: string;
-    backgroundType?: 'image' | 'video';
+    backgroundType?: 'image' | 'video' | 'slideshow';
+    /** When backgroundType is slideshow, ordered image URLs */
+    slideshowUrls?: string[];
+    slideshowIntervalSec?: number;
+    slideshowAutoplay?: boolean;
     showOverlay?: boolean;
     isFullBleed?: boolean;
     overlayType: 'text' | 'image' | 'none';
@@ -79,6 +83,7 @@ export interface InvitationData {
     receptionAddress?: string;
     mapLink?: string;
     heroImage?: string;
+    metadataImageUrl?: string;
     heroVideo?: string;
     audioUrl?: string;
     heroLogoUrl?: string;
@@ -118,6 +123,91 @@ interface InvitationPreviewProps {
         updatedAt: Date | null;
     } | null;
     isPreview?: boolean;
+}
+
+function CustomSectionSlideshow({
+    urls,
+    intervalSec,
+    autoplay
+}: {
+    urls: string[];
+    intervalSec: number;
+    autoplay: boolean;
+}) {
+    const safe = urls.filter(Boolean);
+    const n = safe.length;
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        setIndex((i) => (n <= 0 ? 0 : Math.min(i, n - 1)));
+    }, [n]);
+
+    useEffect(() => {
+        if (n <= 1 || !autoplay) return;
+        const ms = Math.min(60, Math.max(2, intervalSec)) * 1000;
+        const t = window.setInterval(() => {
+            setIndex((i) => (i + 1) % n);
+        }, ms);
+        return () => window.clearInterval(t);
+    }, [n, autoplay, intervalSec]);
+
+    if (n === 0) {
+        return <div className="absolute inset-0 bg-stone-900" aria-hidden />;
+    }
+
+    return (
+        <>
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={`${index}-${safe[index]}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.35 }}
+                    className="absolute inset-0 bg-cover bg-center bg-stone-900"
+                    style={{ backgroundImage: `url(${safe[index]})` }}
+                />
+            </AnimatePresence>
+            {n > 1 && (
+                <>
+                    <button
+                        type="button"
+                        aria-label="Previous slide"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setIndex((i) => (i - 1 + n) % n);
+                        }}
+                        className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-[15] rounded-full bg-white/85 p-2 text-stone-800 shadow-md hover:bg-white transition-colors"
+                    >
+                        <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
+                    </button>
+                    <button
+                        type="button"
+                        aria-label="Next slide"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setIndex((i) => (i + 1) % n);
+                        }}
+                        className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-[15] rounded-full bg-white/85 p-2 text-stone-800 shadow-md hover:bg-white transition-colors"
+                    >
+                        <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
+                    </button>
+                </>
+            )}
+        </>
+    );
+}
+
+export function customSectionSlideUrls(section: CustomSection): string[] {
+    if (section.backgroundType === 'slideshow') {
+        const fromArr = (section.slideshowUrls || []).filter(Boolean);
+        if (fromArr.length > 0) return fromArr;
+        if (section.backgroundUrl) return [section.backgroundUrl];
+        return [];
+    }
+    return section.backgroundUrl ? [section.backgroundUrl] : [];
 }
 
 export default function InvitationPreview({ data, guestData, isPreview = false }: InvitationPreviewProps) {
@@ -851,10 +941,15 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
 
                         {/* Custom Modular Sections */}
                         {data.customSections?.map((section, index) => {
-                            const sectionIsVideo = section.backgroundType === 'video' || (section.backgroundUrl || '').split('?')[0].match(/\.(mp4|webm|ogg|mov)$/i);
+                            const sectionIsSlideshow = section.backgroundType === 'slideshow';
+                            const sectionIsVideo =
+                                !sectionIsSlideshow &&
+                                (section.backgroundType === 'video' ||
+                                    !!(section.backgroundUrl || '').split('?')[0].match(/\.(mp4|webm|ogg|mov)$/i));
                             const showOverlay = section.showOverlay !== false;
                             const isFullBleed = section.isFullBleed === true;
-                            
+                            const slideUrls = customSectionSlideUrls(section);
+
                             return (
                                 <motion.section
                                     key={section.id || index}
@@ -879,6 +974,12 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                 className="w-full h-auto block" 
                                                 playsInline 
                                                 muted 
+                                            />
+                                        ) : sectionIsSlideshow ? (
+                                            <CustomSectionSlideshow
+                                                urls={slideUrls}
+                                                intervalSec={section.slideshowIntervalSec ?? 5}
+                                                autoplay={section.slideshowAutoplay !== false}
                                             />
                                         ) : (
                                             <div

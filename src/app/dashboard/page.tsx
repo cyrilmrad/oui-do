@@ -23,7 +23,9 @@ import {
     Armchair,
     Edit2,
     Trash2,
-    Lock
+    Lock,
+    Loader2,
+    Download
 } from 'lucide-react';
 import InvitationPreview, {
     EMPTY_EXPLORING_SPOT,
@@ -41,6 +43,12 @@ import { getExpensesBySlug } from '@/app/actions/budget';
 import { getSeatingData } from '@/app/actions/seating';
 import type { SelectSeatingTable, SelectGuest } from '@/app/actions/seating';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
+import {
+    parseGuestImportCsv,
+    parseGuestImportFromExcelRows,
+    type GuestImportRow,
+    GUEST_CSV_TEMPLATE_DOWNLOAD_URL,
+} from '@/lib/guestCsvImport';
 import { useEntitlements } from '@/components/entitlements/EntitlementsContext';
 import type { FeatureKey } from '@/lib/features';
 type RsvpStatus = 'all' | 'attending' | 'declined' | 'pending';
@@ -88,6 +96,7 @@ export default function DashboardPage() {
         mapLink: "",
         heroVideo: "",
         heroImage: "",
+        metadataImageUrl: "",
         audioUrl: "",
         giftMessage: "",
         bankAccountName: "",
@@ -115,6 +124,13 @@ export default function DashboardPage() {
     const [newGuestData, setNewGuestData] = useState({ firstName: '', lastName: '', pax: 1 });
     const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
     const [editGuestData, setEditGuestData] = useState<any>({});
+    const [csvImportPreview, setCsvImportPreview] = useState<{
+        fileName: string;
+        guests: GuestImportRow[];
+        skippedLineCount: number;
+    } | null>(null);
+    const [isGuestCsvImporting, setIsGuestCsvImporting] = useState(false);
+    const [deletingGuestId, setDeletingGuestId] = useState<string | null>(null);
 
     const handleEditGuest = (guest: any) => {
         setEditingGuestId(guest.id);
@@ -141,6 +157,7 @@ export default function DashboardPage() {
 
     const handleDeleteGuest = async (id: string) => {
         if (!confirm("Are you sure you want to delete this guest?")) return;
+        setDeletingGuestId(id);
         try {
             const res = await fetchWithAuth(`/api/guests?id=${id}`, {
                 method: 'DELETE'
@@ -148,10 +165,14 @@ export default function DashboardPage() {
             if (res.ok) {
                 const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
                 setRsvps(await updatedRes.json());
+            } else {
+                alert("Failed to delete guest.");
             }
         } catch (error) {
             console.error(error);
             alert("Failed to delete guest.");
+        } finally {
+            setDeletingGuestId(null);
         }
     };
 
@@ -175,47 +196,82 @@ export default function DashboardPage() {
         }
     };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const CSV_PREVIEW_LIMIT = 50;
+
+    const GUEST_IMPORT_FORMAT_HINT =
+        'Use a header row, then columns: firstName, lastName, pax (CSV or first sheet of an .xlsx file).';
+
+    const handleGuestImportFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            const text = event.target?.result as string;
-            // Parse CSV format expected: firstName,lastName,pax
-            const rows = text.split('\n').filter(row => row.trim() !== '');
-            const guestsToImport = rows.slice(1).map(row => { // Assuming first row is header
-                const cols = row.split(',');
-                return {
-                    firstName: cols[0]?.trim() || '',
-                    lastName: cols[1]?.trim() || '',
-                    pax: parseInt(cols[2]?.trim() || '1', 10)
-                };
-            }).filter(g => g.firstName && g.lastName);
+        const input = e.target;
+        const lower = file.name.toLowerCase();
+        const isExcel =
+            lower.endsWith('.xlsx') ||
+            file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-            if (guestsToImport.length > 0) {
-                try {
-                    const res = await fetchWithAuth('/api/guests', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ slug: userSlug, guests: guestsToImport })
-                    });
-                    if (res.ok) {
-                        const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
-                        setRsvps(await updatedRes.json());
-                        alert('Guests imported successfully!');
-                    }
-                } catch (error) {
-                    console.error(error);
-                    alert("Failed to import CSV.");
-                }
+        const openPreview = (guests: GuestImportRow[], skippedLineCount: number) => {
+            if (guests.length === 0) {
+                alert(`No valid guests found. ${GUEST_IMPORT_FORMAT_HINT}`);
             } else {
-                alert("No valid guests found in CSV. Please ensure format is: firstName,lastName,pax");
+                setCsvImportPreview({ fileName: file.name, guests, skippedLineCount });
             }
         };
-        reader.readAsText(file);
-        // reset input
-        e.target.value = '';
+
+        try {
+            if (isExcel) {
+                const { default: readXlsxFile } = await import('read-excel-file/browser');
+                const sheets = await readXlsxFile(file);
+                const data = sheets[0]?.data;
+                if (!data || !Array.isArray(data)) {
+                    alert('Could not read this workbook. Try saving as .xlsx with guest data on the first sheet.');
+                    return;
+                }
+                const parsed = parseGuestImportFromExcelRows(data as unknown[][]);
+                openPreview(parsed.guests, parsed.skippedLineCount);
+            } else {
+                const text = await file.text();
+                const parsed = parseGuestImportCsv(text);
+                openPreview(parsed.guests, parsed.skippedLineCount);
+            }
+        } catch (err) {
+            console.error(err);
+            alert(
+                isExcel
+                    ? `Could not read this Excel file. ${GUEST_IMPORT_FORMAT_HINT}`
+                    : `Could not read this file. ${GUEST_IMPORT_FORMAT_HINT}`,
+            );
+        } finally {
+            input.value = '';
+        }
+    };
+
+    const confirmCsvImport = async () => {
+        if (!csvImportPreview || !userSlug) return;
+        const { guests } = csvImportPreview;
+        setIsGuestCsvImporting(true);
+        try {
+            const res = await fetchWithAuth('/api/guests', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug: userSlug, guests }),
+            });
+            if (res.ok) {
+                const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
+                setRsvps(await updatedRes.json());
+                alert('Guests imported successfully!');
+                setCsvImportPreview(null);
+            } else {
+                const err = await res.json().catch(() => ({}));
+                alert(typeof err?.error === 'string' ? err.error : 'Failed to import CSV.');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Failed to import CSV.');
+        } finally {
+            setIsGuestCsvImporting(false);
+        }
     };
 
     const copyGuestLink = (guestId: string) => {
@@ -264,6 +320,7 @@ export default function DashboardPage() {
                                 mapLink: dbData.mapLink || "",
                                 heroVideo: dbData.heroVideo || "",
                                 heroImage: dbData.heroImage || "",
+                                metadataImageUrl: dbData.metadataImageUrl || "",
                                 audioUrl: dbData.audioUrl || "",
                                 heroLogoUrl: dbData.heroLogoUrl || "",
                                 showHeroLogo: dbData.showHeroLogo || false,
@@ -683,15 +740,112 @@ export default function DashboardPage() {
         }
         return (
         <>
+            {isGuestCsvImporting && (
+                <div
+                    className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-stone-900/55 backdrop-blur-[2px] px-6"
+                    role="status"
+                    aria-live="polite"
+                    aria-busy="true"
+                >
+                    <div className="relative bg-white rounded-2xl shadow-2xl px-12 py-10 flex flex-col items-center gap-6 border border-stone-200/90 max-w-sm w-full">
+                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-50/80 via-white to-stone-50/60 pointer-events-none" aria-hidden />
+                        <div className="relative flex flex-col items-center gap-6">
+                            <div className="relative">
+                                <div className="absolute inset-0 rounded-full bg-emerald-400/20 scale-150 animate-pulse" aria-hidden />
+                                <Loader2 className="relative w-14 h-14 text-emerald-600 animate-spin" strokeWidth={1.25} />
+                            </div>
+                            <div className="text-center space-y-1">
+                                <p className="text-base font-serif text-stone-900">Importing your guests</p>
+                                <p className="text-sm text-stone-500">This usually takes just a moment.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {csvImportPreview && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-[1px]" role="dialog" aria-modal="true" aria-labelledby="csv-import-title">
+                    <div className="bg-white rounded-xl shadow-xl border border-stone-200 max-w-2xl w-full max-h-[min(90vh,640px)] flex flex-col">
+                        <div className="px-6 py-4 border-b border-stone-100 shrink-0">
+                            <h3 id="csv-import-title" className="text-lg font-serif text-stone-900">Review import</h3>
+                            <p className="text-sm text-stone-500 mt-1 truncate" title={csvImportPreview.fileName}>{csvImportPreview.fileName}</p>
+                        </div>
+                        <div className="px-6 py-3 border-b border-stone-100 shrink-0 space-y-2">
+                            <p className="text-sm text-stone-700">
+                                <span className="font-medium">{csvImportPreview.guests.length}</span> guest{csvImportPreview.guests.length === 1 ? '' : 's'} will be added.
+                            </p>
+                            {csvImportPreview.skippedLineCount > 0 && (
+                                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                                    {csvImportPreview.skippedLineCount} row{csvImportPreview.skippedLineCount === 1 ? '' : 's'} skipped (empty first or last name).
+                                </p>
+                            )}
+                        </div>
+                        <div className="overflow-auto flex-1 min-h-0 px-6 py-3">
+                            <table className="w-full text-left text-sm border-collapse">
+                                <thead>
+                                    <tr className="border-b border-stone-200 text-stone-500">
+                                        <th className="py-2 pr-4 font-semibold uppercase tracking-wider text-xs">First name</th>
+                                        <th className="py-2 pr-4 font-semibold uppercase tracking-wider text-xs">Last name</th>
+                                        <th className="py-2 font-semibold uppercase tracking-wider text-xs text-center w-20">Pax</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-stone-100">
+                                    {csvImportPreview.guests.slice(0, CSV_PREVIEW_LIMIT).map((g, i) => (
+                                        <tr key={`${g.firstName}-${g.lastName}-${i}`}>
+                                            <td className="py-2 pr-4 text-stone-900">{g.firstName}</td>
+                                            <td className="py-2 pr-4 text-stone-900">{g.lastName}</td>
+                                            <td className="py-2 text-center text-stone-700">{g.pax}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {csvImportPreview.guests.length > CSV_PREVIEW_LIMIT && (
+                                <p className="text-xs text-stone-500 mt-3">
+                                    Showing first {CSV_PREVIEW_LIMIT} rows. All {csvImportPreview.guests.length} will be imported if you confirm.
+                                </p>
+                            )}
+                        </div>
+                        <div className="px-6 py-4 border-t border-stone-100 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setCsvImportPreview(null)}
+                                className="w-full sm:w-auto px-4 py-2.5 rounded-md text-sm font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isGuestCsvImporting}
+                                onClick={() => void confirmCsvImport()}
+                                className="w-full sm:w-auto px-4 py-2.5 rounded-md text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-60 disabled:pointer-events-none"
+                            >
+                                Import {csvImportPreview.guests.length} guest{csvImportPreview.guests.length === 1 ? '' : 's'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
                     <h2 className="text-3xl font-serif text-stone-900">Guest Management</h2>
-                    <p className="mt-2 text-sm text-stone-500">Add guests manually or import from a CSV to generate secure personalized RSVP links.</p>
+                    <p className="mt-2 text-sm text-stone-500">Add guests manually or import a CSV / Excel (.xlsx) file to generate secure personalized RSVP links.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                    <a
+                        href={GUEST_CSV_TEMPLATE_DOWNLOAD_URL}
+                        download
+                        className="inline-flex items-center gap-2 bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 hover:border-stone-300 uppercase tracking-widest text-xs font-semibold py-2.5 px-4 rounded-md transition-colors"
+                    >
+                        <Download className="w-3.5 h-3.5" aria-hidden />
+                        Template
+                    </a>
                     <label className="cursor-pointer bg-stone-100 text-stone-600 hover:bg-stone-200 uppercase tracking-widest text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center">
-                        <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
-                        Import CSV
+                        <input
+                            type="file"
+                            accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            className="hidden"
+                            onChange={(ev) => void handleGuestImportFileSelected(ev)}
+                        />
+                        Import
                     </label>
                     <button onClick={() => setIsAddingGuest(!isAddingGuest)} className="bg-stone-900 text-white hover:bg-stone-800 uppercase tracking-widest text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center gap-2">
                         <Plus className="w-4 h-4" /> Add Guest
@@ -795,17 +949,24 @@ export default function DashboardPage() {
                                                 <div className="text-sm text-stone-500 truncate max-w-[150px]">{rsvp.message || "-"}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                <div className="flex items-center justify-end gap-3">
-                                                    <button onClick={() => copyGuestLink(rsvp.id)} className="text-stone-400 hover:text-stone-700 transition-colors" title="Copy Personalized Link">
-                                                        <Copy className="w-4 h-4" />
-                                                    </button>
-                                                    <button onClick={() => handleEditGuest(rsvp)} className="text-stone-400 hover:text-stone-700 transition-colors" title="Edit Guest">
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </button>
-                                                    <button onClick={() => handleDeleteGuest(rsvp.id)} className="text-stone-400 hover:text-rose-600 transition-colors" title="Delete Guest">
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
+                                                {deletingGuestId === rsvp.id ? (
+                                                    <div className="flex items-center justify-end gap-2 text-sm text-stone-500">
+                                                        <Loader2 className="w-4 h-4 shrink-0 animate-spin text-rose-500" strokeWidth={2} aria-hidden />
+                                                        <span>Deleting…</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center justify-end gap-3">
+                                                        <button type="button" onClick={() => copyGuestLink(rsvp.id)} className="text-stone-400 hover:text-stone-700 transition-colors" title="Copy Personalized Link">
+                                                            <Copy className="w-4 h-4" />
+                                                        </button>
+                                                        <button type="button" onClick={() => handleEditGuest(rsvp)} className="text-stone-400 hover:text-stone-700 transition-colors" title="Edit Guest">
+                                                            <Edit2 className="w-4 h-4" />
+                                                        </button>
+                                                        <button type="button" onClick={() => void handleDeleteGuest(rsvp.id)} className="text-stone-400 hover:text-rose-600 transition-colors" title="Delete Guest">
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </td>
                                         </tr>
                                     )

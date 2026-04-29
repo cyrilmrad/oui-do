@@ -15,23 +15,22 @@ const supabaseAdmin = supabaseUrl && supabaseUrl.startsWith('http')
 
 import { db } from '@/db';
 import { invitations } from '@/db/schema';
-import { eq } from 'drizzle-orm';
 
-export async function GET(request: Request) {
+export async function GET() {
     if (!supabaseAdmin) {
         return NextResponse.json({ error: 'Supabase is not correctly configured.' }, { status: 500 });
     }
 
     try {
         const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
-        const allInvitations = await db.select().from(invitations);
-
         if (error) {
             return NextResponse.json({ error: error.message }, { status: 400 });
         }
+        const allInvitations = await db.select().from(invitations);
+        const userList = users ?? [];
 
         // Filter for clients only and map to match mock structure
-        const clients = users
+        const clients = userList
             .filter(user => user.app_metadata?.role === 'client')
             .map(user => {
                 const slug = user.app_metadata?.slug || 'unknown-slug';
@@ -50,6 +49,7 @@ export async function GET(request: Request) {
         return NextResponse.json(clients, { status: 200 });
 
     } catch (err: any) {
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        console.error('GET /api/admin/clients failed', err);
+        return NextResponse.json({ error: err?.message || 'Internal Server Error' }, { status: 500 });
     }
 }

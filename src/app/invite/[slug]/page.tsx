@@ -27,7 +27,10 @@ export async function generateMetadata({
     const data = result[0];
     const title = `${data.bride} & ${data.groom} | Wedding Invitation`;
     const description = `You are invited to the wedding of ${data.bride} & ${data.groom}. Join us on ${data.date || 'our special day'}.`;
-    const imageUrl = data.heroImage || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070&auto=format&fit=crop";
+    const imageUrl =
+        data.metadataImageUrl ||
+        data.heroImage ||
+        "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070&auto=format&fit=crop";
 
     return {
         title,
@@ -97,6 +100,7 @@ export default async function InvitePage({
         detailsBackgroundUrl: dbData.detailsBackgroundUrl || "",
         mapLink: dbData.mapLink || "",
         heroImage: dbData.heroImage || "",
+        metadataImageUrl: dbData.metadataImageUrl || "",
         heroVideo: dbData.heroVideo || "",
         audioUrl: dbData.audioUrl || "",
         message: dbData.message || "",

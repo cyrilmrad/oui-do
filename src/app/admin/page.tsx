@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import InvitationPreview, {
@@ -36,6 +36,7 @@ const defaultData: InvitationData = {
     time: "",
     venue: "",
     location: "",
+    metadataImageUrl: "",
     message: "We can't wait to celebrate our special day with our favorite people.",
     showHeroLogo: false,
     showFormalInvitation: false,
@@ -68,6 +69,8 @@ export default function AdminDashboard() {
     // File Upload State
     const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
     const [heroImagePreview, setHeroImagePreview] = useState<string | null>(null);
+    const [metadataImageFile, setMetadataImageFile] = useState<File | null>(null);
+    const [metadataImagePreview, setMetadataImagePreview] = useState<string | null>(null);
     const [heroVideoFile, setHeroVideoFile] = useState<File | null>(null);
     const [heroVideoPreview, setHeroVideoPreview] = useState<string | null>(null);
     const [heroLogoFile, setHeroLogoFile] = useState<File | null>(null);
@@ -84,24 +87,42 @@ export default function AdminDashboard() {
     const [detailsBgFile, setDetailsBgFile] = useState<File | null>(null);
     const [detailsBgPreview, setDetailsBgPreview] = useState<string | null>(null);
 
-    const [customFiles, setCustomFiles] = useState<Record<string, { bgFile?: File, bgPreview?: string, overlayFile?: File, overlayPreview?: string }>>({});
+    type CustomSectionFiles = {
+        bgFile?: File;
+        bgPreview?: string;
+        overlayFile?: File;
+        overlayPreview?: string;
+        slideshowFiles?: File[];
+        slideshowPreviews?: string[];
+    };
+    const [customFiles, setCustomFiles] = useState<Record<string, CustomSectionFiles>>({});
+    const customFilesRef = useRef(customFiles);
+    customFilesRef.current = customFiles;
 
-    // Cleanup object URLs to prevent memory leaks
+    // Cleanup hero / global preview object URLs when those inputs change.
+    // Do NOT tie customFiles to this effect: its cleanup was revoking blob URLs still in use after each slideshow append.
     useEffect(() => {
         return () => {
             if (heroImagePreview) URL.revokeObjectURL(heroImagePreview);
+            if (metadataImagePreview) URL.revokeObjectURL(metadataImagePreview);
             if (heroVideoPreview) URL.revokeObjectURL(heroVideoPreview);
             if (heroLogoPreview) URL.revokeObjectURL(heroLogoPreview);
             if (audioPreview) URL.revokeObjectURL(audioPreview);
             if (formalImagePreview) URL.revokeObjectURL(formalImagePreview);
             if (preCeremonyMediaPreview) URL.revokeObjectURL(preCeremonyMediaPreview);
             if (detailsBgPreview) URL.revokeObjectURL(detailsBgPreview);
-            Object.values(customFiles).forEach(opts => {
+        };
+    }, [heroImagePreview, metadataImagePreview, heroVideoPreview, heroLogoPreview, audioPreview, formalImagePreview, preCeremonyMediaPreview, detailsBgPreview]);
+
+    useEffect(() => {
+        return () => {
+            Object.values(customFilesRef.current).forEach((opts) => {
                 if (opts.bgPreview) URL.revokeObjectURL(opts.bgPreview);
                 if (opts.overlayPreview) URL.revokeObjectURL(opts.overlayPreview);
+                opts.slideshowPreviews?.forEach((u) => URL.revokeObjectURL(u));
             });
         };
-    }, [heroImagePreview, heroVideoPreview, heroLogoPreview, audioPreview, formalImagePreview, preCeremonyMediaPreview, detailsBgPreview, customFiles]);
+    }, []);
 
 
 
@@ -280,6 +301,111 @@ export default function AdminDashboard() {
         });
     };
 
+    const handleSlideshowToggle = (idx: number, sectionId: string, enabled: boolean) => {
+        if (!enabled) {
+            setCustomFiles((prev) => {
+                const cur = prev[sectionId];
+                if (!cur?.slideshowPreviews?.length && !cur?.slideshowFiles?.length) return prev;
+                cur.slideshowPreviews?.forEach((u) => URL.revokeObjectURL(u));
+                const next: CustomSectionFiles = { ...cur };
+                delete next.slideshowFiles;
+                delete next.slideshowPreviews;
+                if (!next.bgFile && !next.bgPreview && !next.overlayFile && !next.overlayPreview) {
+                    const { [sectionId]: _, ...rest } = prev;
+                    return rest;
+                }
+                return { ...prev, [sectionId]: next };
+            });
+        }
+        setLiveData((prev) => {
+            const arr = [...(prev.customSections || [])];
+            const s = arr[idx];
+            if (!s) return prev;
+            if (enabled) {
+                const urls =
+                    s.slideshowUrls && s.slideshowUrls.length > 0
+                        ? [...s.slideshowUrls]
+                        : s.backgroundUrl &&
+                            s.backgroundType !== 'video' &&
+                            !String(s.backgroundUrl).split('?')[0].match(/\.(mp4|webm|ogg|mov)$/i)
+                          ? [s.backgroundUrl]
+                          : [];
+                arr[idx] = {
+                    ...s,
+                    backgroundType: 'slideshow',
+                    slideshowUrls: urls,
+                    slideshowIntervalSec: s.slideshowIntervalSec ?? 5,
+                    slideshowAutoplay: s.slideshowAutoplay !== false
+                };
+            } else {
+                const prevUrls = s.slideshowUrls || [];
+                const first = prevUrls[0] || s.backgroundUrl || '';
+                const looksVideo = !!String(first).split('?')[0].match(/\.(mp4|webm|ogg|mov)$/i);
+                arr[idx] = {
+                    ...s,
+                    backgroundType: looksVideo ? 'video' : 'image',
+                    backgroundUrl: first,
+                    slideshowUrls: []
+                };
+            }
+            return { ...prev, customSections: arr };
+        });
+    };
+
+    const isLikelyImageFile = (file: File) => {
+        if (file.type.startsWith('image/')) return true;
+        if (file.type && file.type !== 'application/octet-stream') return false;
+        return /\.(jpe?g|png|gif|webp|avif|bmp|svg|heic|heif)$/i.test(file.name);
+    };
+
+    const handleSlideshowFilesAdd = (sectionId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+        const list = e.target.files;
+        if (!list?.length) return;
+        const picked = Array.from(list).filter(isLikelyImageFile);
+        if (!picked.length) return;
+        setCustomFiles((prev) => {
+            const cur = prev[sectionId] || {};
+            const files = [...(cur.slideshowFiles || [])];
+            const previews = [...(cur.slideshowPreviews || [])];
+            picked.forEach((file) => {
+                files.push(file);
+                previews.push(URL.createObjectURL(file));
+            });
+            return { ...prev, [sectionId]: { ...cur, slideshowFiles: files, slideshowPreviews: previews } };
+        });
+        e.target.value = '';
+    };
+
+    const handleSlideshowRemoveSlide = (sectionIndex: number, slideIndex: number) => {
+        const section = liveData.customSections?.[sectionIndex];
+        if (!section) return;
+        const saved = section.slideshowUrls || [];
+        if (slideIndex < saved.length) {
+            handleSectionChange(
+                sectionIndex,
+                'slideshowUrls',
+                saved.filter((_, i) => i !== slideIndex)
+            );
+            return;
+        }
+        const pIdx = slideIndex - saved.length;
+        setCustomFiles((prev) => {
+            const cur = prev[section.id];
+            if (!cur?.slideshowFiles?.length) return prev;
+            const files = [...(cur.slideshowFiles || [])];
+            const previews = [...(cur.slideshowPreviews || [])];
+            if (pIdx < 0 || pIdx >= files.length) return prev;
+            const rev = previews[pIdx];
+            if (rev) URL.revokeObjectURL(rev);
+            files.splice(pIdx, 1);
+            previews.splice(pIdx, 1);
+            return {
+                ...prev,
+                [section.id]: { ...cur, slideshowFiles: files, slideshowPreviews: previews }
+            };
+        });
+    };
+
     const handleAddGiftOption = (type: 'bank' | 'mobile') => {
         setLiveData(prev => ({
             ...prev,
@@ -436,6 +562,7 @@ export default function AdminDashboard() {
         setIsSaving(true);
         try {
             let updatedHeroImage = liveData.heroImage;
+            let updatedMetadataImageUrl = liveData.metadataImageUrl;
             let updatedHeroVideo = liveData.heroVideo;
             let updatedHeroLogoUrl = liveData.heroLogoUrl;
             let updatedAudioUrl = liveData.audioUrl;
@@ -474,6 +601,7 @@ export default function AdminDashboard() {
             let updatedDetailsBg = liveData.detailsBackgroundUrl;
 
             if (heroImageFile) updatedHeroImage = await uploadFile(heroImageFile, liveData.heroImage, setHeroImageFile);
+            if (metadataImageFile) updatedMetadataImageUrl = await uploadFile(metadataImageFile, liveData.metadataImageUrl, setMetadataImageFile);
             if (heroVideoFile) updatedHeroVideo = await uploadFile(heroVideoFile, liveData.heroVideo, setHeroVideoFile);
             if (heroLogoFile) updatedHeroLogoUrl = await uploadFile(heroLogoFile, liveData.heroLogoUrl, setHeroLogoFile);
             if (audioFile) updatedAudioUrl = await uploadFile(audioFile, liveData.audioUrl, setAudioFile);
@@ -485,6 +613,25 @@ export default function AdminDashboard() {
                 const files = customFiles[section.id];
                 let bgUrl = section.backgroundUrl;
                 let overlayUrl = section.overlayImageUrl;
+
+                if (section.backgroundType === 'slideshow') {
+                    let urls = [...(section.slideshowUrls || [])];
+                    const pending = files?.slideshowFiles || [];
+                    for (const f of pending) {
+                        urls.push(await uploadFile(f, undefined));
+                    }
+                    bgUrl = urls[0] || bgUrl;
+                    if (files?.overlayFile) {
+                        overlayUrl = await uploadFile(files.overlayFile, section.overlayImageUrl);
+                    }
+                    return {
+                        ...section,
+                        backgroundUrl: bgUrl,
+                        slideshowUrls: urls,
+                        overlayImageUrl: overlayUrl,
+                        backgroundType: 'slideshow' as const
+                    };
+                }
 
                 if (files?.bgFile) {
                     bgUrl = await uploadFile(files.bgFile, section.backgroundUrl);
@@ -500,12 +647,17 @@ export default function AdminDashboard() {
                 };
             }));
 
+            Object.values(customFiles).forEach((opts) => {
+                opts.slideshowPreviews?.forEach((u) => URL.revokeObjectURL(u));
+            });
+
             // Clear custom files to prevent duplicate uploads
             setCustomFiles({});
 
             const payloadToSave = {
                 ...liveData,
                 heroImage: updatedHeroImage,
+                metadataImageUrl: updatedMetadataImageUrl,
                 heroVideo: updatedHeroVideo,
                 heroLogoUrl: updatedHeroLogoUrl,
                 audioUrl: updatedAudioUrl,
@@ -555,6 +707,7 @@ export default function AdminDashboard() {
                             setLiveData(defaultData);
                             setIsCreatingClient(true);
                             setHeroImageFile(null); setHeroImagePreview(null);
+                            setMetadataImageFile(null); setMetadataImagePreview(null);
                             setHeroVideoFile(null); setHeroVideoPreview(null);
                             setHeroLogoFile(null); setHeroLogoPreview(null);
                             setAudioFile(null); setAudioPreview(null);
@@ -583,6 +736,7 @@ export default function AdminDashboard() {
                                 setLiveData(defaultData); // Clear builder
                                 setActiveTab('clients-list');
                                 setHeroImageFile(null); setHeroImagePreview(null);
+                                setMetadataImageFile(null); setMetadataImagePreview(null);
                                 setHeroVideoFile(null); setHeroVideoPreview(null);
                                 setHeroLogoFile(null); setHeroLogoPreview(null);
                                 setAudioFile(null); setAudioPreview(null);
@@ -600,6 +754,7 @@ export default function AdminDashboard() {
                                 setLiveData(defaultData);
                                 setActiveTab('entitlements');
                                 setHeroImageFile(null); setHeroImagePreview(null);
+                                setMetadataImageFile(null); setMetadataImagePreview(null);
                                 setHeroVideoFile(null); setHeroVideoPreview(null);
                                 setHeroLogoFile(null); setHeroLogoPreview(null);
                                 setAudioFile(null); setAudioPreview(null);
@@ -648,6 +803,7 @@ export default function AdminDashboard() {
                                 setLiveData(defaultData);
                                 setActiveTab('clients-list');
                                 setHeroImageFile(null); setHeroImagePreview(null);
+                                setMetadataImageFile(null); setMetadataImagePreview(null);
                                 setHeroVideoFile(null); setHeroVideoPreview(null);
                                 setHeroLogoFile(null); setHeroLogoPreview(null);
                                 setAudioFile(null); setAudioPreview(null);
@@ -769,6 +925,7 @@ export default function AdminDashboard() {
                                                         setLiveData({ ...defaultData, slug: client.slug, bride: client.bride, groom: client.groom });
                                                     }
                                                     setHeroImageFile(null); setHeroImagePreview(null);
+                                                    setMetadataImageFile(null); setMetadataImagePreview(null);
                                                     setHeroVideoFile(null); setHeroVideoPreview(null);
                                                     setHeroLogoFile(null); setHeroLogoPreview(null);
                                                     setAudioFile(null); setAudioPreview(null);
@@ -1006,6 +1163,16 @@ export default function AdminDashboard() {
                                                         </div>
                                                     ) : null}
                                                     <input type="file" accept="video/mp4,video/*" onChange={(e) => handleFileChange(e, setHeroVideoFile, setHeroVideoPreview, heroVideoPreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Metadata Share Image (Open Graph / Twitter)</label>
+                                                    {metadataImagePreview || liveData.metadataImageUrl ? (
+                                                        <div className="mb-2">
+                                                            <img src={metadataImagePreview || liveData.metadataImageUrl} alt="Metadata Share Preview" className="h-24 w-auto rounded-md object-cover border border-outline-variant/20" />
+                                                        </div>
+                                                    ) : null}
+                                                    <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setMetadataImageFile, setMetadataImagePreview, metadataImagePreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
+                                                    <p className="text-xs text-secondary">If empty, invite metadata falls back to Hero image, then default image.</p>
                                                 </div>
 
                                                 <div className="flex items-center justify-between mt-6">
@@ -1361,6 +1528,16 @@ export default function AdminDashboard() {
                                                                         <div className="w-8 h-4 bg-surface-container-highest rounded-full peer peer-checked:bg-primary relative transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
                                                                         <span className="text-[0.65rem] font-label uppercase text-secondary font-bold">Full Bleed</span>
                                                                     </label>
+                                                                    <label className="flex items-center gap-2 cursor-pointer">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={section.backgroundType === 'slideshow'}
+                                                                            onChange={(e) => handleSlideshowToggle(idx, section.id, e.target.checked)}
+                                                                            className="sr-only peer"
+                                                                        />
+                                                                        <div className="w-8 h-4 bg-surface-container-highest rounded-full peer peer-checked:bg-primary relative transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+                                                                        <span className="text-[0.65rem] font-label uppercase text-secondary font-bold">Slideshow</span>
+                                                                    </label>
                                                                     <select
                                                                         value={section.overlayType}
                                                                         onChange={(e) => handleSectionChange(idx, 'overlayType', e.target.value)}
@@ -1373,24 +1550,98 @@ export default function AdminDashboard() {
                                                                 </div>
                                                             </div>
 
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Cinematic Background Media (Image/Video)</label>
-                                                                {customFiles[section.id]?.bgPreview || section.backgroundUrl ? (
-                                                                    <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block bg-black relative">
-                                                                        {section.backgroundType === 'video' || (section.backgroundUrl || '').match(/\.(mp4|webm|ogg|mov)$/i) || customFiles[section.id]?.bgFile?.type.startsWith('video/') ? (
-                                                                            <video src={customFiles[section.id]?.bgPreview || section.backgroundUrl} className="h-24 w-auto object-cover opacity-80" muted playsInline />
-                                                                        ) : (
-                                                                            <img src={customFiles[section.id]?.bgPreview || section.backgroundUrl} alt={`Custom bg ${idx}`} className="h-24 w-auto object-cover opacity-80" />
-                                                                        )}
+                                                            {section.backgroundType === 'slideshow' ? (
+                                                                <div className="space-y-4">
+                                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Slideshow images</label>
+                                                                    <p className="text-xs text-secondary">Add multiple images. Use arrows or autoplay on the public invite.</p>
+                                                                    <div className="flex flex-wrap gap-3">
+                                                                        {(section.slideshowUrls || []).map((url, si) => (
+                                                                            <div key={`slide-saved-${section.id}-${si}`} className="relative group/thumb">
+                                                                                <img src={url} alt="" className="h-20 w-20 object-cover rounded-md border border-outline-variant/20" />
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => handleSlideshowRemoveSlide(idx, si)}
+                                                                                    className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-error text-white text-xs font-bold leading-6 shadow opacity-90 hover:opacity-100"
+                                                                                    title="Remove slide"
+                                                                                >
+                                                                                    ×
+                                                                                </button>
+                                                                            </div>
+                                                                        ))}
+                                                                        {(customFiles[section.id]?.slideshowPreviews || []).map((p, pi) => {
+                                                                            const combinedIdx = (section.slideshowUrls || []).length + pi;
+                                                                            return (
+                                                                                <div key={`slide-pending-${section.id}-${pi}`} className="relative group/thumb">
+                                                                                    <img src={p} alt="" className="h-20 w-20 object-cover rounded-md border border-primary/30" />
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => handleSlideshowRemoveSlide(idx, combinedIdx)}
+                                                                                        className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-error text-white text-xs font-bold leading-6 shadow opacity-90 hover:opacity-100"
+                                                                                        title="Remove slide"
+                                                                                    >
+                                                                                        ×
+                                                                                    </button>
+                                                                                </div>
+                                                                            );
+                                                                        })}
                                                                     </div>
-                                                                ) : null}
-                                                                <input
-                                                                    type="file"
-                                                                    accept="image/*,video/*"
-                                                                    onChange={(e) => handleCustomFileChange(e, section.id, 'bg')}
-                                                                    className="w-full bg-surface border-outline-variant/30 border rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90"
-                                                                />
-                                                            </div>
+                                                                    <input
+                                                                        type="file"
+                                                                        accept="image/*"
+                                                                        multiple
+                                                                        onChange={(e) => handleSlideshowFilesAdd(section.id, e)}
+                                                                        className="w-full bg-surface border-outline-variant/30 border rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90"
+                                                                    />
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                        <div className="space-y-1.5">
+                                                                            <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Interval (seconds)</label>
+                                                                            <input
+                                                                                type="number"
+                                                                                min={2}
+                                                                                max={60}
+                                                                                value={section.slideshowIntervalSec ?? 5}
+                                                                                onChange={(e) => {
+                                                                                    const v = parseInt(e.target.value, 10);
+                                                                                    handleSectionChange(
+                                                                                        idx,
+                                                                                        'slideshowIntervalSec',
+                                                                                        Number.isFinite(v) ? Math.min(60, Math.max(2, v)) : 5
+                                                                                    );
+                                                                                }}
+                                                                                className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 text-on-surface font-body"
+                                                                            />
+                                                                        </div>
+                                                                        <label className="flex items-center gap-2 cursor-pointer mt-6 sm:mt-8">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={section.slideshowAutoplay !== false}
+                                                                                onChange={(e) => handleSectionChange(idx, 'slideshowAutoplay', e.target.checked)}
+                                                                                className="rounded border-outline-variant"
+                                                                            />
+                                                                            <span className="text-[0.75rem] font-label uppercase text-secondary font-bold">Autoplay</span>
+                                                                        </label>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="space-y-1.5">
+                                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Cinematic Background Media (Image/Video)</label>
+                                                                    {customFiles[section.id]?.bgPreview || section.backgroundUrl ? (
+                                                                        <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block bg-black relative">
+                                                                            {section.backgroundType === 'video' || (section.backgroundUrl || '').match(/\.(mp4|webm|ogg|mov)$/i) || customFiles[section.id]?.bgFile?.type.startsWith('video/') ? (
+                                                                                <video src={customFiles[section.id]?.bgPreview || section.backgroundUrl} className="h-24 w-auto object-cover opacity-80" muted playsInline />
+                                                                            ) : (
+                                                                                <img src={customFiles[section.id]?.bgPreview || section.backgroundUrl} alt={`Custom bg ${idx}`} className="h-24 w-auto object-cover opacity-80" />
+                                                                            )}
+                                                                        </div>
+                                                                    ) : null}
+                                                                    <input
+                                                                        type="file"
+                                                                        accept="image/*,video/*"
+                                                                        onChange={(e) => handleCustomFileChange(e, section.id, 'bg')}
+                                                                        className="w-full bg-surface border-outline-variant/30 border rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90"
+                                                                    />
+                                                                </div>
+                                                            )}
 
                                                             {section.overlayType === 'text' ? (
                                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1650,6 +1901,7 @@ export default function AdminDashboard() {
                                     const previewData = {
                                         ...liveData,
                                         ...(heroImagePreview && { heroImage: heroImagePreview }),
+                                        ...(metadataImagePreview && { metadataImageUrl: metadataImagePreview }),
                                         ...(heroVideoPreview && { heroVideo: heroVideoPreview }),
                                         ...(heroLogoPreview && { heroLogoUrl: heroLogoPreview }),
                                         ...(audioPreview && { audioUrl: audioPreview }),
@@ -1664,6 +1916,16 @@ export default function AdminDashboard() {
                                         ...(detailsBgPreview && { detailsBackgroundUrl: detailsBgPreview }),
                                         customSections: liveData.customSections?.map(section => {
                                             const files = customFiles[section.id];
+                                            if (section.backgroundType === 'slideshow') {
+                                                const saved = section.slideshowUrls || [];
+                                                const pending = files?.slideshowPreviews || [];
+                                                return {
+                                                    ...section,
+                                                    slideshowUrls: [...saved, ...pending],
+                                                    backgroundUrl: saved[0] || pending[0] || section.backgroundUrl,
+                                                    ...(files?.overlayPreview && { overlayImageUrl: files.overlayPreview })
+                                                };
+                                            }
                                             if (files) {
                                                 return {
                                                     ...section,
