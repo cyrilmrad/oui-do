@@ -16,6 +16,7 @@ export const invitations = pgTable('invitations', {
     receptionAddress: varchar('reception_address', { length: 255 }),
     mapLink: text('map_link'),
     heroImage: text('hero_image'),
+    metadataImageUrl: text('metadata_image_url'),
     heroVideo: text('hero_video'),
     detailsBackgroundUrl: text('details_background_url'),
     audioUrl: text('audio_url'),
