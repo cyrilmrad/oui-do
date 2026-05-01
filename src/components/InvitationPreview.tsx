@@ -1270,7 +1270,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                     >
                         <section className="py-20 px-6 md:px-12 text-center flex flex-col items-center justify-center">
                             <h2 className={`text-5xl md:text-6xl font-serif mb-6 ${cleanTheme.primaryText}`}>{nav.lodgingTitle}</h2>
-                            <p className={`max-w-2xl text-lg font-light ${cleanTheme.primaryText} opacity-80 leading-relaxed mb-16`}>
+                            <p className={`max-w-2xl text-lg font-light ${cleanTheme.primaryText} opacity-80 leading-relaxed mb-16 whitespace-pre-line`}>
                                 {nav.lodgingIntro}
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto w-full">
@@ -1281,7 +1281,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                         </div>
                                         <h3 className="text-2xl font-serif text-stone-800 mb-2">{hotel.title}</h3>
                                         <p className="text-stone-500 text-sm uppercase tracking-widest font-semibold mb-6">{hotel.subtitle}</p>
-                                        <p className="text-stone-600 font-light mb-8 leading-relaxed">{hotel.description}</p>
+                                        <p className="text-stone-600 font-light mb-8 leading-relaxed whitespace-pre-line">{hotel.description}</p>
                                         <a
                                             href={hotel.linkUrl || '#'}
                                             target={hotel.linkUrl && hotel.linkUrl !== '#' ? '_blank' : undefined}
@@ -1306,7 +1306,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                     >
                         <section className="py-20 px-6 md:px-12 text-center flex flex-col items-center justify-center">
                             <h2 className={`text-5xl md:text-6xl font-serif mb-6 ${cleanTheme.primaryText}`}>{nav.exploringTitle}</h2>
-                            <p className={`max-w-2xl text-lg font-light ${cleanTheme.primaryText} opacity-80 leading-relaxed mb-16`}>
+                            <p className={`max-w-2xl text-lg font-light ${cleanTheme.primaryText} opacity-80 leading-relaxed mb-16 whitespace-pre-line`}>
                                 {nav.exploringIntro}
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto w-full text-left">
@@ -1318,7 +1318,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                         <div className="p-8">
                                             <h3 className="text-xl font-serif text-stone-800 mb-2">{spot.title}</h3>
                                             <p className="text-stone-500 text-xs tracking-widest uppercase font-semibold mb-4">{spot.category}</p>
-                                            <p className="text-stone-600 font-light text-sm">{spot.description}</p>
+                                            <p className="text-stone-600 font-light text-sm whitespace-pre-line">{spot.description}</p>
                                         </div>
                                     </div>
                                 ))}

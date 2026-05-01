@@ -54,6 +54,7 @@ export async function POST(request: Request) {
         return NextResponse.json(payload, { status: 201 });
     } catch (e: any) {
         console.error('POST /admin/client-entitlements', e);
-        return NextResponse.json({ error: e.message ?? 'Server error' }, { status: 500 });
+        const status = typeof e?.statusCode === 'number' ? e.statusCode : 500;
+        return NextResponse.json({ error: e.message ?? 'Server error' }, { status });
     }
 }

@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { clientEntitlements } from '@/db/schema';
+import { clientEntitlements, invitations } from '@/db/schema';
 import type { FeatureKey } from '@/lib/features';
 import { eq } from 'drizzle-orm';
 import { getDefaultFeatureFlags } from '@/lib/entitlements/defaults';
@@ -61,6 +61,18 @@ export async function upsertClientEntitlements(
             .set({ ...merged, updatedAt: new Date() })
             .where(eq(clientEntitlements.slug, slug));
     } else {
+        const inv = await db
+            .select({ slug: invitations.slug })
+            .from(invitations)
+            .where(eq(invitations.slug, slug))
+            .limit(1);
+        if (inv.length === 0) {
+            const err = new Error(
+                `Cannot create entitlements: no invitation exists with slug "${slug}". Create the invitation first.`
+            );
+            (err as Error & { statusCode?: number }).statusCode = 400;
+            throw err;
+        }
         await db.insert(clientEntitlements).values({
             slug,
             ...merged
