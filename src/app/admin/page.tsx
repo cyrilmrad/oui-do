@@ -13,7 +13,7 @@ import InvitationPreview, {
     NavigationLodgingHotel,
     NavigationPagesContent
 } from '@/components/InvitationPreview';
-import { LogOut, Users, Plus, LayoutDashboard, Search, ChevronRight, Copy, Link, QrCode, Download, Share, Lock, Trash2, Shield } from 'lucide-react';
+import { LogOut, Users, Plus, LayoutDashboard, Search, ChevronRight, Copy, Link, QrCode, Download, Share, Lock, Trash2, Shield, Loader2 } from 'lucide-react';
 import BudgetTracker from '@/components/BudgetTracker';
 import TableSeating from '@/components/TableSeating';
 import ClientEntitlementsPanel from '@/components/admin/ClientEntitlementsPanel';
@@ -55,6 +55,7 @@ export default function AdminDashboard() {
 
     // Admin Sidebar State
     const [isCreatingClient, setIsCreatingClient] = useState(false);
+    const [isLoadingClientDetails, setIsLoadingClientDetails] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [newClientForm, setNewClientForm] = useState({ email: '', password: '', slug: '' });
     const [onboardLoading, setOnboardLoading] = useState(false);
@@ -694,6 +695,27 @@ export default function AdminDashboard() {
 
     return (
         <div className="flex bg-surface text-on-surface font-body overflow-x-hidden relative h-screen w-full">
+            {isLoadingClientDetails && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/35 backdrop-blur-sm"
+                    role="alertdialog"
+                    aria-busy="true"
+                    aria-live="polite"
+                    aria-labelledby="admin-client-loading-title"
+                >
+                    <div className="bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant/15 px-10 py-9 max-w-sm mx-4 flex flex-col items-center gap-5 text-center">
+                        <Loader2 className="w-11 h-11 text-primary animate-spin shrink-0" aria-hidden />
+                        <div>
+                            <p id="admin-client-loading-title" className="font-headline text-lg text-primary">
+                                Preparing the details
+                            </p>
+                            <p className="font-body text-sm text-secondary mt-2 leading-relaxed">
+                                Loading invitation, budget, and seating for this client.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Sidebar - Admin Navigation */}
             <aside className="hidden md:flex flex-col h-full py-8 px-4 bg-surface-container-low text-primary w-64 shrink-0 whitespace-separation z-20 scrollbar-hide">
                 <div className="mb-8 px-4">
@@ -909,6 +931,7 @@ export default function AdminDashboard() {
                                 <div className="space-y-4">
                                     {(useMocks ? mockClients : realClients).filter(c => c.slug.includes(searchQuery.toLowerCase())).map(client => (
                                         <div key={client.id} className="group bg-surface-container-lowest hover:bg-surface-container-low transition-all duration-300 rounded-xl p-6 flex items-center justify-between border border-transparent hover:border-outline-variant/20 shadow-sm cursor-pointer" onClick={async () => {
+                                            setIsLoadingClientDetails(true);
                                             try {
                                                 const res = await fetch(`/api/invitation?slug=${client.slug}`);
                                                 if (res.ok) {
@@ -939,6 +962,9 @@ export default function AdminDashboard() {
                                                     setActiveTab('builder'); // Transition to Builder
                                                 }
                                             } catch (e) { console.error(e); }
+                                            finally {
+                                                setIsLoadingClientDetails(false);
+                                            }
                                         }}>
                                             <div className="flex items-center gap-6 w-[60%] md:w-1/3">
                                                 <div className="w-16 h-16 rounded-full bg-surface-container-high overflow-hidden flex-shrink-0 border border-outline-variant/10">

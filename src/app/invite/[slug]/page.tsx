@@ -97,6 +97,7 @@ export default async function InvitePage({
         receptionTime: dbData.receptionTime || "",
         receptionVenue: dbData.receptionVenue || "",
         receptionLocation: dbData.receptionLocation || "",
+        receptionAddress: dbData.receptionAddress || "",
         detailsBackgroundUrl: dbData.detailsBackgroundUrl || "",
         mapLink: dbData.mapLink || "",
         heroImage: dbData.heroImage || "",
