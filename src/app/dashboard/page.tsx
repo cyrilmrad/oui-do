@@ -25,18 +25,23 @@ import {
     Trash2,
     Lock,
     Loader2,
-    Download
+    Download,
+    ChevronDown
 } from 'lucide-react';
 import InvitationPreview, {
+    createEmptyDynamicPage,
     EMPTY_EXPLORING_SPOT,
     EMPTY_LODGING_HOTEL,
     InvitationData,
     Theme,
     mergeNavigationPages,
+    NavigationBlogBody,
+    NavigationDynamicPage,
     NavigationExploringSpot,
     NavigationLodgingHotel,
     NavigationPagesContent
 } from '@/components/InvitationPreview';
+import { InvitationBlogEditor } from '@/components/blog/InvitationBlogEditor';
 import BudgetTracker from '@/components/BudgetTracker';
 import TableSeating from '@/components/TableSeating';
 import { getExpensesBySlug } from '@/app/actions/budget';
@@ -115,6 +120,7 @@ export default function DashboardPage() {
     });
 
     const [isSaving, setIsSaving] = useState(false);
+    const [navigationEditorOpen, setNavigationEditorOpen] = useState(false);
     const [userSlug, setUserSlug] = useState("");
     const [accessToken, setAccessToken] = useState<string | null>(null);
     const { hasFeature, loading: entitlementsLoading, features } = useEntitlements();
@@ -616,6 +622,44 @@ export default function DashboardPage() {
                 navigationPages: {
                     ...base,
                     exploringSpots: base.exploringSpots.filter((_, i) => i !== index)
+                }
+            };
+        });
+    };
+
+    const updateDynamicPage = (id: string, patch: Partial<NavigationDynamicPage>) => {
+        setWeddingDetails((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            const dynamicNavPages = base.dynamicNavPages.map((p) => (p.id === id ? { ...p, ...patch } : p));
+            return { ...prev, navigationPages: { ...base, dynamicNavPages } };
+        });
+    };
+
+    const updateDynamicPageBody = (id: string, body: NavigationBlogBody) => {
+        updateDynamicPage(id, { body });
+    };
+
+    const addDynamicPage = () => {
+        setWeddingDetails((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            return {
+                ...prev,
+                navigationPages: {
+                    ...base,
+                    dynamicNavPages: [...base.dynamicNavPages, createEmptyDynamicPage()]
+                }
+            };
+        });
+    };
+
+    const removeDynamicPage = (id: string) => {
+        setWeddingDetails((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            return {
+                ...prev,
+                navigationPages: {
+                    ...base,
+                    dynamicNavPages: base.dynamicNavPages.filter((p) => p.id !== id)
                 }
             };
         });
@@ -1316,7 +1360,27 @@ export default function DashboardPage() {
                         </div>
                     </div>
 
-                    <div className="pt-6 border-t border-stone-100 mt-8">
+                    <div className="mt-8 rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+                        <button
+                            type="button"
+                            onClick={() => setNavigationEditorOpen((open) => !open)}
+                            className="w-full flex items-center justify-between gap-4 px-4 py-3.5 text-left hover:bg-stone-50/90 transition-colors border-b border-stone-100"
+                            aria-expanded={navigationEditorOpen}
+                        >
+                            <div className="min-w-0">
+                                <span className="text-sm font-semibold text-stone-800">Multi-page navigation</span>
+                                <p className="text-xs text-stone-500 mt-0.5">
+                                    Hamburger menu, lodging, exploring, and custom pages
+                                </p>
+                            </div>
+                            <ChevronDown
+                                className={`w-5 h-5 text-stone-400 shrink-0 transition-transform duration-200 ${navigationEditorOpen ? 'rotate-180' : ''}`}
+                                aria-hidden
+                            />
+                        </button>
+                        {navigationEditorOpen && (
+                            <div className="px-4 py-5 space-y-6 bg-stone-50/40">
+                                <div className="space-y-4">
                         <label className="flex items-center space-x-3 cursor-pointer group">
                             <div className="relative">
                                 <input
@@ -1333,14 +1397,40 @@ export default function DashboardPage() {
                                 </div>
                             </div>
                             <span className="text-sm font-medium text-stone-700 group-hover:text-stone-900 transition-colors">
-                                Enable Multi-Page Navigation (Lodging & Exploring)
+                                Enable multi-page navigation (hamburger menu)
                             </span>
                         </label>
-                    </div>
+                        <p className="text-xs text-stone-500 pl-14 max-w-xl">
+                            The menu appears only when at least one page below is enabled. Existing live invitations keep Lodging and Exploring on until you change these toggles.
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-14 max-w-xl">
+                            {(
+                                [
+                                    ['lodgingEnabled', 'Lodging page', navDraft.lodgingEnabled],
+                                    ['exploringEnabled', 'Exploring page', navDraft.exploringEnabled]
+                                ] as const
+                            ).map(([key, label, checked]) => (
+                                <label key={key} className="flex items-center gap-2 cursor-pointer text-sm text-stone-700">
+                                    <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        onChange={(e) =>
+                                            updateNavigationPages({ [key]: e.target.checked } as Partial<NavigationPagesContent>)
+                                        }
+                                        className="rounded border-stone-300 text-emerald-600 focus:ring-emerald-500"
+                                    />
+                                    {label}
+                                </label>
+                            ))}
+                        </div>
+                        <p className="text-xs text-stone-500 pl-14 max-w-xl">
+                            Add custom pages (e.g. Cars, Stays, Food) below — each gets its own menu item when navigation is on.
+                        </p>
+                                </div>
 
-                    <div className="mt-8 pt-8 border-t border-stone-100 space-y-8">
+                                <div className="pt-6 border-t border-stone-200 space-y-8">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
-                            Multi-page copy (lodging & exploring)
+                            Multi-page content
                         </p>
 
                         <div className="space-y-3">
@@ -1453,6 +1543,80 @@ export default function DashboardPage() {
                                 ))}
                             </div>
                         </div>
+
+                        <div className="space-y-3 pt-2 border-t border-stone-100">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <h3 className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
+                                    Custom pages (menu + full page each)
+                                </h3>
+                                <button
+                                    type="button"
+                                    onClick={addDynamicPage}
+                                    className="inline-flex items-center gap-1.5 rounded-md border border-stone-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-stone-700 hover:bg-stone-50"
+                                >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    Add page
+                                </button>
+                            </div>
+                            <div className="space-y-6">
+                                {navDraft.dynamicNavPages.map((page) => (
+                                    <div key={page.id} className="rounded-lg border border-stone-200 p-4 space-y-3 bg-white/60">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Custom page</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeDynamicPage(page.id)}
+                                                className="rounded-md p-1.5 text-stone-400 hover:bg-red-50 hover:text-red-600"
+                                                title="Remove page"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            placeholder="Menu label (e.g. Cars, Stays)"
+                                            value={page.navLabel}
+                                            onChange={(e) => updateDynamicPage(page.id, { navLabel: e.target.value })}
+                                            className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Page title (heading)"
+                                            value={page.title}
+                                            onChange={(e) => updateDynamicPage(page.id, { title: e.target.value })}
+                                            className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none"
+                                        />
+                                        <textarea
+                                            placeholder="Introduction"
+                                            value={page.introduction}
+                                            onChange={(e) => updateDynamicPage(page.id, { introduction: e.target.value })}
+                                            rows={3}
+                                            className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none resize-y"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Date (optional)"
+                                            value={page.date}
+                                            onChange={(e) => updateDynamicPage(page.id, { date: e.target.value })}
+                                            className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none"
+                                        />
+                                        {userSlug ? (
+                                            <InvitationBlogEditor
+                                                slug={userSlug}
+                                                instanceKey={page.id}
+                                                content={page.body}
+                                                onChange={(body) => updateDynamicPageBody(page.id, body)}
+                                            />
+                                        ) : (
+                                            <p className="text-xs text-stone-500">Save your profile first to upload images.</p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="pt-8 flex justify-end">

@@ -1,21 +1,30 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Clock, MapPin, Music, VolumeX, Gift, ExternalLink, Landmark, Smartphone, Heart, MailOpen, CheckCircle2, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { NavigationPagesContent } from '@/lib/navigationPages';
 import { mergeNavigationPages } from '@/lib/navigationPages';
+import { InvitationBlogReadonly } from '@/components/blog/InvitationBlogReadonly';
 
 export type {
+    NavigationBlogBody,
+    NavigationBlogPost,
+    NavigationDynamicPage,
     NavigationExploringSpot,
     NavigationLodgingHotel,
     NavigationPagesContent
 } from '@/lib/navigationPages';
 export {
+    createEmptyDynamicPage,
     DEFAULT_NAVIGATION_PAGES,
+    EMPTY_BLOG_BODY,
+    EMPTY_BLOG_POST,
+    EMPTY_DYNAMIC_PAGE_TEMPLATE,
     EMPTY_EXPLORING_SPOT,
     EMPTY_LODGING_HOTEL,
-    mergeNavigationPages
+    mergeNavigationPages,
+    newDynamicPageId
 } from '@/lib/navigationPages';
 
 export interface Theme {
@@ -227,7 +236,8 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
     const [submitError, setSubmitError] = useState('');
 
     const [hasOpened, setHasOpened] = useState(false);
-    const [activeTab, setActiveTab] = useState<'main' | 'lodging' | 'exploring'>('main');
+    /** `main` | `lodging` | `exploring` | `page:${id}` */
+    const [activeTab, setActiveTab] = useState<string>('main');
     const [isNavOpen, setIsNavOpen] = useState(false);
 
     const handleOpenInvitation = async () => {
@@ -437,7 +447,47 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
     };
 
     const cleanTheme = sanitizeTheme(data.theme);
-    const nav = mergeNavigationPages(data.navigationPages);
+    const nav = useMemo(() => mergeNavigationPages(data.navigationPages), [data.navigationPages]);
+
+    const showNavButton =
+        !!data.showNavigation &&
+        (nav.lodgingEnabled || nav.exploringEnabled || nav.dynamicNavPages.length > 0);
+
+    const navMenuItems: { key: string; label: string }[] = useMemo(
+        () => [
+            { key: 'main', label: nav.mainNavLabel },
+            ...(nav.lodgingEnabled ? [{ key: 'lodging', label: nav.lodgingNavLabel }] : []),
+            ...(nav.exploringEnabled ? [{ key: 'exploring', label: nav.exploringNavLabel }] : []),
+            ...nav.dynamicNavPages.map((p) => ({
+                key: `page:${p.id}`,
+                label: p.navLabel.trim() || p.title.trim() || 'Page'
+            }))
+        ],
+        [nav]
+    );
+
+    const effectiveTab = useMemo((): string => {
+        if (activeTab === 'lodging' && !nav.lodgingEnabled) return 'main';
+        if (activeTab === 'exploring' && !nav.exploringEnabled) return 'main';
+        if (activeTab.startsWith('page:')) {
+            const id = activeTab.slice(5);
+            if (!nav.dynamicNavPages.some((p) => p.id === id)) return 'main';
+        }
+        const anySection =
+            nav.lodgingEnabled || nav.exploringEnabled || nav.dynamicNavPages.length > 0;
+        if (activeTab !== 'main' && (!data.showNavigation || !anySection)) return 'main';
+        return activeTab;
+    }, [activeTab, nav.lodgingEnabled, nav.exploringEnabled, nav.dynamicNavPages, data.showNavigation]);
+
+    const activeDynamicPage = useMemo(() => {
+        if (!effectiveTab.startsWith('page:')) return null;
+        const id = effectiveTab.slice(5);
+        return nav.dynamicNavPages.find((p) => p.id === id) ?? null;
+    }, [effectiveTab, nav.dynamicNavPages]);
+
+    useEffect(() => {
+        if (effectiveTab !== activeTab) setActiveTab(effectiveTab);
+    }, [effectiveTab, activeTab]);
 
     return (
         <div 
@@ -508,8 +558,8 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                         transition={{ duration: 1.2 }}
                         className="w-full flex flex-col relative"
                     >
-                        {/* Floating Nav Button */}
-                        {data.showNavigation && (
+                        {/* Floating Nav Button — only when at least one secondary section is on */}
+                        {showNavButton && (
                             <motion.button
                                 initial={{ opacity: 0, scale: 0.8 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -541,30 +591,25 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     </button>
                                     
                                     <nav className="flex flex-col items-center space-y-10">
-                                        <button 
-                                            onClick={() => { setActiveTab('main'); setIsNavOpen(false); }}
-                                            className={`text-4xl md:text-5xl font-serif transition-all ${activeTab === 'main' ? 'text-white scale-110 drop-shadow-md' : 'text-white/60 hover:text-white/90 hover:scale-105'}`}
-                                        >
-                                            {nav.mainNavLabel}
-                                        </button>
-                                        <button 
-                                            onClick={() => { setActiveTab('lodging'); setIsNavOpen(false); }}
-                                            className={`text-4xl md:text-5xl font-serif transition-all ${activeTab === 'lodging' ? 'text-white scale-110 drop-shadow-md' : 'text-white/60 hover:text-white/90 hover:scale-105'}`}
-                                        >
-                                            {nav.lodgingNavLabel}
-                                        </button>
-                                        <button 
-                                            onClick={() => { setActiveTab('exploring'); setIsNavOpen(false); }}
-                                            className={`text-4xl md:text-5xl font-serif transition-all ${activeTab === 'exploring' ? 'text-white scale-110 drop-shadow-md' : 'text-white/60 hover:text-white/90 hover:scale-105'}`}
-                                        >
-                                            {nav.exploringNavLabel}
-                                        </button>
+                                        {navMenuItems.map((item) => (
+                                            <button
+                                                key={item.key}
+                                                type="button"
+                                                onClick={() => {
+                                                    setActiveTab(item.key);
+                                                    setIsNavOpen(false);
+                                                }}
+                                                className={`text-4xl md:text-5xl font-serif transition-all ${effectiveTab === item.key ? 'text-white scale-110 drop-shadow-md' : 'text-white/60 hover:text-white/90 hover:scale-105'}`}
+                                            >
+                                                {item.label}
+                                            </button>
+                                        ))}
                                     </nav>
                                 </motion.div>
                             )}
                         </AnimatePresence>
 
-                        {activeTab === 'main' ? (
+                        {effectiveTab === 'main' ? (
                             <motion.div
                                 key="main-content"
                                 initial={{ opacity: 0, y: 20 }}
@@ -1259,7 +1304,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                             </div>
                         </motion.section>
                     </motion.div>
-                ) : activeTab === 'lodging' ? (
+                ) : effectiveTab === 'lodging' && nav.lodgingEnabled ? (
                     <motion.div
                         key="lodging-content"
                         initial={{ opacity: 0, y: 20 }}
@@ -1295,7 +1340,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                             </div>
                         </section>
                     </motion.div>
-                ) : (
+                ) : effectiveTab === 'exploring' && nav.exploringEnabled ? (
                     <motion.div
                         key="exploring-content"
                         initial={{ opacity: 0, y: 20 }}
@@ -1325,7 +1370,45 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                             </div>
                         </section>
                     </motion.div>
-                )}
+                ) : activeDynamicPage ? (
+                    <motion.div
+                        key={`dynamic-page-${activeDynamicPage.id}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.5 }}
+                        className={`w-full flex flex-col relative ${cleanTheme.background} min-h-screen pt-24 pb-20`}
+                    >
+                        <section className="py-20 px-6 md:px-12 flex flex-col items-center">
+                            <div className="w-full max-w-3xl mx-auto bg-white p-8 md:p-12 border border-stone-100 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                                {activeDynamicPage.title ? (
+                                    <h2
+                                        className={`text-4xl md:text-5xl font-serif mb-4 text-center ${cleanTheme.primaryText} font-light`}
+                                    >
+                                        {activeDynamicPage.title}
+                                    </h2>
+                                ) : null}
+                                {activeDynamicPage.date ? (
+                                    <p className="text-stone-500 text-xs tracking-widest uppercase font-semibold mb-6 text-center">
+                                        {activeDynamicPage.date}
+                                    </p>
+                                ) : null}
+                                {activeDynamicPage.introduction ? (
+                                    <p
+                                        className={`max-w-2xl mx-auto text-lg font-light ${cleanTheme.primaryText} opacity-80 leading-relaxed mb-10 whitespace-pre-line text-center`}
+                                    >
+                                        {activeDynamicPage.introduction}
+                                    </p>
+                                ) : null}
+                                <InvitationBlogReadonly
+                                    body={activeDynamicPage.body}
+                                    contentKey={activeDynamicPage.id}
+                                    primaryTextClass={`${cleanTheme.primaryText} text-stone-700`}
+                                />
+                            </div>
+                        </section>
+                    </motion.div>
+                ) : null}
 
                         {/* Shared Footer System (Outside the Switch) */}
                         < footer className="py-20 text-center border-t border-stone-200/60 bg-white" >
