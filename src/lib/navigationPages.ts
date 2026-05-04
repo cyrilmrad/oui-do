@@ -1,6 +1,6 @@
 /**
- * Pure navigation/lodging/exploring defaults and merge logic.
- * Lives outside client components so Server Components (e.g. invite page) can import safely.
+ * Pure navigation/lodging/exploring + optional dynamic content pages.
+ * Each dynamic page is one hamburger item (e.g. Cars, Stays, Food) with its own title, intro, date, and rich body.
  */
 
 export interface NavigationLodgingHotel {
@@ -18,6 +18,28 @@ export interface NavigationExploringSpot {
     imageUrl: string;
 }
 
+/** Tiptap / ProseMirror JSON document */
+export type NavigationBlogBody = Record<string, unknown>;
+
+/** One extra page in the hamburger (not nested under a parent “blog”). */
+export interface NavigationDynamicPage {
+    id: string;
+    /** Label in the hamburger menu */
+    navLabel: string;
+    /** Large heading on the page */
+    title: string;
+    introduction: string;
+    date: string;
+    body: NavigationBlogBody | null;
+}
+
+/** @deprecated Use NavigationDynamicPage; kept for merge migration only */
+export interface NavigationBlogPost {
+    title: string;
+    date: string;
+    body: NavigationBlogBody | null;
+}
+
 export interface NavigationPagesContent {
     mainNavLabel: string;
     lodgingNavLabel: string;
@@ -28,6 +50,9 @@ export interface NavigationPagesContent {
     exploringTitle: string;
     exploringIntro: string;
     exploringSpots: NavigationExploringSpot[];
+    lodgingEnabled: boolean;
+    exploringEnabled: boolean;
+    dynamicNavPages: NavigationDynamicPage[];
 }
 
 export const EMPTY_LODGING_HOTEL: NavigationLodgingHotel = {
@@ -44,6 +69,38 @@ export const EMPTY_EXPLORING_SPOT: NavigationExploringSpot = {
     description: '',
     imageUrl: ''
 };
+
+export const EMPTY_BLOG_BODY: NavigationBlogBody = {
+    type: 'doc',
+    content: [{ type: 'paragraph' }]
+};
+
+/** Template without `id` — always set `id` when adding (e.g. crypto.randomUUID()). */
+export const EMPTY_DYNAMIC_PAGE_TEMPLATE: Omit<NavigationDynamicPage, 'id'> = {
+    navLabel: '',
+    title: '',
+    introduction: '',
+    date: '',
+    body: EMPTY_BLOG_BODY
+};
+
+/** @deprecated Use EMPTY_DYNAMIC_PAGE_TEMPLATE + id */
+export const EMPTY_BLOG_POST: NavigationBlogPost = {
+    title: '',
+    date: '',
+    body: EMPTY_BLOG_BODY
+};
+
+export function newDynamicPageId(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    return `page-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+export function createEmptyDynamicPage(): NavigationDynamicPage {
+    return { id: newDynamicPageId(), ...EMPTY_DYNAMIC_PAGE_TEMPLATE };
+}
 
 export const DEFAULT_NAVIGATION_PAGES: NavigationPagesContent = {
     mainNavLabel: 'The Wedding',
@@ -95,11 +152,72 @@ export const DEFAULT_NAVIGATION_PAGES: NavigationPagesContent = {
             imageUrl:
                 'https://images.unsplash.com/photo-1579027989536-b7b1f875659b?q=80&w=2070&auto=format&fit=crop'
         }
-    ]
+    ],
+    lodgingEnabled: false,
+    exploringEnabled: false,
+    dynamicNavPages: []
 };
+
+function isLegacyNavigationPartial(partial: Partial<NavigationPagesContent> | undefined): boolean {
+    if (partial === undefined || partial === null) return false;
+    if (typeof partial !== 'object') return false;
+    const keys = Object.keys(partial as object);
+    if (keys.length === 0) return false;
+    const hasLodging = Object.prototype.hasOwnProperty.call(partial, 'lodgingEnabled');
+    const hasExploring = Object.prototype.hasOwnProperty.call(partial, 'exploringEnabled');
+    return !hasLodging && !hasExploring;
+}
+
+function normalizeBlogBody(body: unknown): NavigationBlogBody {
+    if (body && typeof body === 'object' && (body as { type?: string }).type === 'doc') {
+        return body as NavigationBlogBody;
+    }
+    return { ...EMPTY_BLOG_BODY };
+}
+
+/** Old persisted shape before dynamic pages */
+interface LegacyBlogPartial {
+    blogEnabled?: boolean;
+    blogNavLabel?: string;
+    blogTitle?: string;
+    blogIntro?: string;
+    blogPosts?: NavigationBlogPost[];
+}
+
+function migrateLegacyBlogToDynamicPages(partial: Partial<NavigationPagesContent> & LegacyBlogPartial): NavigationDynamicPage[] {
+    const posts = partial.blogPosts;
+    if (posts && posts.length > 0) {
+        return posts.map((p, i) => ({
+            id: `migrated-${i}`,
+            navLabel: p.title?.trim() || partial.blogNavLabel?.trim() || `Page ${i + 1}`,
+            title: p.title?.trim() || partial.blogTitle?.trim() || '',
+            introduction: i === 0 ? (partial.blogIntro ?? '') : '',
+            date: p.date ?? '',
+            body: normalizeBlogBody(p.body)
+        }));
+    }
+    if (partial.blogEnabled && (partial.blogTitle?.trim() || partial.blogIntro?.trim())) {
+        return [
+            {
+                id: 'migrated-0',
+                navLabel: partial.blogNavLabel?.trim() || partial.blogTitle?.trim() || 'Updates',
+                title: partial.blogTitle?.trim() || '',
+                introduction: partial.blogIntro ?? '',
+                date: '',
+                body: { ...EMPTY_BLOG_BODY }
+            }
+        ];
+    }
+    return [];
+}
 
 export function mergeNavigationPages(partial?: Partial<NavigationPagesContent>): NavigationPagesContent {
     const d = DEFAULT_NAVIGATION_PAGES;
+    const isLegacy = isLegacyNavigationPartial(partial);
+
+    const lodgingEnabled = isLegacy ? true : (partial?.lodgingEnabled ?? false);
+    const exploringEnabled = isLegacy ? true : (partial?.exploringEnabled ?? false);
+
     const lodgingHotels =
         partial?.lodgingHotels && partial.lodgingHotels.length > 0
             ? partial.lodgingHotels.map((h, i) => ({
@@ -114,6 +232,24 @@ export function mergeNavigationPages(partial?: Partial<NavigationPagesContent>):
                   ...s
               }))
             : d.exploringSpots.map((s) => ({ ...s }));
+
+    const legacy = partial as Partial<NavigationPagesContent> & LegacyBlogPartial | undefined;
+    let dynamicNavPages: NavigationDynamicPage[];
+    if (partial?.dynamicNavPages !== undefined) {
+        dynamicNavPages = partial.dynamicNavPages.map((page, i) => ({
+            id: page.id?.trim() || `page-${i}`,
+            navLabel: page.navLabel ?? '',
+            title: page.title ?? '',
+            introduction: page.introduction ?? '',
+            date: page.date ?? '',
+            body: normalizeBlogBody(page.body)
+        }));
+    } else if (legacy && ('blogPosts' in legacy || 'blogEnabled' in legacy || 'blogTitle' in legacy)) {
+        dynamicNavPages = migrateLegacyBlogToDynamicPages(legacy);
+    } else {
+        dynamicNavPages = [];
+    }
+
     return {
         mainNavLabel: partial?.mainNavLabel ?? d.mainNavLabel,
         lodgingNavLabel: partial?.lodgingNavLabel ?? d.lodgingNavLabel,
@@ -123,6 +259,9 @@ export function mergeNavigationPages(partial?: Partial<NavigationPagesContent>):
         lodgingHotels,
         exploringTitle: partial?.exploringTitle ?? d.exploringTitle,
         exploringIntro: partial?.exploringIntro ?? d.exploringIntro,
-        exploringSpots
+        exploringSpots,
+        lodgingEnabled,
+        exploringEnabled,
+        dynamicNavPages
     };
 }

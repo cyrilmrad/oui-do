@@ -4,16 +4,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import InvitationPreview, {
+    createEmptyDynamicPage,
     EMPTY_EXPLORING_SPOT,
     EMPTY_LODGING_HOTEL,
     InvitationData,
     Theme,
     mergeNavigationPages,
+    NavigationBlogBody,
+    NavigationDynamicPage,
     NavigationExploringSpot,
     NavigationLodgingHotel,
     NavigationPagesContent
 } from '@/components/InvitationPreview';
-import { LogOut, Users, Plus, LayoutDashboard, Search, ChevronRight, Copy, Link, QrCode, Download, Share, Lock, Trash2, Shield, Loader2 } from 'lucide-react';
+import { InvitationBlogEditor } from '@/components/blog/InvitationBlogEditor';
+import { LogOut, Users, Plus, LayoutDashboard, Search, ChevronRight, ChevronDown, Copy, Link, QrCode, Download, Share, Lock, Trash2, Shield, Loader2 } from 'lucide-react';
 import BudgetTracker from '@/components/BudgetTracker';
 import TableSeating from '@/components/TableSeating';
 import ClientEntitlementsPanel from '@/components/admin/ClientEntitlementsPanel';
@@ -66,6 +70,7 @@ export default function AdminDashboard() {
     const [liveData, setLiveData] = useState<InvitationData>(defaultData);
     const [themeSelection, setThemeSelection] = useState<string>("emerald");
     const [isSaving, setIsSaving] = useState(false);
+    const [navigationEditorOpen, setNavigationEditorOpen] = useState(false);
 
     // File Upload State
     const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
@@ -520,6 +525,44 @@ export default function AdminDashboard() {
                 navigationPages: {
                     ...base,
                     exploringSpots: base.exploringSpots.filter((_, i) => i !== index)
+                }
+            };
+        });
+    };
+
+    const updateDynamicPage = (id: string, patch: Partial<NavigationDynamicPage>) => {
+        setLiveData((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            const dynamicNavPages = base.dynamicNavPages.map((p) => (p.id === id ? { ...p, ...patch } : p));
+            return { ...prev, navigationPages: { ...base, dynamicNavPages } };
+        });
+    };
+
+    const updateDynamicPageBody = (id: string, body: NavigationBlogBody) => {
+        updateDynamicPage(id, { body });
+    };
+
+    const addDynamicPage = () => {
+        setLiveData((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            return {
+                ...prev,
+                navigationPages: {
+                    ...base,
+                    dynamicNavPages: [...base.dynamicNavPages, createEmptyDynamicPage()]
+                }
+            };
+        });
+    };
+
+    const removeDynamicPage = (id: string) => {
+        setLiveData((prev) => {
+            const base = mergeNavigationPages(prev.navigationPages);
+            return {
+                ...prev,
+                navigationPages: {
+                    ...base,
+                    dynamicNavPages: base.dynamicNavPages.filter((p) => p.id !== id)
                 }
             };
         });
@@ -1803,10 +1846,49 @@ export default function AdminDashboard() {
                                                 </div>
                                                 <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 08</span>
                                             </div>
-                                            <div className="bg-surface-container-latest p-8 space-y-8">
+                                            <div className="rounded-xl border border-outline-variant/20 bg-surface-container-latest overflow-hidden">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setNavigationEditorOpen((open) => !open)}
+                                                    className="w-full flex items-center justify-between gap-4 px-6 py-4 text-left hover:bg-surface-container-high/40 transition-colors border-b border-outline-variant/10"
+                                                    aria-expanded={navigationEditorOpen}
+                                                >
+                                                    <div className="min-w-0">
+                                                        <span className="text-sm font-semibold text-on-surface">Navigation content & pages</span>
+                                                        <p className="text-xs text-secondary mt-0.5">
+                                                            Menu labels, lodging, exploring, and custom pages
+                                                        </p>
+                                                    </div>
+                                                    <ChevronDown
+                                                        className={`w-5 h-5 text-secondary shrink-0 transition-transform duration-200 ${navigationEditorOpen ? 'rotate-180' : ''}`}
+                                                        aria-hidden
+                                                    />
+                                                </button>
+                                                {navigationEditorOpen && (
+                                                <div className="p-8 space-y-8 border-t border-outline-variant/10">
                                                 <p className="text-sm text-secondary">
-                                                    Activating this toggle enables the floating Hamburger Menu at the top right of the invitation, allowing guests to switch between &quot;The Wedding&quot;, &quot;Lodging&quot;, and &quot;Exploring&quot; pages.
+                                                    When navigation is on, the menu lists Main, any enabled Lodging/Exploring pages, plus each custom page you add (e.g. Cars, Stays, Food). Each custom page is one full screen with its own title, intro, date, and rich body. Existing invitations without section toggles keep Lodging and Exploring on until you save.
                                                 </p>
+                                                <div className="flex flex-wrap gap-6">
+                                                    {(
+                                                        [
+                                                            ['lodgingEnabled', 'Lodging page', np.lodgingEnabled],
+                                                            ['exploringEnabled', 'Exploring page', np.exploringEnabled]
+                                                        ] as const
+                                                    ).map(([key, label, checked]) => (
+                                                        <label key={key} className="flex items-center gap-2 cursor-pointer text-sm text-on-surface">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={checked}
+                                                                onChange={(e) =>
+                                                                    updateNavigationPages({ [key]: e.target.checked } as Partial<NavigationPagesContent>)
+                                                                }
+                                                                className="rounded border-outline-variant text-primary"
+                                                            />
+                                                            {label}
+                                                        </label>
+                                                    ))}
+                                                </div>
 
                                                 <div className="space-y-4">
                                                     <h3 className="text-[0.7rem] font-label uppercase tracking-[0.12em] text-primary font-bold">Menu labels</h3>
@@ -1918,6 +2000,79 @@ export default function AdminDashboard() {
                                                         ))}
                                                     </div>
                                                 </div>
+
+                                                <div className="space-y-4 pt-2 border-t border-outline-variant/15">
+                                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                                        <h3 className="text-[0.7rem] font-label uppercase tracking-[0.12em] text-primary font-bold">
+                                                            Custom pages (one menu item + full page each)
+                                                        </h3>
+                                                        <button
+                                                            type="button"
+                                                            onClick={addDynamicPage}
+                                                            className="inline-flex items-center gap-1.5 rounded-md border border-outline-variant/30 bg-surface px-3 py-2 text-[0.65rem] font-label font-bold uppercase tracking-widest text-primary hover:bg-surface-container-high"
+                                                        >
+                                                            <Plus className="w-3.5 h-3.5" />
+                                                            Add page
+                                                        </button>
+                                                    </div>
+                                                    <div className="space-y-6 pt-2">
+                                                        {np.dynamicNavPages.map((page) => (
+                                                            <div key={page.id} className="rounded-xl border border-outline-variant/20 p-5 space-y-3 bg-surface/50">
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <p className="text-[0.65rem] font-label uppercase tracking-widest text-secondary font-bold">Custom page</p>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeDynamicPage(page.id)}
+                                                                        className="rounded-md p-1.5 text-secondary hover:bg-error-container/30 hover:text-error"
+                                                                        title="Remove page"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Menu label (e.g. Cars, Stays)"
+                                                                    value={page.navLabel}
+                                                                    onChange={(e) => updateDynamicPage(page.id, { navLabel: e.target.value })}
+                                                                    className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface"
+                                                                />
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Page title (heading)"
+                                                                    value={page.title}
+                                                                    onChange={(e) => updateDynamicPage(page.id, { title: e.target.value })}
+                                                                    className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface"
+                                                                />
+                                                                <textarea
+                                                                    placeholder="Introduction"
+                                                                    value={page.introduction}
+                                                                    onChange={(e) => updateDynamicPage(page.id, { introduction: e.target.value })}
+                                                                    rows={3}
+                                                                    className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface resize-y"
+                                                                />
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Date (optional)"
+                                                                    value={page.date}
+                                                                    onChange={(e) => updateDynamicPage(page.id, { date: e.target.value })}
+                                                                    className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface"
+                                                                />
+                                                                {liveData.slug ? (
+                                                                    <InvitationBlogEditor
+                                                                        slug={liveData.slug}
+                                                                        instanceKey={page.id}
+                                                                        content={page.body}
+                                                                        onChange={(body) => updateDynamicPageBody(page.id, body)}
+                                                                    />
+                                                                ) : (
+                                                                    <p className="text-xs text-secondary">Select a client with a slug to upload images.</p>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                </div>
+                                                )}
                                             </div>
                                         </section>
                                     </div>
