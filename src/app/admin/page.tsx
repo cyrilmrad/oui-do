@@ -32,6 +32,27 @@ const THEME_PRESETS: Record<string, Theme> = {
     rose: { primaryText: "text-rose-950", accent: "text-rose-600", bgAccent: "bg-rose-600/10", borderAccent: "border-rose-600", background: "bg-rose-50" }
 };
 
+const getThemeSelectionFromTheme = (theme?: Theme | null): string => {
+    if (!theme) return 'emerald';
+
+    if (
+        theme.name === 'custom' ||
+        Boolean((theme as any).rawPrimary) ||
+        Boolean((theme as any).rawAccent) ||
+        Boolean((theme as any).rawBackground)
+    ) {
+        return 'custom';
+    }
+
+    return Object.entries(THEME_PRESETS).find(([, preset]) =>
+        preset.primaryText === theme.primaryText &&
+        preset.accent === theme.accent &&
+        preset.bgAccent === theme.bgAccent &&
+        preset.borderAccent === theme.borderAccent &&
+        preset.background === theme.background
+    )?.[0] || 'emerald';
+};
+
 const defaultData: InvitationData = {
     slug: "",
     bride: "",
@@ -980,7 +1001,7 @@ export default function AdminDashboard() {
                                                 if (res.ok) {
                                                     const dbData = await res.json();
                                                     if (dbData) {
-                                                        setThemeSelection(dbData.theme ? Object.keys(THEME_PRESETS).find(k => THEME_PRESETS[k].accent === (dbData.theme as Theme).accent) || 'emerald' : 'emerald');
+                                                        setThemeSelection(getThemeSelectionFromTheme(dbData.theme as Theme | null));
                                                         setLiveData({
                                                             ...defaultData,
                                                             ...dbData,
