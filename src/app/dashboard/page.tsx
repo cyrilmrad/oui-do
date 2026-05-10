@@ -344,7 +344,8 @@ export default function DashboardPage() {
                                 showHouses: dbData.showHouses || false,
                                 housesData: dbData.housesData || {},
                                 showNavigation: dbData.showNavigation || false,
-                                navigationPages: mergeNavigationPages((dbData as InvitationData).navigationPages)
+                                navigationPages: mergeNavigationPages((dbData as InvitationData).navigationPages),
+                                footnote: dbData.footnote || ""
                             });
                         }
                     }
@@ -1617,6 +1618,31 @@ export default function DashboardPage() {
                                 </div>
                             </div>
                         )}
+                    </div>
+
+                    <div>
+                        <h3 className="text-sm font-semibold uppercase tracking-widest text-stone-400 border-b border-stone-100 pb-2 mb-6 flex items-center">
+                            Footnote
+                        </h3>
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Footer Message</label>
+                            <textarea
+                                name="footnote"
+                                value={weddingDetails.footnote || ''}
+                                onChange={handleSettingsChange}
+                                rows={3}
+                                placeholder={'e.g. Don\'t forget to check the section\n\n[THE HOUSES](nav:page:YOUR_PAGE_ID)'}
+                                className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                            />
+                            <p className="text-xs text-stone-400">
+                                Shown centered below the RSVP card. Intro line (small caps) plus optional button: use{' '}
+                                <code className="bg-stone-100 px-1 py-0.5 rounded text-[0.65rem]">[label](nav:lodging)</code>,{' '}
+                                <code className="bg-stone-100 px-1 py-0.5 rounded text-[0.65rem]">nav:exploring</code>,{' '}
+                                <code className="bg-stone-100 px-1 py-0.5 rounded text-[0.65rem]">nav:main</code>, or{' '}
+                                <code className="bg-stone-100 px-1 py-0.5 rounded text-[0.65rem]">nav:page:…</code>
+                                for in-app pages; use a normal URL for an external link button.
+                            </p>
+                        </div>
                     </div>
 
                     <div className="pt-8 flex justify-end">

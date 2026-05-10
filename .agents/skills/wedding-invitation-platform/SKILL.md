@@ -78,6 +78,7 @@ The database schema is defined in `src/db/schema.ts` and uses Supabase for hosti
 - **Strictly Coding:** Your role is limited to generating, updating, and saving code to files. 
 
 ### Token Optimization (Minimal Output)
-- **Zero Fluff:** Do not output conversational filler, pleasantries, or unsolicited explanations. Provide the code and stop.
+- **Zero Fluff:** Do not output conversational filler, pleasantries, or unsolicited explanations.
 - **Partial Code Blocks:** NEVER output an entire file if you are only changing a few lines. Use placeholders like `// ... existing code ...` to skip unchanged sections.
 - **Diff Focus:** Only output the exact functions, components, or lines that are being created or modified.
+- **Summary Only:** At the end of your work, generate only a brief 2–4 line summary of what was changed and why. Do NOT re-list file contents, do NOT repeat diffs, and do NOT narrate each step. Keep the final chat message minimal.
