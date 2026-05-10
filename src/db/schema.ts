@@ -38,6 +38,7 @@ export const invitations = pgTable('invitations', {
     showNavigation: boolean('show_navigation').default(false),
     navigationPages: jsonb('navigation_pages'),
     customSections: jsonb('custom_sections').default([]),
+    footnote: text('footnote'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
 }).enableRLS();

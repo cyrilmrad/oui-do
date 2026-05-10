@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Clock, MapPin, Music, VolumeX, Gift, ExternalLink, Landmark, Smartphone, Heart, MailOpen, CheckCircle2, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { NavigationPagesContent } from '@/lib/navigationPages';
@@ -116,6 +116,7 @@ export interface InvitationData {
     housesData?: HousesData;
     showNavigation?: boolean;
     navigationPages?: Partial<NavigationPagesContent>;
+    footnote?: string;
 }
 
 interface InvitationPreviewProps {
@@ -217,6 +218,48 @@ export function customSectionSlideUrls(section: CustomSection): string[] {
         return [];
     }
     return section.backgroundUrl ? [section.backgroundUrl] : [];
+}
+
+const FOOTNOTE_LINK_SPLIT_RE = /(\[[^\]]+\]\([^)]+\))/g;
+
+type FootnoteSegment =
+    | { type: 'plain'; text: string }
+    | { type: 'link'; label: string; href: string };
+
+function parseFootnoteSegments(footnote: string): FootnoteSegment[] {
+    const parts = footnote.split(FOOTNOTE_LINK_SPLIT_RE);
+    const segments: FootnoteSegment[] = [];
+    for (const part of parts) {
+        if (!part) continue;
+        const m = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+        if (m) segments.push({ type: 'link', label: m[1], href: m[2] });
+        else segments.push({ type: 'plain', text: part });
+    }
+    return segments;
+}
+
+/** In-app nav from footnote markdown, e.g. `[Label](nav:lodging)` or `[Label](nav:page:abc123)`. */
+function parseFootnoteNavHref(href: string): string | null {
+    const h = href.trim();
+    if (!h.toLowerCase().startsWith('nav:')) return null;
+    const rest = h.slice(4);
+    const restLower = rest.toLowerCase();
+    if (restLower === 'main' || restLower === 'lodging' || restLower === 'exploring') return restLower;
+    if (restLower.startsWith('page:')) return `page:${rest.slice(5)}`;
+    return null;
+}
+
+function canFootnoteNavigate(href: string, showNavigation: boolean | undefined, nav: NavigationPagesContent): boolean {
+    const tab = parseFootnoteNavHref(href);
+    if (!tab || !showNavigation) return false;
+    if (tab === 'main') return true;
+    if (tab === 'lodging') return nav.lodgingEnabled;
+    if (tab === 'exploring') return nav.exploringEnabled;
+    if (tab.startsWith('page:')) {
+        const id = tab.slice(5);
+        return nav.dynamicNavPages.some((p) => p.id === id);
+    }
+    return false;
 }
 
 export default function InvitationPreview({ data, guestData, isPreview = false }: InvitationPreviewProps) {
@@ -488,6 +531,39 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
     useEffect(() => {
         if (effectiveTab !== activeTab) setActiveTab(effectiveTab);
     }, [effectiveTab, activeTab]);
+
+    const footnoteSegments = useMemo(
+        () => (data.footnote?.trim() ? parseFootnoteSegments(data.footnote) : []),
+        [data.footnote]
+    );
+    const footnoteIntro = useMemo(
+        () =>
+            footnoteSegments
+                .filter((s): s is { type: 'plain'; text: string } => s.type === 'plain')
+                .map((s) => s.text)
+                .join('')
+                .trim(),
+        [footnoteSegments]
+    );
+    const footnoteLinks = useMemo(
+        () => footnoteSegments.filter((s): s is { type: 'link'; label: string; href: string } => s.type === 'link'),
+        [footnoteSegments]
+    );
+
+    const goToFootnoteNavTarget = useCallback(
+        (href: string) => {
+            if (!canFootnoteNavigate(href, data.showNavigation, nav)) return;
+            const tab = parseFootnoteNavHref(href);
+            if (!tab) return;
+            setActiveTab(tab);
+            setIsNavOpen(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        [data.showNavigation, nav]
+    );
+
+    const footnoteBtnClass =
+        'w-full max-w-sm border border-stone-900 bg-transparent px-8 py-4 font-serif text-sm uppercase tracking-[0.2em] text-stone-900 transition-colors duration-300 hover:bg-stone-900 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2';
 
     return (
         <div 
@@ -1302,6 +1378,47 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     </form>
                                 )}
                             </div>
+                            {(footnoteIntro || footnoteLinks.length > 0) && (
+                                <div className="pt-16 md:pt-24 pb-6 md:pb-10 px-6 max-w-lg mx-auto flex flex-col items-center text-center gap-10">
+                                    {footnoteIntro ? (
+                                        <p className="text-[10px] sm:text-[11px] font-sans uppercase tracking-[0.22em] text-stone-400 leading-relaxed whitespace-pre-line max-w-md">
+                                            {footnoteIntro}
+                                        </p>
+                                    ) : null}
+                                    {footnoteLinks.length > 0 ? (
+                                        <div className="w-full flex flex-col items-stretch gap-5">
+                                            {footnoteLinks.map((item, i) => {
+                                                const navTab = parseFootnoteNavHref(item.href);
+                                                const canNav = !!(navTab && canFootnoteNavigate(item.href, data.showNavigation, nav));
+                                                if (navTab) {
+                                                    return (
+                                                        <button
+                                                            key={`${item.label}-${i}`}
+                                                            type="button"
+                                                            disabled={!canNav}
+                                                            onClick={() => goToFootnoteNavTarget(item.href)}
+                                                            className={`${footnoteBtnClass} ${!canNav ? 'opacity-35 cursor-not-allowed hover:bg-transparent hover:text-stone-900' : ''}`}
+                                                        >
+                                                            {item.label}
+                                                        </button>
+                                                    );
+                                                }
+                                                return (
+                                                    <a
+                                                        key={`${item.label}-${i}`}
+                                                        href={item.href}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className={`${footnoteBtnClass} inline-flex justify-center items-center`}
+                                                    >
+                                                        {item.label}
+                                                    </a>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : null}
+                                </div>
+                            )}
                         </motion.section>
                     </motion.div>
                 ) : effectiveTab === 'lodging' && nav.lodgingEnabled ? (
@@ -1411,11 +1528,11 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                 ) : null}
 
                         {/* Shared Footer System (Outside the Switch) */}
-                        < footer className="py-20 text-center border-t border-stone-200/60 bg-white" >
+                        <footer className="py-20 text-center border-t border-stone-200/60 bg-white">
                             <p className="text-stone-400 font-serif italic text-xl tracking-wide">
                                 {data.bride || "Bride"} & {data.groom || "Groom"}
                             </p>
-                        </footer >
+                        </footer>
 
                         {/* Music Player */}
                         {
