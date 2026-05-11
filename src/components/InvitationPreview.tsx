@@ -6,6 +6,8 @@ import { Calendar, Clock, MapPin, Music, VolumeX, Gift, ExternalLink, Landmark, 
 import type { NavigationPagesContent } from '@/lib/navigationPages';
 import { mergeNavigationPages } from '@/lib/navigationPages';
 import { InvitationBlogReadonly } from '@/components/blog/InvitationBlogReadonly';
+// Add-to-calendar (custom ICS + Google); re-enable when ready to show on the live invite.
+// import { InvitationAddToCalendar } from '@/components/InvitationAddToCalendar';
 
 export type {
     NavigationBlogBody,
@@ -855,6 +857,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     </div>
                                 </motion.div>
                             )}
+                            {/* {<InvitationAddToCalendar data={data} />} */}
                             <div className="w-12 h-[1px] bg-stone-300 mx-auto mt-20" />
                         </motion.section>
 
@@ -1017,7 +1020,10 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                         </h4>
                                         <div className="space-y-4 mb-4">
                                             {data.venue && (
-                                                <p className="text-lg @md:text-xl font-serif text-stone-700 uppercase tracking-widest drop-shadow-sm leading-relaxed">
+                                                <p
+                                                    dir="auto"
+                                                    className="text-lg @md:text-xl font-serif text-stone-700 uppercase tracking-widest drop-shadow-sm leading-relaxed whitespace-pre-line text-center"
+                                                >
                                                     {data.venue}
                                                 </p>
                                             )}
@@ -1060,7 +1066,10 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                         </h4>
                                         <div className="space-y-4 mb-4">
                                             {data.receptionVenue && (
-                                                <p className="text-lg @md:text-xl font-serif text-stone-700 uppercase tracking-widest drop-shadow-sm leading-relaxed">
+                                                <p
+                                                    dir="auto"
+                                                    className="text-lg @md:text-xl font-serif text-stone-700 uppercase tracking-widest drop-shadow-sm leading-relaxed whitespace-pre-line text-center"
+                                                >
                                                     {data.receptionVenue}
                                                 </p>
                                             )}

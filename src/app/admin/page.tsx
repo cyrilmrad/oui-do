@@ -1522,8 +1522,18 @@ export default function AdminDashboard() {
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Venue Name</label>
-                                                    <input type="text" name="venue" value={liveData.venue} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Venue name</label>
+                                                    <p className="text-[0.7rem] text-secondary/80 font-body normal-case tracking-normal">
+                                                        Use a new line for an alternate script or second line (e.g. Arabic under English).
+                                                    </p>
+                                                    <textarea
+                                                        name="venue"
+                                                        value={liveData.venue}
+                                                        onChange={handleInputChange}
+                                                        rows={3}
+                                                        dir="auto"
+                                                        className="w-full min-h-[7rem] resize-y bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body leading-relaxed"
+                                                    />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Geographical Details</label>
@@ -1548,8 +1558,15 @@ export default function AdminDashboard() {
                                                         <input type="time" name="receptionTime" value={liveData.receptionTime || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
                                                     </div>
                                                     <div className="space-y-1.5">
-                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception Venue</label>
-                                                        <input type="text" name="receptionVenue" value={liveData.receptionVenue || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
+                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception venue</label>
+                                                        <textarea
+                                                            name="receptionVenue"
+                                                            value={liveData.receptionVenue || ''}
+                                                            onChange={handleInputChange}
+                                                            rows={3}
+                                                            dir="auto"
+                                                            className="w-full min-h-[7rem] resize-y bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body leading-relaxed"
+                                                        />
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1.5">
