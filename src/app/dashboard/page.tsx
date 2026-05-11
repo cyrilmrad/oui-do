@@ -1224,10 +1224,17 @@ export default function DashboardPage() {
                         </div>
                         <div className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Venue Name</label>
-                                <input
-                                    type="text" name="venue" value={weddingDetails.venue} onChange={handleSettingsChange}
-                                    className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Venue name</label>
+                                <p className="text-[11px] text-stone-400 normal-case tracking-normal">
+                                    New line for a second line or alternate script (e.g. Arabic under English).
+                                </p>
+                                <textarea
+                                    name="venue"
+                                    value={weddingDetails.venue}
+                                    onChange={handleSettingsChange}
+                                    rows={3}
+                                    dir="auto"
+                                    className="w-full min-h-[6.5rem] resize-y border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 leading-relaxed"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -1261,10 +1268,14 @@ export default function DashboardPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Reception Venue Name</label>
-                                    <input
-                                        type="text" name="receptionVenue" value={weddingDetails.receptionVenue || ''} onChange={handleSettingsChange}
-                                        className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Reception venue name</label>
+                                    <textarea
+                                        name="receptionVenue"
+                                        value={weddingDetails.receptionVenue || ''}
+                                        onChange={handleSettingsChange}
+                                        rows={3}
+                                        dir="auto"
+                                        className="w-full min-h-[6.5rem] resize-y border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 leading-relaxed"
                                     />
                                 </div>
                             </div>
