@@ -13,10 +13,17 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required RSVP fields' }, { status: 400 });
         }
 
-        const invitationResult = await db.select({ id: invitations.id }).from(invitations).where(eq(invitations.slug, slug));
+        const invitationResult = await db
+            .select({ id: invitations.id, showRsvp: invitations.showRsvp })
+            .from(invitations)
+            .where(eq(invitations.slug, slug));
 
         if (invitationResult.length === 0) {
             return NextResponse.json({ error: 'Invalid invitation slug' }, { status: 404 });
+        }
+
+        if (invitationResult[0].showRsvp === false) {
+            return NextResponse.json({ error: 'RSVP is not enabled for this invitation' }, { status: 403 });
         }
 
         const invitationId = invitationResult[0].id;

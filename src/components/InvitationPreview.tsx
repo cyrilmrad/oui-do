@@ -117,6 +117,8 @@ export interface InvitationData {
     showNavigation?: boolean;
     navigationPages?: Partial<NavigationPagesContent>;
     footnote?: string;
+    /** When false, the RSVP form is hidden on the live invitation. Defaults to true. */
+    showRsvp?: boolean;
 }
 
 interface InvitationPreviewProps {
@@ -188,9 +190,9 @@ function CustomSectionSlideshow({
                             e.preventDefault();
                             setIndex((i) => (i - 1 + n) % n);
                         }}
-                        className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-[15] rounded-full bg-white/85 p-2 text-stone-800 shadow-md hover:bg-white transition-colors"
+                        className="absolute left-2 @md:left-4 top-1/2 -translate-y-1/2 z-[15] rounded-full bg-white/85 p-2 text-stone-800 shadow-md hover:bg-white transition-colors"
                     >
-                        <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
+                        <ChevronLeft className="w-5 h-5 @md:w-6 @md:h-6" />
                     </button>
                     <button
                         type="button"
@@ -200,9 +202,9 @@ function CustomSectionSlideshow({
                             e.preventDefault();
                             setIndex((i) => (i + 1) % n);
                         }}
-                        className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-[15] rounded-full bg-white/85 p-2 text-stone-800 shadow-md hover:bg-white transition-colors"
+                        className="absolute right-2 @md:right-4 top-1/2 -translate-y-1/2 z-[15] rounded-full bg-white/85 p-2 text-stone-800 shadow-md hover:bg-white transition-colors"
                     >
-                        <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
+                        <ChevronRight className="w-5 h-5 @md:w-6 @md:h-6" />
                     </button>
                 </>
             )}
@@ -265,7 +267,7 @@ function canFootnoteNavigate(href: string, showNavigation: boolean | undefined, 
 export default function InvitationPreview({ data, guestData, isPreview = false }: InvitationPreviewProps) {
     const screenClass = isPreview ? "min-h-[750px]" : "min-h-screen";
     const dvhClass = isPreview ? "min-h-[750px]" : "min-h-[100dvh]";
-    const h80Class = isPreview ? "h-[600px]" : "h-[80vh] md:h-[90vh]";
+    const h80Class = isPreview ? "h-[600px]" : "h-[80vh] @md:h-[90vh]";
     const h60Class = isPreview ? "min-h-[450px]" : "min-h-[60vh]";
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [formData, setFormData] = useState({
@@ -567,7 +569,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
 
     return (
         <div 
-            className={`${screenClass} ${cleanTheme.background || 'bg-stone-50'} ${cleanTheme.primaryText || 'text-stone-800'} font-sans selection:bg-emerald-100/30 selection:text-emerald-900 w-full flex flex-col transition-colors duration-700`}
+            className={`@container ${screenClass} ${cleanTheme.background || 'bg-stone-50'} ${cleanTheme.primaryText || 'text-stone-800'} font-sans selection:bg-emerald-100/30 selection:text-emerald-900 w-full min-w-0 max-w-full overflow-x-hidden flex flex-col transition-colors duration-700`}
             style={{
                 '--theme-primary': data.theme?.rawPrimary || '#1a1a1a',
                 '--theme-accent': data.theme?.rawAccent || (data.theme?.name === 'emerald' ? '#047857' : data.theme?.name === 'rose' ? '#fb7185' : '#9ca3af'),
@@ -606,7 +608,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                             </div>
 
                             {data.showHeroLogo && data.heroLogoUrl ? (
-                                <img src={data.heroLogoUrl} alt="Hero Logo" className="w-48 md:w-64 max-h-32 object-contain mx-auto mb-6" />
+                                <img src={data.heroLogoUrl} alt="Hero Logo" className="w-48 @md:w-64 max-h-32 object-contain mx-auto mb-6" />
                             ) : (
                                 <h1 className="text-3xl font-serif mb-3 text-white tracking-wide">
                                     {data.bride || "Bride"} & {data.groom || "Groom"}
@@ -675,7 +677,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                     setActiveTab(item.key);
                                                     setIsNavOpen(false);
                                                 }}
-                                                className={`text-4xl md:text-5xl font-serif transition-all ${effectiveTab === item.key ? 'text-white scale-110 drop-shadow-md' : 'text-white/60 hover:text-white/90 hover:scale-105'}`}
+                                                className={`text-4xl @md:text-5xl font-serif transition-all ${effectiveTab === item.key ? 'text-white scale-110 drop-shadow-md' : 'text-white/60 hover:text-white/90 hover:scale-105'}`}
                                             >
                                                 {item.label}
                                             </button>
@@ -730,14 +732,14 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
                                 >
                                     {data.showHeroLogo && data.heroLogoUrl ? (
-                                        <img src={data.heroLogoUrl} alt="Hero Logo" className="max-w-[80vw] md:max-w-xl mx-auto mb-6 object-contain" />
+                                        <img src={data.heroLogoUrl} alt="Hero Logo" className="max-w-[min(100%,80cqw)] @md:max-w-xl mx-auto mb-6 object-contain" />
                                     ) : (
-                                        <h1 className="text-5xl md:text-8xl lg:text-9xl font-serif mb-6 tracking-wide drop-shadow-sm font-light">
+                                        <h1 className="text-5xl @md:text-8xl @lg:text-9xl font-serif mb-6 tracking-wide drop-shadow-sm font-light">
                                             {data.bride || "Bride"} & {data.groom || "Groom"}
                                         </h1>
                                     )}
                                     {data.showHeroDate !== false && (
-                                        <p className="text-lg md:text-xl lg:text-2xl font-light tracking-[0.3em] uppercase drop-shadow-sm mt-8 opacity-90">
+                                        <p className="text-lg @md:text-xl @lg:text-2xl font-light tracking-[0.3em] uppercase drop-shadow-sm mt-8 opacity-90">
                                             {formatDate(data.date)}
                                         </p>
                                     )}
@@ -788,13 +790,13 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
 
                         {/* Welcome Section & Countdown */}
                         <motion.section
-                            className="py-32 md:py-48 px-6 md:px-12 max-w-4xl mx-auto text-center"
+                            className="py-32 @md:py-48 px-6 @md:px-12 max-w-4xl mx-auto text-center"
                             initial="hidden"
                             whileInView="visible"
                             viewport={{ once: true, margin: "-100px" }}
                             variants={sectionVariants}
                         >
-                            <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif mb-8 leading-relaxed text-stone-800 font-light whitespace-pre-line">
+                            <h2 className="text-3xl @md:text-4xl @lg:text-5xl font-serif mb-8 leading-relaxed text-stone-800 font-light whitespace-pre-line">
                                 {data.message || "Message goes here"}
                             </h2>
 
@@ -806,22 +808,22 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     transition={{ delay: 0.3, duration: 0.8 }}
                                     className="mt-20"
                                 >
-                                    <h3 className="text-sm md:text-base font-sans mb-10 tracking-[0.2em] uppercase text-stone-400">
+                                    <h3 className="text-sm @md:text-base font-sans mb-10 tracking-[0.2em] uppercase text-stone-400">
                                         Countdown for the most special day
                                     </h3>
-                                    <div className="flex justify-center items-center gap-6 md:gap-12">
+                                    <div className="flex justify-center items-center gap-6 @md:gap-12">
                                         {(timeLeft.years > 0 || timeLeft.months > 0) && (
                                             <>
                                                 <div className="flex flex-col items-center">
-                                                    <span className={`text-6xl md:text-8xl lg:text-9xl font-serif ${cleanTheme.accent} font-extralight tracking-tighter drop-shadow-sm`}>{timeLeft.months}</span>
-                                                    <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-stone-400 mt-6 font-medium">Months</span>
+                                                    <span className={`text-6xl @md:text-8xl @lg:text-9xl font-serif ${cleanTheme.accent} font-extralight tracking-tighter drop-shadow-sm`}>{timeLeft.months}</span>
+                                                    <span className="text-[10px] @md:text-xs uppercase tracking-[0.3em] text-stone-400 mt-6 font-medium">Months</span>
                                                 </div>
-                                                <div className="w-px h-16 md:h-24 bg-stone-200 mt-[-20px]" />
+                                                <div className="w-px h-16 @md:h-24 bg-stone-200 mt-[-20px]" />
                                             </>
                                         )}
                                         <div className="flex flex-col items-center">
-                                            <span className={`text-6xl md:text-8xl lg:text-9xl font-serif ${cleanTheme.accent} font-extralight tracking-tighter drop-shadow-sm`}>{timeLeft.days}</span>
-                                            <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-stone-400 mt-6 font-medium">Days</span>
+                                            <span className={`text-6xl @md:text-8xl @lg:text-9xl font-serif ${cleanTheme.accent} font-extralight tracking-tighter drop-shadow-sm`}>{timeLeft.days}</span>
+                                            <span className="text-[10px] @md:text-xs uppercase tracking-[0.3em] text-stone-400 mt-6 font-medium">Days</span>
                                         </div>
                                     </div>
                                 </motion.div>
@@ -863,7 +865,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
 
                         {/* Event Details Section - Refactored to Stacked Elegant Layout */}
                         <motion.section
-                            className={`relative py-32 md:py-48 px-6 md:px-12 flex items-center justify-center overflow-hidden ${screenClass}`}
+                            className={`relative py-32 @md:py-48 px-6 @md:px-12 flex items-center justify-center overflow-hidden ${screenClass}`}
                             initial="hidden"
                             whileInView="visible"
                             viewport={{ once: true, margin: "-100px" }}
@@ -883,26 +885,26 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                             )}
 
                             {/* Inner Stationery Frame */}
-                            <div className="relative z-20 w-full max-w-2xl bg-white/40 backdrop-blur-md border border-stone-200 shadow-2xl p-16 md:p-24 rounded-sm flex flex-col items-center text-center">
+                            <div className="relative z-20 w-full max-w-2xl bg-white/40 backdrop-blur-md border border-stone-200 shadow-2xl p-16 @md:p-24 rounded-sm flex flex-col items-center text-center">
 
                                 {/* The Houses Block */}
                                 {data.showHouses && (
                                     <motion.div variants={itemVariants} className="flex flex-col items-center w-full mb-16">
-                                        <div className="w-full flex flex-col gap-16 md:px-8 text-center">
+                                        <div className="w-full flex flex-col gap-16 @md:px-8 text-center">
                                             {/* Bride's House */}
                                             <div className="flex flex-col items-center gap-4">
                                                 {data.housesData?.brideLabel && (
-                                                    <p className="text-[10px] md:text-xs font-sans text-stone-400 uppercase tracking-[0.25em] mb-[-12px]">
+                                                    <p className="text-[10px] @md:text-xs font-sans text-stone-400 uppercase tracking-[0.25em] mb-[-12px]">
                                                         {data.housesData.brideLabel}
                                                     </p>
                                                 )}
-                                                <h5 className={`text-3xl md:text-5xl font-serif ${cleanTheme.primaryText} uppercase tracking-[0.2em] mb-4 font-light drop-shadow-sm`}>
+                                                <h5 className={`text-3xl @md:text-5xl font-serif ${cleanTheme.primaryText} uppercase tracking-[0.2em] mb-4 font-light drop-shadow-sm`}>
                                                     {data.housesData?.brideName || "The Bride's House"}
                                                 </h5>
                                                 
                                                 {data.housesData?.brideAddress && (
                                                     <div className="flex flex-col items-center gap-2 text-stone-700">
-                                                        <p className="font-sans font-light leading-relaxed whitespace-pre-line text-sm md:text-base">
+                                                        <p className="font-sans font-light leading-relaxed whitespace-pre-line text-sm @md:text-base">
                                                             {data.housesData.brideAddress}
                                                         </p>
                                                     </div>
@@ -910,7 +912,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                 
                                                 {data.housesData?.brideTime && (
                                                     <div className="flex flex-col items-center gap-2 text-stone-700">
-                                                        <p className="font-sans font-light text-sm md:text-base">
+                                                        <p className="font-sans font-light text-sm @md:text-base">
                                                             Starting <span className="font-medium">{data.housesData.brideTime}</span>
                                                         </p>
                                                     </div>
@@ -934,17 +936,17 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                             {/* Groom's House */}
                                             <div className="flex flex-col items-center gap-4">
                                                 {data.housesData?.groomLabel && (
-                                                    <p className="text-[10px] md:text-xs font-sans text-stone-400 uppercase tracking-[0.25em] mb-[-12px]">
+                                                    <p className="text-[10px] @md:text-xs font-sans text-stone-400 uppercase tracking-[0.25em] mb-[-12px]">
                                                         {data.housesData.groomLabel}
                                                     </p>
                                                 )}
-                                                <h5 className={`text-3xl md:text-5xl font-serif ${cleanTheme.primaryText} uppercase tracking-[0.2em] mb-4 font-light drop-shadow-sm`}>
+                                                <h5 className={`text-3xl @md:text-5xl font-serif ${cleanTheme.primaryText} uppercase tracking-[0.2em] mb-4 font-light drop-shadow-sm`}>
                                                     {data.housesData?.groomName || "The Groom's House"}
                                                 </h5>
                                                 
                                                 {data.housesData?.groomAddress && (
                                                     <div className="flex flex-col items-center gap-2 text-stone-700">
-                                                        <p className="font-sans font-light leading-relaxed whitespace-pre-line text-sm md:text-base">
+                                                        <p className="font-sans font-light leading-relaxed whitespace-pre-line text-sm @md:text-base">
                                                             {data.housesData.groomAddress}
                                                         </p>
                                                     </div>
@@ -952,7 +954,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                 
                                                 {data.housesData?.groomTime && (
                                                     <div className="flex flex-col items-center gap-2 text-stone-700">
-                                                        <p className="font-sans font-light text-sm md:text-base">
+                                                        <p className="font-sans font-light text-sm @md:text-base">
                                                             Starting <span className="font-medium">{data.housesData.groomTime}</span>
                                                         </p>
                                                     </div>
@@ -983,17 +985,17 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                 {/* Ceremony Block */}
                                 {(data.venue || data.time) && (
                                     <motion.div variants={itemVariants} className="flex flex-col items-center w-full">
-                                        <h4 className="text-3xl md:text-5xl font-serif text-stone-800 tracking-[0.2em] uppercase mb-10 font-light drop-shadow-sm">
+                                        <h4 className="text-3xl @md:text-5xl font-serif text-stone-800 tracking-[0.2em] uppercase mb-10 font-light drop-shadow-sm">
                                             Ceremony
                                         </h4>
                                         <div className="space-y-4 mb-4">
                                             {data.venue && (
-                                                <p className="text-lg md:text-xl font-serif text-stone-700 uppercase tracking-widest drop-shadow-sm leading-relaxed">
+                                                <p className="text-lg @md:text-xl font-serif text-stone-700 uppercase tracking-widest drop-shadow-sm leading-relaxed">
                                                     {data.venue}
                                                 </p>
                                             )}
                                             {data.location && (
-                                                <p className="text-xs md:text-sm font-sans text-stone-600 uppercase tracking-[0.25em]">
+                                                <p className="text-xs @md:text-sm font-sans text-stone-600 uppercase tracking-[0.25em]">
                                                     {data.location}
                                                 </p>
                                             )}
@@ -1026,17 +1028,17 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                 {/* Reception Block */}
                                 {(data.receptionVenue || data.receptionTime) && (
                                     <motion.div variants={itemVariants} className="flex flex-col items-center w-full">
-                                        <h4 className="text-3xl md:text-5xl font-serif text-stone-800 tracking-[0.2em] uppercase mb-10 font-light drop-shadow-sm">
+                                        <h4 className="text-3xl @md:text-5xl font-serif text-stone-800 tracking-[0.2em] uppercase mb-10 font-light drop-shadow-sm">
                                             Reception
                                         </h4>
                                         <div className="space-y-4 mb-4">
                                             {data.receptionVenue && (
-                                                <p className="text-lg md:text-xl font-serif text-stone-700 uppercase tracking-widest drop-shadow-sm leading-relaxed">
+                                                <p className="text-lg @md:text-xl font-serif text-stone-700 uppercase tracking-widest drop-shadow-sm leading-relaxed">
                                                     {data.receptionVenue}
                                                 </p>
                                             )}
                                             {data.receptionAddress && (
-                                                <p className="text-xs md:text-sm font-sans text-stone-600 uppercase tracking-[0.25em]">
+                                                <p className="text-xs @md:text-sm font-sans text-stone-600 uppercase tracking-[0.25em]">
                                                     {data.receptionAddress}
                                                 </p>
                                             )}
@@ -1117,7 +1119,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     {section.overlayType !== 'none' && (
                                         <div className={`absolute inset-0 z-20 text-center px-6 w-full flex flex-col items-center justify-center ${sectionIsVideo ? '' : (isFullBleed ? '' : 'max-w-4xl mx-auto')}`}>
                                             {section.overlayType === 'text' && section.textContent && (
-                                                <h2 className={`text-4xl md:text-5xl lg:text-6xl text-white drop-shadow-md leading-relaxed ${section.fontFamily || 'font-sans'}`}>
+                                                <h2 className={`text-4xl @md:text-5xl @lg:text-6xl text-white drop-shadow-md leading-relaxed ${section.fontFamily || 'font-sans'}`}>
                                                     {section.textContent}
                                                 </h2>
                                             )}
@@ -1126,7 +1128,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                 <img
                                                     src={section.overlayImageUrl}
                                                     alt="Custom Section Overlay"
-                                                    className="w-full max-w-xs md:max-w-md lg:max-w-lg object-contain drop-shadow-xl"
+                                                    className="w-full max-w-xs @md:max-w-md @lg:max-w-lg object-contain drop-shadow-xl"
                                                 />
                                             )}
                                         </div>
@@ -1138,7 +1140,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                         {/* Gifts Section */}
                         {hasGiftsSection && (
                             <motion.section
-                                className="py-24 px-6 md:px-12 bg-stone-50 border-y border-stone-200"
+                                className="py-24 px-6 @md:px-12 bg-stone-50 border-y border-stone-200"
                                 initial="hidden"
                                 whileInView="visible"
                                 viewport={{ once: true, margin: "-100px" }}
@@ -1148,11 +1150,11 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center mx-auto mb-8 shadow-sm">
                                         <Gift className={`w-6 h-6 ${cleanTheme.accent}`} strokeWidth={1.5} />
                                     </div>
-                                    <h3 className="text-sm md:text-base font-sans mb-8 tracking-[0.2em] uppercase text-stone-400">
+                                    <h3 className="text-sm @md:text-base font-sans mb-8 tracking-[0.2em] uppercase text-stone-400">
                                         Registry & Gifts
                                     </h3>
                                     {data.giftMessage && (
-                                        <p className="text-xl md:text-2xl font-serif text-stone-800 leading-relaxed font-light whitespace-pre-line mb-10">
+                                        <p className="text-xl @md:text-2xl font-serif text-stone-800 leading-relaxed font-light whitespace-pre-line mb-10">
                                             {data.giftMessage}
                                         </p>
                                     )}
@@ -1196,16 +1198,17 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                             </motion.section>
                         )}
 
-                        {/* RSVP Section */}
+                        {/* RSVP Section (optional) */}
+                        {data.showRsvp !== false && (
                         <motion.section
-                            className="py-32 md:py-48 px-4 sm:px-6 md:px-12 max-w-3xl mx-auto"
+                            className="py-32 @md:py-48 px-4 @sm:px-6 @md:px-12 max-w-3xl mx-auto"
                             initial="hidden"
                             whileInView="visible"
                             viewport={{ once: true, margin: "-100px" }}
                             variants={sectionVariants}
                         >
-                            <div className="bg-white p-8 sm:p-12 md:p-20 rounded-none md:rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:border sm:border-stone-100">
-                                <h3 className="text-4xl md:text-5xl font-serif text-center mb-16 text-stone-800 font-light">
+                            <div className="bg-white p-8 @sm:p-12 @md:p-20 rounded-none @md:rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] @sm:border @sm:border-stone-100">
+                                <h3 className="text-4xl @md:text-5xl font-serif text-center mb-16 text-stone-800 font-light">
                                     RSVP
                                 </h3>
 
@@ -1214,7 +1217,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                                        className="text-center py-12 md:py-16"
+                                        className="text-center py-12 @md:py-16"
                                     >
                                         <div className={`relative w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8 overflow-hidden ${cleanTheme.accent}`}>
                                             <div className="absolute inset-0 bg-current opacity-10" 
@@ -1230,18 +1233,18 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                             <div className={`relative p-6 rounded-2xl mb-4 shadow-sm border overflow-hidden ${cleanTheme.accent}`}>
                                                 <div className="absolute inset-0 bg-current opacity-5" 
                                                      style={data.theme?.name === 'custom' ? { backgroundColor: 'var(--theme-accent)' } : {}} />
-                                                <div className="relative z-10 flex flex-col sm:flex-row items-center gap-4">
+                                                <div className="relative z-10 flex flex-col @sm:flex-row items-center gap-4">
                                                     <div className="w-10 h-10 rounded-full bg-current/10 flex items-center justify-center flex-shrink-0">
                                                         <CheckCircle2 className="w-5 h-5 shadow-sm" />
                                                     </div>
-                                                    <div className="text-center sm:text-left text-stone-800">
+                                                    <div className="text-center @sm:text-left text-stone-800">
                                                         <p className="font-medium text-base mb-1 tracking-wide">RSVP Already Submitted</p>
                                                         <p className="opacity-80 font-light text-sm">You have responded as <strong>{guestData.status === 'attending' ? 'Attending' : 'Declined'}</strong>.</p>
                                                     </div>
                                                 </div>
                                             </div>
                                         )}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-8">
+                                        <div className="grid grid-cols-1 @md:grid-cols-2 gap-10 @md:gap-8">
                                             <div className="space-y-3">
                                                 <label htmlFor="firstName" className="block text-xs uppercase tracking-[0.1em] text-stone-400">First Name</label>
                                                 <input
@@ -1273,9 +1276,9 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                         </div>
 
                                         <div className="space-y-6 pt-4">
-                                            <label className="block text-xs uppercase tracking-[0.1em] text-stone-400 text-center md:text-left">Will you be attending?</label>
-                                            <div className="flex flex-col sm:flex-row gap-6 sm:gap-12">
-                                                <label className="flex items-center gap-4 cursor-pointer group p-4 sm:p-0 rounded-lg sm:rounded-none bg-stone-50 sm:bg-transparent hover:bg-stone-100 sm:hover:bg-transparent transition-colors">
+                                            <label className="block text-xs uppercase tracking-[0.1em] text-stone-400 text-center @md:text-left">Will you be attending?</label>
+                                            <div className="flex flex-col @sm:flex-row gap-6 @sm:gap-12">
+                                                <label className="flex items-center gap-4 cursor-pointer group p-4 @sm:p-0 rounded-lg @sm:rounded-none bg-stone-50 @sm:bg-transparent hover:bg-stone-100 @sm:hover:bg-transparent transition-colors">
                                                     <div className="relative flex items-center justify-center">
                                                         <input
                                                             type="radio"
@@ -1293,7 +1296,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                     </div>
                                                     <span className="text-stone-600 group-hover:text-stone-900 transition-colors font-serif text-lg">Joyfully Accept</span>
                                                 </label>
-                                                <label className="flex items-center gap-4 cursor-pointer group p-4 sm:p-0 rounded-lg sm:rounded-none bg-stone-50 sm:bg-transparent hover:bg-stone-100 sm:hover:bg-transparent transition-colors">
+                                                <label className="flex items-center gap-4 cursor-pointer group p-4 @sm:p-0 rounded-lg @sm:rounded-none bg-stone-50 @sm:bg-transparent hover:bg-stone-100 @sm:hover:bg-transparent transition-colors">
                                                     <div className="relative flex items-center justify-center">
                                                         <input
                                                             type="radio"
@@ -1378,10 +1381,20 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     </form>
                                 )}
                             </div>
-                            {(footnoteIntro || footnoteLinks.length > 0) && (
-                                <div className="pt-16 md:pt-24 pb-6 md:pb-10 px-6 max-w-lg mx-auto flex flex-col items-center text-center gap-10">
+                        </motion.section>
+                        )}
+
+                        {(footnoteIntro || footnoteLinks.length > 0) && (
+                            <motion.section
+                                className="py-16 @md:py-24 px-4 @sm:px-6 @md:px-12 max-w-3xl mx-auto"
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true, margin: "-100px" }}
+                                variants={sectionVariants}
+                            >
+                                <div className="pb-6 @md:pb-10 px-6 max-w-lg mx-auto flex flex-col items-center text-center gap-10">
                                     {footnoteIntro ? (
-                                        <p className="text-[10px] sm:text-[11px] font-sans uppercase tracking-[0.22em] text-stone-400 leading-relaxed whitespace-pre-line max-w-md">
+                                        <p className="text-[10px] @sm:text-[11px] font-sans uppercase tracking-[0.22em] text-stone-400 leading-relaxed whitespace-pre-line max-w-md">
                                             {footnoteIntro}
                                         </p>
                                     ) : null}
@@ -1418,8 +1431,8 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                         </div>
                                     ) : null}
                                 </div>
-                            )}
-                        </motion.section>
+                            </motion.section>
+                        )}
                     </motion.div>
                 ) : effectiveTab === 'lodging' && nav.lodgingEnabled ? (
                     <motion.div
@@ -1430,12 +1443,12 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                         transition={{ duration: 0.5 }}
                         className={`w-full flex flex-col relative ${cleanTheme.background} min-h-screen pt-24`}
                     >
-                        <section className="py-20 px-6 md:px-12 text-center flex flex-col items-center justify-center">
-                            <h2 className={`text-5xl md:text-6xl font-serif mb-6 ${cleanTheme.primaryText}`}>{nav.lodgingTitle}</h2>
+                        <section className="py-20 px-6 @md:px-12 text-center flex flex-col items-center justify-center">
+                            <h2 className={`text-5xl @md:text-6xl font-serif mb-6 ${cleanTheme.primaryText}`}>{nav.lodgingTitle}</h2>
                             <p className={`max-w-2xl text-lg font-light ${cleanTheme.primaryText} opacity-80 leading-relaxed mb-16 whitespace-pre-line`}>
                                 {nav.lodgingIntro}
                             </p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto w-full">
+                            <div className="grid grid-cols-1 @md:grid-cols-2 gap-8 max-w-4xl mx-auto w-full">
                                 {nav.lodgingHotels.map((hotel, idx) => (
                                     <div key={idx} className="bg-white p-10 border border-stone-100 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-left hover:-translate-y-1 transition-transform">
                                         <div className={`w-12 h-12 rounded-full ${cleanTheme.bgAccent} text-white flex items-center justify-center mb-6`}>
@@ -1466,12 +1479,12 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                         transition={{ duration: 0.5 }}
                         className={`w-full flex flex-col relative ${cleanTheme.background} min-h-screen pt-24 pb-20`}
                     >
-                        <section className="py-20 px-6 md:px-12 text-center flex flex-col items-center justify-center">
-                            <h2 className={`text-5xl md:text-6xl font-serif mb-6 ${cleanTheme.primaryText}`}>{nav.exploringTitle}</h2>
+                        <section className="py-20 px-6 @md:px-12 text-center flex flex-col items-center justify-center">
+                            <h2 className={`text-5xl @md:text-6xl font-serif mb-6 ${cleanTheme.primaryText}`}>{nav.exploringTitle}</h2>
                             <p className={`max-w-2xl text-lg font-light ${cleanTheme.primaryText} opacity-80 leading-relaxed mb-16 whitespace-pre-line`}>
                                 {nav.exploringIntro}
                             </p>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto w-full text-left">
+                            <div className="grid grid-cols-1 @md:grid-cols-3 gap-8 max-w-6xl mx-auto w-full text-left">
                                 {nav.exploringSpots.map((spot, idx) => (
                                     <div key={idx} className="bg-white rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] group hover:-translate-y-2 transition-all duration-300 border border-stone-50">
                                         <div className="h-48 overflow-hidden bg-stone-100">
@@ -1496,11 +1509,11 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                         transition={{ duration: 0.5 }}
                         className={`w-full flex flex-col relative ${cleanTheme.background} min-h-screen pt-24 pb-20`}
                     >
-                        <section className="py-20 px-6 md:px-12 flex flex-col items-center">
-                            <div className="w-full max-w-3xl mx-auto bg-white p-8 md:p-12 border border-stone-100 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                        <section className="py-20 px-6 @md:px-12 flex flex-col items-center">
+                            <div className="w-full max-w-3xl mx-auto bg-white p-8 @md:p-12 border border-stone-100 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                                 {activeDynamicPage.title ? (
                                     <h2
-                                        className={`text-4xl md:text-5xl font-serif mb-4 text-center ${cleanTheme.primaryText} font-light`}
+                                        className={`text-4xl @md:text-5xl font-serif mb-4 text-center ${cleanTheme.primaryText} font-light`}
                                     >
                                         {activeDynamicPage.title}
                                     </h2>

@@ -71,7 +71,8 @@ const defaultData: InvitationData = {
     customSections: [],
     giftOptions: [],
     theme: THEME_PRESETS.emerald,
-    navigationPages: mergeNavigationPages()
+    navigationPages: mergeNavigationPages(),
+    showRsvp: true
 };
 
 export default function AdminDashboard() {
@@ -781,13 +782,13 @@ export default function AdminDashboard() {
                 </div>
             )}
             {/* Sidebar - Admin Navigation */}
-            <aside className="hidden md:flex flex-col h-full py-8 px-4 bg-surface-container-low text-primary w-64 shrink-0 whitespace-separation z-20 scrollbar-hide">
-                <div className="mb-8 px-4">
-                    <h1 className="text-lg font-headline text-primary">Oui-Do Admin</h1>
-                    <p className="text-[0.75rem] font-label uppercase tracking-wider text-secondary mt-1">Editorial Workspace</p>
+            <aside className="hidden md:flex flex-col h-full py-6 px-2 bg-surface-container-low text-primary w-52 shrink-0 whitespace-separation z-20 scrollbar-hide">
+                <div className="mb-6 px-2">
+                    <h1 className="text-base font-headline text-primary leading-tight">Oui-Do Admin</h1>
+                    <p className="text-[0.65rem] font-label uppercase tracking-wider text-secondary mt-1">Editorial Workspace</p>
                 </div>
 
-                <div className="px-4 mb-4">
+                <div className="px-2 mb-3">
                     <button
                         onClick={() => {
                             setLiveData(defaultData);
@@ -801,23 +802,23 @@ export default function AdminDashboard() {
                             setDetailsBgFile(null); setDetailsBgPreview(null);
                             setCustomFiles({});
                         }}
-                        className="w-full py-4 px-6 rounded-full text-[10px] font-label uppercase tracking-widest transition-all hover:opacity-90 font-bold text-on-primary shadow-xl shadow-primary/10"
+                        className="w-full py-3 px-3 rounded-full text-[9px] font-label uppercase tracking-widest transition-all hover:opacity-90 font-bold text-on-primary shadow-xl shadow-primary/10 leading-tight"
                         style={{ background: 'linear-gradient(135deg, #00150F 0%, #062C22 100%)' }}
                     >
                         New Client Instance
                     </button>
                 </div>
 
-                <div className="flex-1 px-0 flex flex-col pt-8">
-                    <nav className="flex-1 space-y-2">
+                <div className="flex-1 px-0 flex flex-col pt-4">
+                    <nav className="flex-1 space-y-1">
                         <button
-                            className="w-full flex items-center gap-3 text-secondary py-3 px-8 hover:bg-surface-container-lowest hover:text-primary rounded-r-full transition-all duration-200"
+                            className="w-full flex items-center gap-2 text-secondary py-2.5 px-3 hover:bg-surface-container-lowest hover:text-primary rounded-r-full transition-all duration-200"
                         >
-                            <LayoutDashboard className="w-5 h-5" />
-                            <span className="font-label uppercase tracking-[0.05em] text-[0.75rem] font-medium">Dashboard</span>
+                            <LayoutDashboard className="w-4 h-4 shrink-0" />
+                            <span className="font-label uppercase tracking-[0.05em] text-[0.65rem] font-medium text-left leading-snug">Dashboard</span>
                         </button>
                         <button
-                            className={`w-full flex items-center gap-3 py-3 px-8 rounded-r-full transition-all duration-200 ${activeTab === 'clients-list' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm scale-[0.99]' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
+                            className={`w-full flex items-center gap-2 py-2.5 px-3 rounded-r-full transition-all duration-200 ${activeTab === 'clients-list' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm scale-[0.99]' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
                             onClick={() => {
                                 setLiveData(defaultData); // Clear builder
                                 setActiveTab('clients-list');
@@ -831,11 +832,11 @@ export default function AdminDashboard() {
                                 setCustomFiles({});
                             }}
                         >
-                            <Users className="w-5 h-5" />
-                            <span className="font-label uppercase tracking-[0.05em] text-[0.75rem] font-bold">Active Clients</span>
+                            <Users className="w-4 h-4 shrink-0" />
+                            <span className="font-label uppercase tracking-[0.05em] text-[0.65rem] font-bold text-left leading-snug">Active Clients</span>
                         </button>
                         <button
-                            className={`w-full flex items-center gap-3 py-3 px-8 rounded-r-full transition-all duration-200 ${activeTab === 'entitlements' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm scale-[0.99]' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
+                            className={`w-full flex items-center gap-2 py-2.5 px-3 rounded-r-full transition-all duration-200 ${activeTab === 'entitlements' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm scale-[0.99]' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
                             onClick={() => {
                                 setLiveData(defaultData);
                                 setActiveTab('entitlements');
@@ -849,14 +850,14 @@ export default function AdminDashboard() {
                                 setCustomFiles({});
                             }}
                         >
-                            <Shield className="w-5 h-5" />
-                            <span className="font-label uppercase tracking-[0.05em] text-[0.75rem] font-bold">Client Entitlements</span>
+                            <Shield className="w-4 h-4 shrink-0" />
+                            <span className="font-label uppercase tracking-[0.05em] text-[0.65rem] font-bold text-left leading-snug">Entitlements</span>
                         </button>
                     </nav>
 
-                    <div className="mt-auto px-6 mb-4">
-                        <div className="flex items-center justify-between px-3 py-3 bg-surface-container-highest/20 rounded-xl">
-                            <span className="text-[0.65rem] font-bold text-secondary uppercase tracking-widest">Mock Mode</span>
+                    <div className="mt-auto px-2 mb-3">
+                        <div className="flex items-center justify-between px-2 py-2 bg-surface-container-highest/20 rounded-xl gap-2">
+                            <span className="text-[0.6rem] font-bold text-secondary uppercase tracking-widest truncate">Mock</span>
                             <button
                                 onClick={() => setUseMocks(!useMocks)}
                                 className={`w-8 h-4 rounded-full relative transition-colors ${useMocks ? 'bg-primary' : 'bg-surface-dim'}`}
@@ -867,18 +868,18 @@ export default function AdminDashboard() {
                     </div>
                 </div>
 
-                <div className="px-4 py-4 pt-4 border-t border-outline-variant/10">
+                <div className="px-2 py-3 border-t border-outline-variant/10">
                     <button
                         onClick={handleSignOut}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-secondary hover:text-primary transition-colors font-label uppercase tracking-widest font-bold"
+                        className="w-full flex items-center gap-2 px-2 py-2 text-xs text-secondary hover:text-primary transition-colors font-label uppercase tracking-widest font-bold"
                     >
-                        <LogOut className="w-4 h-4" /> Sign Out
+                        <LogOut className="w-4 h-4 shrink-0" /> Sign Out
                     </button>
                 </div>
             </aside>
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col h-full relative bg-surface">
+            <main className="flex-1 min-w-0 flex flex-col h-full relative bg-surface">
 
                 {/* Top Nav Tabs */}
                 {liveData.slug && activeTab !== 'clients-list' && activeTab !== 'entitlements' && (
@@ -1165,7 +1166,7 @@ export default function AdminDashboard() {
                             {/* Center Column - Builder Form */}
                             <div className="flex flex-1 overflow-hidden h-full w-full">
                                 {/* Left Column: Editor & Controls */}
-                                <div className={`w-full lg:w-3/5 h-full overflow-y-auto bg-surface p-8 md:p-12 lg:p-16 transition-opacity ${isCreatingClient ? 'opacity-20 pointer-events-none' : ''}`}>
+                                <div className={`w-full min-w-0 flex-1 h-full overflow-y-auto bg-surface p-8 md:p-12 lg:p-16 transition-opacity ${isCreatingClient ? 'opacity-20 pointer-events-none' : ''}`}>
                                     <div className="max-w-3xl mx-auto space-y-16 pb-24">
                                         {/* Page Header Actions */}
                                         <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-6 mb-16">
@@ -1845,6 +1846,21 @@ export default function AdminDashboard() {
                                                         </div>
                                                     ))}
                                                 </div>
+
+                                                <div className="pt-6 border-t border-outline-variant/15 space-y-2">
+                                                    <label className="flex items-center gap-3 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={liveData.showRsvp !== false}
+                                                            onChange={(e) => setLiveData((prev) => ({ ...prev, showRsvp: e.target.checked }))}
+                                                            className="rounded border-outline-variant text-primary focus:ring-primary/20"
+                                                        />
+                                                        <span className="text-[0.8rem] font-body text-on-surface font-medium">Show RSVP form on the live invitation</span>
+                                                    </label>
+                                                    <p className="text-xs text-secondary pl-7 max-w-xl">
+                                                        Disable if this couple collects responses elsewhere. The API will reject RSVP submissions when this is off.
+                                                    </p>
+                                                </div>
                                             </div>
                                         </section>
 
@@ -2168,7 +2184,7 @@ export default function AdminDashboard() {
                                         })
                                     };
                                     return (
-                                        <div className={`hidden lg:block lg:w-2/5 h-full bg-stone-100 relative overflow-hidden transition-opacity ${isCreatingClient ? 'opacity-20 pointer-events-none' : ''}`}>
+                                        <div className={`hidden lg:block lg:flex-[0_0_26rem] xl:flex-[0_0_28rem] min-w-0 h-full bg-stone-100 relative overflow-hidden transition-opacity ${isCreatingClient ? 'opacity-20 pointer-events-none' : ''}`}>
                                             <div className="absolute top-0 inset-x-0 h-12 bg-white/80 backdrop-blur-sm border-b border-stone-200 z-50 flex items-center justify-between px-6 shadow-sm">
                                                 <div className="flex gap-2">
                                                     <div className="w-3 h-3 rounded-full bg-rose-400"></div>
@@ -2181,11 +2197,15 @@ export default function AdminDashboard() {
                                                 <div className="w-12"></div>
                                             </div>
                                             <div className="h-full w-full overflow-y-auto pt-12">
-                                                <div className="pointer-events-auto">
+                                                <div className="pointer-events-auto flex justify-center items-start px-4 pb-10">
                                                     {liveData.slug ? (
-                                                        <InvitationPreview data={previewData} />
+                                                        <div className="w-full min-w-0 max-w-[390px] shrink-0 overflow-hidden rounded-[2rem] border border-stone-300/70 bg-stone-200/40 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.28)] ring-1 ring-black/5">
+                                                            <InvitationPreview data={previewData} isPreview />
+                                                        </div>
                                                     ) : (
-                                                        <div className="h-full flex items-center justify-center text-stone-400 italic">Select a client from the sidebar to preview</div>
+                                                        <div className="min-h-[12rem] w-full max-w-[390px] flex items-center justify-center text-stone-400 italic text-center px-4">
+                                                            Select a client from the sidebar to preview
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
