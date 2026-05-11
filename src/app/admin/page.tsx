@@ -445,7 +445,9 @@ export default function AdminDashboard() {
                     bankName: '',
                     accountName: '',
                     accountNumber: '',
+                    swiftCode: '',
                     mobileNumber: '',
+                    mobileAccountName: '',
                     serviceName: ''
                 }
             ]
@@ -1814,32 +1816,42 @@ export default function AdminDashboard() {
                                                                 ✕
                                                             </button>
                                                             <h4 className="text-xs font-bold text-secondary uppercase tracking-widest mb-4">
-                                                                {option.type === 'bank' ? 'Bank Transfer' : 'Mobile Transfer'}
+                                                                {option.type === 'bank'
+                                                                    ? 'Bank transfer'
+                                                                    : option.serviceName?.trim() || 'Mobile transfer'}
                                                             </h4>
                                                             {option.type === 'bank' ? (
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                    <div className="space-y-1.5">
-                                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Bank Name</label>
-                                                                        <input type="text" value={option.bankName || ''} onChange={(e) => handleGiftOptionChange(idx, 'bankName', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" placeholder="e.g. Chase Bank" />
+                                                                <div className="space-y-3">
+                                                                    <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-4 py-3">
+                                                                        <label className="text-[10px] font-label font-bold uppercase tracking-[0.18em] text-secondary mb-2 block">Bank name</label>
+                                                                        <input type="text" value={option.bankName || ''} onChange={(e) => handleGiftOptionChange(idx, 'bankName', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-semibold text-on-surface placeholder:text-secondary/60 focus:ring-0 outline-none" placeholder="e.g. Doha Bank" />
                                                                     </div>
-                                                                    <div className="space-y-1.5">
-                                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Account Name</label>
-                                                                        <input type="text" value={option.accountName || ''} onChange={(e) => handleGiftOptionChange(idx, 'accountName', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" placeholder="e.g. John Doe" />
+                                                                    <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-4 py-3">
+                                                                        <label className="text-[10px] font-label font-bold uppercase tracking-[0.18em] text-secondary mb-2 block">Account holder</label>
+                                                                        <input type="text" value={option.accountName || ''} onChange={(e) => handleGiftOptionChange(idx, 'accountName', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-semibold text-on-surface placeholder:text-secondary/60 focus:ring-0 outline-none" placeholder="Full name on account" />
                                                                     </div>
-                                                                    <div className="space-y-1.5 md:col-span-2">
-                                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Account Number / IBAN *</label>
-                                                                        <input type="text" value={option.accountNumber || ''} onChange={(e) => handleGiftOptionChange(idx, 'accountNumber', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" />
+                                                                    <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-4 py-3">
+                                                                        <label className="text-[10px] font-label font-bold uppercase tracking-[0.18em] text-secondary mb-2 block">IBAN / Account number</label>
+                                                                        <input type="text" value={option.accountNumber || ''} onChange={(e) => handleGiftOptionChange(idx, 'accountNumber', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-on-surface tracking-wide placeholder:text-secondary/60 focus:ring-0 outline-none" placeholder="IBAN or account number" />
+                                                                    </div>
+                                                                    <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-4 py-3">
+                                                                        <label className="text-[10px] font-label font-bold uppercase tracking-[0.18em] text-secondary mb-2 block">SWIFT / BIC code</label>
+                                                                        <input type="text" value={option.swiftCode || ''} onChange={(e) => handleGiftOptionChange(idx, 'swiftCode', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-semibold text-on-surface uppercase placeholder:text-secondary/60 focus:ring-0 outline-none" placeholder="e.g. DOHBQAQA" />
                                                                     </div>
                                                                 </div>
                                                             ) : (
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                    <div className="space-y-1.5">
-                                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Service Name</label>
-                                                                        <input type="text" value={option.serviceName || ''} onChange={(e) => handleGiftOptionChange(idx, 'serviceName', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" placeholder="e.g. Venmo, Zelle" />
+                                                                <div className="space-y-3">
+                                                                    <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-4 py-3">
+                                                                        <label className="text-[10px] font-label font-bold uppercase tracking-[0.18em] text-secondary mb-2 block">Service (header)</label>
+                                                                        <input type="text" value={option.serviceName || ''} onChange={(e) => handleGiftOptionChange(idx, 'serviceName', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-semibold text-on-surface placeholder:text-secondary/60 focus:ring-0 outline-none" placeholder="e.g. Whish" />
                                                                     </div>
-                                                                    <div className="space-y-1.5">
-                                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Mobile Number / Handle *</label>
-                                                                        <input type="text" value={option.mobileNumber || ''} onChange={(e) => handleGiftOptionChange(idx, 'mobileNumber', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" placeholder="@johndoe or Phone" />
+                                                                    <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-4 py-3">
+                                                                        <label className="text-[10px] font-label font-bold uppercase tracking-[0.18em] text-secondary mb-2 block">Account name (optional)</label>
+                                                                        <input type="text" value={option.mobileAccountName || ''} onChange={(e) => handleGiftOptionChange(idx, 'mobileAccountName', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-semibold text-on-surface placeholder:text-secondary/60 focus:ring-0 outline-none" placeholder="Optional" />
+                                                                    </div>
+                                                                    <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-4 py-3">
+                                                                        <label className="text-[10px] font-label font-bold uppercase tracking-[0.18em] text-secondary mb-2 block">Mobile / handle</label>
+                                                                        <input type="text" value={option.mobileNumber || ''} onChange={(e) => handleGiftOptionChange(idx, 'mobileNumber', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-on-surface tracking-wide placeholder:text-secondary/60 focus:ring-0 outline-none" placeholder="@johndoe or phone" />
                                                                     </div>
                                                                 </div>
                                                             )}

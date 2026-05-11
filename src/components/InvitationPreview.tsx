@@ -61,8 +61,35 @@ export interface GiftOption {
     bankName?: string;
     accountName?: string;
     accountNumber?: string;
+    /** SWIFT / BIC for international bank transfers */
+    swiftCode?: string;
     mobileNumber?: string;
+    /** Optional display name for the payer (mobile transfer only) */
+    mobileAccountName?: string;
     serviceName?: string; // e.g. Venmo, Zelle, PayNow
+}
+
+function GiftTransferDetailCard({
+    label,
+    value,
+    mono
+}: {
+    label: string;
+    value: string;
+    mono?: boolean;
+}) {
+    const raw = value ?? '';
+    if (!raw.trim()) return null;
+    return (
+        <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-5 py-4 text-left shadow-[0_1px_0_rgba(255,255,255,0.6)_inset]">
+            <p className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-stone-500 mb-2">{label}</p>
+            <p
+                className={`text-[15px] font-semibold text-stone-900 leading-snug break-words ${mono ? 'font-mono text-sm' : 'font-sans'}`}
+            >
+                {raw}
+            </p>
+        </div>
+    );
 }
 
 export interface HousesData {
@@ -1161,36 +1188,46 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
 
                                     {/* Interactive Bank/Mobile Transfer Info */}
                                     {data.giftOptions && data.giftOptions.length > 0 && (
-                                        <div className="max-w-lg mx-auto bg-white p-8 rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-stone-100 text-left space-y-8">
-                                            {/* Dynamic Gift Options Array */}
+                                        <div className="max-w-lg mx-auto bg-white p-8 rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-stone-100 text-left space-y-10">
                                             {data.giftOptions.map((option, idx) => (
-                                                <React.Fragment key={option.id || idx}>
-                                                    {idx > 0 && (
-                                                        <div className="w-full h-[1px] bg-stone-100"></div>
-                                                    )}
-                                                    <div>
-                                                        <div className="flex items-center mb-4">
-                                                            <div className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center mr-3">
-                                                                {option.type === 'bank' ? <Landmark className={`w-4 h-4 ${cleanTheme.accent}`} /> : <Smartphone className={`w-4 h-4 ${cleanTheme.accent}`} />}
-                                                            </div>
-                                                            <h4 className="text-xs font-semibold uppercase tracking-widest text-stone-400">
-                                                                {option.type === 'bank' ? (option.bankName || 'Bank Transfer') : (option.serviceName || 'Mobile Transfer')}
-                                                            </h4>
-                                                        </div>
-                                                        <div className="pl-11 space-y-1">
+                                                <div key={option.id || idx}>
+                                                    {idx > 0 && <div className="w-full h-px bg-stone-100 mb-10" aria-hidden />}
+                                                    <div className="flex items-center gap-3 mb-5">
+                                                        <div className="w-9 h-9 rounded-full bg-stone-50 flex items-center justify-center shrink-0 border border-stone-100">
                                                             {option.type === 'bank' ? (
-                                                                <>
-                                                                    {option.accountName && <p className="text-stone-800 font-serif text-lg">{option.accountName}</p>}
-                                                                    <p className="text-stone-600 font-mono text-sm tracking-wide bg-stone-50 inline-block px-3 py-1 rounded border border-stone-100">{option.accountNumber}</p>
-                                                                </>
+                                                                <Landmark className={`w-4 h-4 ${cleanTheme.accent}`} />
                                                             ) : (
-                                                                <>
-                                                                    <p className="text-stone-600 font-mono text-sm tracking-wide bg-stone-50 inline-block px-3 py-1 rounded border border-stone-100">{option.mobileNumber}</p>
-                                                                </>
+                                                                <Smartphone className={`w-4 h-4 ${cleanTheme.accent}`} />
                                                             )}
                                                         </div>
+                                                        <h4
+                                                            className={`text-xs font-semibold uppercase tracking-widest ${
+                                                                option.type === 'mobile' && option.serviceName?.trim()
+                                                                    ? 'text-stone-700'
+                                                                    : 'text-stone-400'
+                                                            }`}
+                                                        >
+                                                            {option.type === 'bank'
+                                                                ? option.bankName || 'Bank transfer'
+                                                                : option.serviceName?.trim() || 'Mobile transfer'}
+                                                        </h4>
                                                     </div>
-                                                </React.Fragment>
+                                                    {option.type === 'bank' ? (
+                                                        <div className="space-y-3">
+                                                            <GiftTransferDetailCard label="Account holder" value={option.accountName || ''} />
+                                                            <GiftTransferDetailCard label="IBAN / Account number" value={option.accountNumber || ''} mono />
+                                                            <GiftTransferDetailCard label="SWIFT / BIC code" value={option.swiftCode || ''} />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-3">
+                                                            <GiftTransferDetailCard
+                                                                label="Account name"
+                                                                value={option.mobileAccountName || ''}
+                                                            />
+                                                            <GiftTransferDetailCard label="Mobile / handle" value={option.mobileNumber || ''} mono />
+                                                        </div>
+                                                    )}
+                                                </div>
                                             ))}
                                         </div>
                                     )}
