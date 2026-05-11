@@ -65,10 +65,27 @@ export interface GiftOption {
     accountNumber?: string;
     /** SWIFT / BIC for international bank transfers */
     swiftCode?: string;
+    /** If empty, label defaults to "IBAN / Account number" on the invite (override for e.g. US account number). */
+    accountNumberLabel?: string;
+    /** If empty, label defaults to "SWIFT / BIC code" (override for e.g. routing number). */
+    swiftCodeLabel?: string;
     mobileNumber?: string;
     /** Optional display name for the payer (mobile transfer only) */
     mobileAccountName?: string;
     serviceName?: string; // e.g. Venmo, Zelle, PayNow
+}
+
+export const GIFT_DEFAULT_ACCOUNT_NUMBER_LABEL = 'IBAN / Account number';
+export const GIFT_DEFAULT_SWIFT_LABEL = 'SWIFT / BIC code';
+
+export function giftResolvedAccountNumberLabel(o: Pick<GiftOption, 'accountNumberLabel'>): string {
+    const t = o.accountNumberLabel?.trim();
+    return t || GIFT_DEFAULT_ACCOUNT_NUMBER_LABEL;
+}
+
+export function giftResolvedSwiftLabel(o: Pick<GiftOption, 'swiftCodeLabel'>): string {
+    const t = o.swiftCodeLabel?.trim();
+    return t || GIFT_DEFAULT_SWIFT_LABEL;
 }
 
 function GiftTransferDetailCard({
@@ -1209,13 +1226,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                                 <Smartphone className={`w-4 h-4 ${cleanTheme.accent}`} />
                                                             )}
                                                         </div>
-                                                        <h4
-                                                            className={`text-xs font-semibold uppercase tracking-widest ${
-                                                                option.type === 'mobile' && option.serviceName?.trim()
-                                                                    ? 'text-stone-700'
-                                                                    : 'text-stone-400'
-                                                            }`}
-                                                        >
+                                                        <h4 className="text-xs font-semibold uppercase tracking-widest text-stone-400">
                                                             {option.type === 'bank'
                                                                 ? option.bankName || 'Bank transfer'
                                                                 : option.serviceName?.trim() || 'Mobile transfer'}
@@ -1224,8 +1235,16 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                     {option.type === 'bank' ? (
                                                         <div className="space-y-3">
                                                             <GiftTransferDetailCard label="Account holder" value={option.accountName || ''} />
-                                                            <GiftTransferDetailCard label="IBAN / Account number" value={option.accountNumber || ''} mono />
-                                                            <GiftTransferDetailCard label="SWIFT / BIC code" value={option.swiftCode || ''} />
+                                                            <GiftTransferDetailCard
+                                                                label={giftResolvedAccountNumberLabel(option)}
+                                                                value={option.accountNumber || ''}
+                                                                mono
+                                                            />
+                                                            <GiftTransferDetailCard
+                                                                label={giftResolvedSwiftLabel(option)}
+                                                                value={option.swiftCode || ''}
+                                                                mono
+                                                            />
                                                         </div>
                                                     ) : (
                                                         <div className="space-y-3">
