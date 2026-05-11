@@ -528,7 +528,9 @@ export default function DashboardPage() {
                     bankName: '',
                     accountName: '',
                     accountNumber: '',
+                    swiftCode: '',
                     mobileNumber: '',
+                    mobileAccountName: '',
                     serviceName: ''
                 }
             ]
@@ -1327,32 +1329,42 @@ export default function DashboardPage() {
                                                 ✕
                                             </button>
                                             <h4 className="text-xs font-bold text-stone-500 uppercase tracking-widest mb-4">
-                                                {option.type === 'bank' ? 'Bank Transfer' : 'Mobile Transfer'}
+                                                {option.type === 'bank'
+                                                    ? 'Bank transfer'
+                                                    : option.serviceName?.trim() || 'Mobile transfer'}
                                             </h4>
                                             {option.type === 'bank' ? (
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-bold uppercase text-stone-400 tracking-[0.1em]">Bank Name</label>
-                                                        <input type="text" value={option.bankName || ''} onChange={(e) => handleGiftOptionChange(idx, 'bankName', e.target.value)} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Chase Bank" />
+                                                <div className="space-y-3">
+                                                    <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-4 py-3">
+                                                        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 mb-2 block">Bank name</label>
+                                                        <input type="text" value={option.bankName || ''} onChange={(e) => handleGiftOptionChange(idx, 'bankName', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-semibold text-stone-900 placeholder:text-stone-400 focus:ring-0 outline-none" placeholder="e.g. Doha Bank" />
                                                     </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-bold uppercase text-stone-400 tracking-[0.1em]">Account Name</label>
-                                                        <input type="text" value={option.accountName || ''} onChange={(e) => handleGiftOptionChange(idx, 'accountName', e.target.value)} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. John Doe" />
+                                                    <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-4 py-3">
+                                                        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 mb-2 block">Account holder</label>
+                                                        <input type="text" value={option.accountName || ''} onChange={(e) => handleGiftOptionChange(idx, 'accountName', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-semibold text-stone-900 placeholder:text-stone-400 focus:ring-0 outline-none" placeholder="Full name on account" />
                                                     </div>
-                                                    <div className="space-y-2 md:col-span-2">
-                                                        <label className="text-[10px] font-bold uppercase text-stone-400 tracking-[0.1em]">Account Number / IBAN *</label>
-                                                        <input type="text" value={option.accountNumber || ''} onChange={(e) => handleGiftOptionChange(idx, 'accountNumber', e.target.value)} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                                    <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-4 py-3">
+                                                        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 mb-2 block">IBAN / Account number</label>
+                                                        <input type="text" value={option.accountNumber || ''} onChange={(e) => handleGiftOptionChange(idx, 'accountNumber', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-stone-900 tracking-wide placeholder:text-stone-400 focus:ring-0 outline-none" placeholder="IBAN or account number" />
+                                                    </div>
+                                                    <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-4 py-3">
+                                                        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 mb-2 block">SWIFT / BIC code</label>
+                                                        <input type="text" value={option.swiftCode || ''} onChange={(e) => handleGiftOptionChange(idx, 'swiftCode', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-semibold text-stone-900 uppercase placeholder:text-stone-400 focus:ring-0 outline-none" placeholder="e.g. DOHBQAQA" />
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-bold uppercase text-stone-400 tracking-[0.1em]">Service Name</label>
-                                                        <input type="text" value={option.serviceName || ''} onChange={(e) => handleGiftOptionChange(idx, 'serviceName', e.target.value)} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Venmo, Zelle" />
+                                                <div className="space-y-3">
+                                                    <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-4 py-3">
+                                                        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 mb-2 block">Service (header)</label>
+                                                        <input type="text" value={option.serviceName || ''} onChange={(e) => handleGiftOptionChange(idx, 'serviceName', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-semibold text-stone-900 placeholder:text-stone-400 focus:ring-0 outline-none" placeholder="e.g. Whish" />
                                                     </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-bold uppercase text-stone-400 tracking-[0.1em]">Mobile Number / Handle *</label>
-                                                        <input type="text" value={option.mobileNumber || ''} onChange={(e) => handleGiftOptionChange(idx, 'mobileNumber', e.target.value)} className="w-full border border-stone-200 rounded-md p-2.5 text-stone-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="@johndoe or Phone" />
+                                                    <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-4 py-3">
+                                                        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 mb-2 block">Account name (optional)</label>
+                                                        <input type="text" value={option.mobileAccountName || ''} onChange={(e) => handleGiftOptionChange(idx, 'mobileAccountName', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-semibold text-stone-900 placeholder:text-stone-400 focus:ring-0 outline-none" placeholder="Optional" />
+                                                    </div>
+                                                    <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-4 py-3">
+                                                        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 mb-2 block">Mobile / handle</label>
+                                                        <input type="text" value={option.mobileNumber || ''} onChange={(e) => handleGiftOptionChange(idx, 'mobileNumber', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-stone-900 tracking-wide placeholder:text-stone-400 focus:ring-0 outline-none" placeholder="@johndoe or phone" />
                                                     </div>
                                                 </div>
                                             )}
