@@ -116,7 +116,8 @@ export default function DashboardPage() {
         showHouses: false,
         housesData: {},
         showNavigation: false,
-        navigationPages: mergeNavigationPages()
+        navigationPages: mergeNavigationPages(),
+        showRsvp: true
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -345,7 +346,8 @@ export default function DashboardPage() {
                                 housesData: dbData.housesData || {},
                                 showNavigation: dbData.showNavigation || false,
                                 navigationPages: mergeNavigationPages((dbData as InvitationData).navigationPages),
-                                footnote: dbData.footnote || ""
+                                footnote: dbData.footnote || "",
+                                showRsvp: dbData.showRsvp !== false
                             });
                         }
                     }
@@ -1087,7 +1089,7 @@ export default function DashboardPage() {
         }
         return (
         <div className="flex h-[calc(100vh-2rem)] rounded-xl overflow-hidden bg-white shadow-sm border border-stone-200">
-            <div className="w-full lg:w-1/2 overflow-y-auto">
+            <div className="w-full min-w-0 flex-1 overflow-y-auto">
                 <form onSubmit={handleSaveSettings} className="p-8 md:p-10 space-y-10">
                     <div className="mb-8">
                         <h2 className="text-3xl font-serif text-stone-900">Live Editor</h2>
@@ -1357,6 +1359,21 @@ export default function DashboardPage() {
                                         </div>
                                     ))}
                                 </div>
+                            </div>
+
+                            <div className="space-y-2 pt-6 border-t border-stone-100">
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={weddingDetails.showRsvp !== false}
+                                        onChange={(e) => setWeddingDetails((prev) => ({ ...prev, showRsvp: e.target.checked }))}
+                                        className="rounded border-stone-300 text-emerald-600 focus:ring-emerald-500"
+                                    />
+                                    <span className="text-sm font-medium text-stone-700 group-hover:text-stone-900">Show RSVP form on invitation</span>
+                                </label>
+                                <p className="text-xs text-stone-500 pl-7">
+                                    Turn off if you are not collecting replies on this page (e.g. RSVP by phone or another site).
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -1656,8 +1673,8 @@ export default function DashboardPage() {
                     </div>
                 </form>
             </div>
-            {/* Right Column - Live Preview */}
-            <div className="hidden lg:block w-1/2 bg-stone-100 relative overflow-hidden h-full rounded-r-xl border-l border-stone-200">
+            {/* Right column: fixed ~phone+chrome width so the editor gets the rest */}
+            <div className="hidden lg:block lg:flex-[0_0_26rem] xl:flex-[0_0_28rem] min-w-0 bg-stone-100 relative overflow-hidden h-full rounded-r-xl border-l border-stone-200">
                 <div className="absolute top-0 inset-x-0 h-10 bg-white/80 backdrop-blur-sm shadow-sm z-50 flex items-center justify-between px-4 border-b border-stone-200">
                     <div className="flex gap-1.5">
                         <div className="w-2.5 h-2.5 rounded-full bg-rose-400"></div>
@@ -1669,7 +1686,11 @@ export default function DashboardPage() {
                     </div>
                 </div>
                 <div className="h-full w-full overflow-y-auto pt-10 pointer-events-auto">
-                    <InvitationPreview data={weddingDetails} />
+                    <div className="flex justify-center items-start px-4 pb-10">
+                        <div className="w-full min-w-0 max-w-[390px] shrink-0 overflow-hidden rounded-[2rem] border border-stone-300/70 bg-stone-200/40 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.28)] ring-1 ring-black/5">
+                            <InvitationPreview data={weddingDetails} isPreview />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1680,71 +1701,71 @@ export default function DashboardPage() {
         <div className="min-h-screen bg-stone-50 flex font-sans text-stone-800 selection:bg-stone-200 selection:text-stone-900">
 
             {/* Sidebar Navigation */}
-            <aside className="w-64 bg-white border-r border-stone-200 hidden md:flex flex-col">
-                <div className="p-6 border-b border-stone-100">
-                    <h1 className="text-2xl font-serif text-stone-900 tracking-wide">{weddingDetails.bride[0]} & {weddingDetails.groom[0]}</h1>
-                    <p className="text-xs text-stone-400 uppercase tracking-widest mt-1">Guest Portal</p>
+            <aside className="w-52 shrink-0 bg-white border-r border-stone-200 hidden md:flex flex-col">
+                <div className="p-4 border-b border-stone-100">
+                    <h1 className="text-lg font-serif text-stone-900 tracking-wide leading-snug break-words">{weddingDetails.bride[0]} & {weddingDetails.groom[0]}</h1>
+                    <p className="text-[10px] text-stone-400 uppercase tracking-widest mt-1">Guest Portal</p>
                 </div>
 
-                <nav className="flex-1 p-4 space-y-2">
+                <nav className="flex-1 p-2.5 space-y-1">
                     <button
                         onClick={() => setActiveTab('overview')}
-                        className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'overview' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
+                        className={`w-full flex items-center px-2.5 py-2.5 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'overview' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
                     >
-                        <LayoutDashboard className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'overview' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
+                        <LayoutDashboard className={`w-5 h-5 mr-2 shrink-0 transition-colors ${activeTab === 'overview' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
                         Overview
                     </button>
                     {hasFeature('guests') && (
                     <button
                         onClick={() => setActiveTab('guests')}
-                        className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'guests' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
+                        className={`w-full flex items-center px-2.5 py-2.5 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'guests' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
                     >
-                        <Users className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'guests' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
+                        <Users className={`w-5 h-5 mr-2 shrink-0 transition-colors ${activeTab === 'guests' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
                         Guests
                     </button>
                     )}
                     {hasFeature('messages') && (
                     <button
                         onClick={() => setActiveTab('messages')}
-                        className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'messages' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
+                        className={`w-full flex items-center gap-1 px-2.5 py-2.5 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'messages' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
                     >
-                        <Mail className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'messages' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
-                        Messages
-                        <span className="ml-auto bg-stone-200 text-stone-600 py-0.5 px-2 rounded-full text-xs font-semibold">{guestMessages.length}</span>
+                        <Mail className={`w-5 h-5 mr-1 shrink-0 transition-colors ${activeTab === 'messages' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
+                        <span className="truncate min-w-0">Messages</span>
+                        <span className="ml-auto shrink-0 bg-stone-200 text-stone-600 py-0.5 px-1.5 rounded-full text-[10px] font-semibold tabular-nums">{guestMessages.length}</span>
                     </button>
                     )}
                     {hasFeature('budget') && (
                     <button
                         onClick={() => setActiveTab('budget')}
-                        className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'budget' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
+                        className={`w-full flex items-center px-2.5 py-2.5 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'budget' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
                     >
-                        <Calculator className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'budget' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
+                        <Calculator className={`w-5 h-5 mr-2 shrink-0 transition-colors ${activeTab === 'budget' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
                         Budget
                     </button>
                     )}
                     {hasFeature('seating') && (
                     <button
                         onClick={() => setActiveTab('seating')}
-                        className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'seating' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
+                        className={`w-full flex items-center px-2.5 py-2.5 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'seating' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
                     >
-                        <Armchair className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'seating' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
+                        <Armchair className={`w-5 h-5 mr-2 shrink-0 transition-colors ${activeTab === 'seating' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
                         Seating
                     </button>
                     )}
                     {hasFeature('settings') && (
                     <button
                         onClick={() => setActiveTab('settings')}
-                        className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'settings' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
+                        className={`w-full flex items-center px-2.5 py-2.5 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'settings' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
                     >
-                        <Settings className={`w-5 h-5 mr-3 transition-colors ${activeTab === 'settings' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
+                        <Settings className={`w-5 h-5 mr-2 shrink-0 transition-colors ${activeTab === 'settings' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
                         Settings
                     </button>
                     )}
                 </nav>
 
-                <div className="p-4 border-t border-stone-100">
-                    <button onClick={handleSignOut} className="flex items-center w-full px-4 py-3 text-sm font-medium text-stone-500 hover:text-rose-600 transition-colors rounded-lg hover:bg-rose-50 group">
-                        <LogOut className="w-5 h-5 mr-3 text-stone-400 group-hover:text-rose-500 transition-colors" />
+                <div className="p-2.5 border-t border-stone-100">
+                    <button onClick={handleSignOut} className="flex items-center w-full px-2.5 py-2.5 text-sm font-medium text-stone-500 hover:text-rose-600 transition-colors rounded-lg hover:bg-rose-50 group">
+                        <LogOut className="w-5 h-5 mr-2 shrink-0 text-stone-400 group-hover:text-rose-500 transition-colors" />
                         Sign Out
                     </button>
                 </div>
@@ -1786,7 +1807,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Main Content Area */}
-            <main className="flex-1 overflow-x-hidden overflow-y-auto bg-stone-50/50 pt-16 md:pt-0">
+            <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto bg-stone-50/50 pt-16 md:pt-0">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
                     {activeTab === 'overview' && renderOverview()}
                     {activeTab === 'guests' && renderGuests()}

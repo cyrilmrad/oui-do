@@ -122,6 +122,7 @@ export default async function InvitePage({
             (dbData.navigationPages as Partial<NavigationPagesContent> | null | undefined) ?? undefined,
         giftOptions: (dbData.giftOptions as any[]) || [],
         footnote: dbData.footnote || "",
+        showRsvp: dbData.showRsvp !== false,
         theme: (dbData.theme as Theme) || {
             primaryText: "text-stone-800",
             accent: "text-emerald-700",
