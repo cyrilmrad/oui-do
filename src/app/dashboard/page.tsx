@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import {
@@ -46,6 +46,7 @@ import InvitationPreview, {
     NavigationPagesContent
 } from '@/components/InvitationPreview';
 import { InvitationBlogEditor } from '@/components/blog/InvitationBlogEditor';
+import { wrapMarkdownBoldSegment } from '@/lib/rsvpClosedMessageBold';
 import BudgetTracker from '@/components/BudgetTracker';
 import TableSeating from '@/components/TableSeating';
 import { getExpensesBySlug } from '@/app/actions/budget';
@@ -121,11 +122,13 @@ export default function DashboardPage() {
         housesData: {},
         showNavigation: false,
         navigationPages: mergeNavigationPages(),
-        showRsvp: true
+        showRsvp: true,
+        rsvpClosedMessage: ''
     });
 
     const [isSaving, setIsSaving] = useState(false);
     const [navigationEditorOpen, setNavigationEditorOpen] = useState(false);
+    const rsvpClosedMessageRef = useRef<HTMLTextAreaElement>(null);
     const [userSlug, setUserSlug] = useState("");
     const [accessToken, setAccessToken] = useState<string | null>(null);
     const { hasFeature, loading: entitlementsLoading, features } = useEntitlements();
@@ -312,7 +315,7 @@ export default function DashboardPage() {
                 try {
                     const res = await fetch(`/api/invitation?slug=${slug}`);
                     if (res.ok) {
-                        const dbData = await res.json();
+                        const dbData = (await res.json()) as InvitationData | null;
                         if (dbData) {
                             setWeddingDetails({
                                 ...weddingDetails,
@@ -349,9 +352,10 @@ export default function DashboardPage() {
                                 showHouses: dbData.showHouses || false,
                                 housesData: dbData.housesData || {},
                                 showNavigation: dbData.showNavigation || false,
-                                navigationPages: mergeNavigationPages((dbData as InvitationData).navigationPages),
+                                navigationPages: mergeNavigationPages(dbData.navigationPages),
                                 footnote: dbData.footnote || "",
-                                showRsvp: dbData.showRsvp !== false
+                                showRsvp: dbData.showRsvp !== false,
+                                rsvpClosedMessage: dbData.rsvpClosedMessage ?? ""
                             });
                         }
                     }
@@ -1425,6 +1429,45 @@ export default function DashboardPage() {
                                 <p className="text-xs text-stone-500 pl-7">
                                     Turn off if you are not collecting replies on this page (e.g. RSVP by phone or another site).
                                 </p>
+                                {weddingDetails.showRsvp === false && (
+                                    <div className="pl-7 pt-4 space-y-2 max-w-2xl">
+                                        <label htmlFor="dashboard-rsvp-closed-message" className="text-xs font-medium text-stone-500 uppercase tracking-wider block">
+                                            RSVP message on the invite (no form)
+                                        </label>
+                                        <textarea
+                                            id="dashboard-rsvp-closed-message"
+                                            ref={rsvpClosedMessageRef}
+                                            name="rsvpClosedMessage"
+                                            rows={5}
+                                            value={weddingDetails.rsvpClosedMessage || ''}
+                                            onChange={handleSettingsChange}
+                                            className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-y min-h-[7rem]"
+                                            placeholder={'e.g. Please RSVP by phone…\nUse **important** for bold.'}
+                                        />
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const el = rsvpClosedMessageRef.current;
+                                                    if (!el) return;
+                                                    const cur = weddingDetails.rsvpClosedMessage ?? '';
+                                                    const { value, caret } = wrapMarkdownBoldSegment(cur, el.selectionStart, el.selectionEnd);
+                                                    setWeddingDetails((p) => ({ ...p, rsvpClosedMessage: value }));
+                                                    queueMicrotask(() => {
+                                                        el.focus();
+                                                        el.setSelectionRange(caret, caret);
+                                                    });
+                                                }}
+                                                className="text-xs uppercase tracking-wider px-3 py-1.5 rounded-md border border-stone-200 text-stone-600 hover:bg-stone-100 transition-colors"
+                                            >
+                                                Bold selection (**)
+                                            </button>
+                                            <span className="text-[11px] text-stone-500">
+                                                Wrap selected text in **double asterisks** for bold on the live invite.
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

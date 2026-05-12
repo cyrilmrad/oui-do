@@ -111,6 +111,23 @@ function GiftTransferDetailCard({
     );
 }
 
+/** Renders `**bold**` segments as `<strong>`; parent should use `whitespace-pre-line` for line breaks. */
+function renderRsvpClosedMessageBody(text: string): React.ReactNode {
+    const parts = text.split(/(\*\*[\s\S]*?\*\*)/g);
+    return parts.map((part, i) => {
+        if (part === '') return null;
+        const m = part.match(/^\*\*([\s\S]*)\*\*$/);
+        if (m) {
+            return (
+                <strong key={i} className="font-semibold text-stone-500">
+                    {m[1]}
+                </strong>
+            );
+        }
+        return <span key={i}>{part}</span>;
+    });
+}
+
 export interface HousesData {
     brideLabel?: string;
     brideName?: string;
@@ -165,6 +182,8 @@ export interface InvitationData {
     footnote?: string;
     /** When false, the RSVP form is hidden on the live invitation. Defaults to true. */
     showRsvp?: boolean;
+    /** When the form is off, non-empty text is shown under the RSVP title (use `**bold**`). */
+    rsvpClosedMessage?: string;
 }
 
 interface InvitationPreviewProps {
@@ -1263,8 +1282,8 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                             </motion.section>
                         )}
 
-                        {/* RSVP Section (optional) */}
-                        {data.showRsvp !== false && (
+                        {/* RSVP: full form when enabled; otherwise optional static message (footnote style) */}
+                        {((data.showRsvp !== false) || (data.showRsvp === false && data.rsvpClosedMessage?.trim())) && (
                         <motion.section
                             className="w-full flex justify-center py-32 @md:py-48 px-4 @sm:px-6 @md:px-12 box-border"
                             initial="hidden"
@@ -1278,6 +1297,8 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     RSVP
                                 </h3>
 
+                                {data.showRsvp !== false ? (
+                                <>
                                 {rsvpSubmitted ? (
                                     <motion.div
                                         initial={{ opacity: 0, scale: 0.95 }}
@@ -1451,6 +1472,14 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                             )}
                                         </div>
                                     </form>
+                                )}
+                                </>
+                                ) : (
+                                    <div className="max-w-lg mx-auto text-center px-2">
+                                        <p className="text-[10px] @sm:text-[11px] font-sans uppercase tracking-[0.22em] text-stone-400 leading-relaxed whitespace-pre-line">
+                                            {renderRsvpClosedMessageBody((data.rsvpClosedMessage ?? '').trim())}
+                                        </p>
+                                    </div>
                                 )}
                             </div>
                             </div>
