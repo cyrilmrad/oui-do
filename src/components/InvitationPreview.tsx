@@ -624,7 +624,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
             } as React.CSSProperties}
         >
             {data.audioUrl && (
-                <audio ref={audioRef} src={data.audioUrl} preload="auto" />
+                <audio ref={audioRef} src={data.audioUrl} preload="auto" loop />
             )}
 
             <AnimatePresence mode="wait">
@@ -1266,13 +1266,14 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                         {/* RSVP Section (optional) */}
                         {data.showRsvp !== false && (
                         <motion.section
-                            className="py-32 @md:py-48 px-4 @sm:px-6 @md:px-12 max-w-3xl mx-auto"
+                            className="w-full flex justify-center py-32 @md:py-48 px-4 @sm:px-6 @md:px-12 box-border"
                             initial="hidden"
                             whileInView="visible"
                             viewport={{ once: true, margin: "-100px" }}
                             variants={sectionVariants}
                         >
-                            <div className="bg-white p-8 @sm:p-12 @md:p-20 rounded-none @md:rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] @sm:border @sm:border-stone-100">
+                            <div className="w-full max-w-3xl min-w-0 shrink-0">
+                            <div className="bg-white p-8 @sm:p-12 @md:p-20 rounded-none @md:rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] @sm:border @sm:border-stone-100 w-full mx-auto">
                                 <h3 className="text-4xl @md:text-5xl font-serif text-center mb-16 text-stone-800 font-light">
                                     RSVP
                                 </h3>
@@ -1386,46 +1387,52 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                             <motion.div
                                                 initial={{ opacity: 0, height: 0 }}
                                                 animate={{ opacity: 1, height: 'auto' }}
-                                                className="space-y-10 overflow-hidden pt-4"
+                                                className="space-y-3 overflow-hidden pt-4"
                                             >
-                                                <div className="space-y-3">
-                                                    <label htmlFor="guests" className="block text-xs uppercase tracking-[0.1em] text-stone-400">Number of Guests</label>
-                                                    <div className="relative">
-                                                        <select
-                                                            id="guests"
-                                                            name="guests"
-                                                            value={formData.guests}
-                                                            onChange={handleInputChange}
-                                                            disabled={!!guestData && guestData.status !== 'pending'}
-                                                            className={`w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors appearance-none font-light ${guestData && guestData.status !== 'pending' ? 'text-stone-500 cursor-not-allowed border-dashed' : 'cursor-pointer'}`}
-                                                        >
-                                                            {Array.from({ length: guestData ? guestData.pax : 4 }, (_, i) => i + 1).map(num => (
-                                                                <option key={num} value={num}>{num} {num === 1 ? 'Person' : 'People'}</option>
-                                                            ))}
-                                                        </select>
-                                                        <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400">
-                                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 9l-7 7-7-7" />
-                                                            </svg>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-3">
-                                                    <label htmlFor="message" className="block text-xs uppercase tracking-[0.1em] text-stone-400">Message to the Newlyweds (Optional)</label>
-                                                    <textarea
-                                                        id="message"
-                                                        name="message"
-                                                        value={formData.message}
+                                                <label htmlFor="guests" className="block text-xs uppercase tracking-[0.1em] text-stone-400">Number of Guests</label>
+                                                <div className="relative">
+                                                    <select
+                                                        id="guests"
+                                                        name="guests"
+                                                        value={formData.guests}
                                                         onChange={handleInputChange}
-                                                        readOnly={!!guestData && guestData.status !== 'pending'}
-                                                        rows={3}
-                                                        className={`w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors resize-none placeholder:text-stone-300 font-light leading-relaxed ${guestData && guestData.status !== 'pending' ? 'text-stone-500 cursor-not-allowed border-dashed' : ''}`}
-                                                        placeholder="Leave us a note, a wish, or just some love..."
-                                                    />
+                                                        disabled={!!guestData && guestData.status !== 'pending'}
+                                                        className={`w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors appearance-none font-light ${guestData && guestData.status !== 'pending' ? 'text-stone-500 cursor-not-allowed border-dashed' : 'cursor-pointer'}`}
+                                                    >
+                                                        {Array.from({ length: guestData ? guestData.pax : 4 }, (_, i) => i + 1).map(num => (
+                                                            <option key={num} value={num}>{num} {num === 1 ? 'Person' : 'People'}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400">
+                                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 9l-7 7-7-7" />
+                                                        </svg>
+                                                    </div>
                                                 </div>
                                             </motion.div>
                                         )}
+
+                                        <div className="space-y-3 pt-4">
+                                            <label htmlFor="message" className="block text-xs uppercase tracking-[0.1em] text-stone-400">
+                                                {formData.attending === 'no'
+                                                    ? 'A note for the couple (optional)'
+                                                    : 'Message to the Newlyweds (Optional)'}
+                                            </label>
+                                            <textarea
+                                                id="message"
+                                                name="message"
+                                                value={formData.message}
+                                                onChange={handleInputChange}
+                                                readOnly={!!guestData && guestData.status !== 'pending'}
+                                                rows={3}
+                                                className={`w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors resize-none placeholder:text-stone-300 font-light leading-relaxed ${guestData && guestData.status !== 'pending' ? 'text-stone-500 cursor-not-allowed border-dashed' : ''}`}
+                                                placeholder={
+                                                    formData.attending === 'no'
+                                                        ? 'Share a kind word or short message…'
+                                                        : 'Leave us a note, a wish, or just some love...'
+                                                }
+                                            />
+                                        </div>
 
                                         <div className="pt-8">
                                             {submitError && (
@@ -1445,6 +1452,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                         </div>
                                     </form>
                                 )}
+                            </div>
                             </div>
                         </motion.section>
                         )}
