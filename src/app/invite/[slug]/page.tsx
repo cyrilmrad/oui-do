@@ -123,6 +123,7 @@ export default async function InvitePage({
         giftOptions: (dbData.giftOptions as any[]) || [],
         footnote: dbData.footnote || "",
         showRsvp: dbData.showRsvp !== false,
+        rsvpClosedMessage: dbData.rsvpClosedMessage ?? "",
         theme: (dbData.theme as Theme) || {
             primaryText: "text-stone-800",
             accent: "text-emerald-700",

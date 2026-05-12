@@ -21,6 +21,7 @@ import InvitationPreview, {
     NavigationPagesContent
 } from '@/components/InvitationPreview';
 import { InvitationBlogEditor } from '@/components/blog/InvitationBlogEditor';
+import { wrapMarkdownBoldSegment } from '@/lib/rsvpClosedMessageBold';
 import { LogOut, Users, Plus, LayoutDashboard, Search, ChevronRight, ChevronDown, Copy, Link, QrCode, Download, Share, Lock, Trash2, Shield, Loader2 } from 'lucide-react';
 import BudgetTracker from '@/components/BudgetTracker';
 import TableSeating from '@/components/TableSeating';
@@ -76,7 +77,8 @@ const defaultData: InvitationData = {
     giftOptions: [],
     theme: THEME_PRESETS.emerald,
     navigationPages: mergeNavigationPages(),
-    showRsvp: true
+    showRsvp: true,
+    rsvpClosedMessage: ''
 };
 
 export default function AdminDashboard() {
@@ -118,6 +120,7 @@ export default function AdminDashboard() {
 
     const [detailsBgFile, setDetailsBgFile] = useState<File | null>(null);
     const [detailsBgPreview, setDetailsBgPreview] = useState<string | null>(null);
+    const rsvpClosedMessageRef = useRef<HTMLTextAreaElement>(null);
 
     type CustomSectionFiles = {
         bgFile?: File;
@@ -1917,6 +1920,45 @@ export default function AdminDashboard() {
                                                     <p className="text-xs text-secondary pl-7 max-w-xl">
                                                         Disable if this couple collects responses elsewhere. The API will reject RSVP submissions when this is off.
                                                     </p>
+                                                    {liveData.showRsvp === false && (
+                                                        <div className="pl-7 pt-4 space-y-2 max-w-2xl">
+                                                            <label htmlFor="admin-rsvp-closed-message" className="text-[0.75rem] font-label font-bold uppercase tracking-[0.1em] text-secondary block">
+                                                                RSVP message on the invite (no form)
+                                                            </label>
+                                                            <textarea
+                                                                id="admin-rsvp-closed-message"
+                                                                ref={rsvpClosedMessageRef}
+                                                                name="rsvpClosedMessage"
+                                                                rows={5}
+                                                                value={liveData.rsvpClosedMessage || ''}
+                                                                onChange={handleInputChange}
+                                                                className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body resize-y min-h-[7rem]"
+                                                                placeholder={'e.g. Please RSVP by phone…\nUse **important** for bold.'}
+                                                            />
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const el = rsvpClosedMessageRef.current;
+                                                                        if (!el) return;
+                                                                        const cur = liveData.rsvpClosedMessage ?? '';
+                                                                        const { value, caret } = wrapMarkdownBoldSegment(cur, el.selectionStart, el.selectionEnd);
+                                                                        setLiveData((p) => ({ ...p, rsvpClosedMessage: value }));
+                                                                        queueMicrotask(() => {
+                                                                            el.focus();
+                                                                            el.setSelectionRange(caret, caret);
+                                                                        });
+                                                                    }}
+                                                                    className="text-[0.7rem] font-label uppercase tracking-widest px-3 py-1.5 rounded-md border border-outline-variant/40 text-secondary hover:bg-surface-container-high transition-colors"
+                                                                >
+                                                                    Bold selection (**)
+                                                                </button>
+                                                                <span className="text-[0.65rem] text-secondary/90">
+                                                                    Wrap selected text in **double asterisks** for bold on the live invite.
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </section>

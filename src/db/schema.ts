@@ -1,5 +1,5 @@
 import { pgTable, serial, text, varchar, timestamp, boolean, integer, jsonb, uuid, pgPolicy } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
+import { sql, type InferSelectModel } from 'drizzle-orm';
 
 export const invitations = pgTable('invitations', {
     id: serial('id').primaryKey(),
@@ -40,9 +40,14 @@ export const invitations = pgTable('invitations', {
     customSections: jsonb('custom_sections').default([]),
     footnote: text('footnote'),
     showRsvp: boolean('show_rsvp').default(true),
+    /** Shown on the invite when `show_rsvp` is false; use `**text**` for bold. */
+    rsvpClosedMessage: text('rsvp_closed_message'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
 }).enableRLS();
+
+/** Row shape returned by `db.select().from(invitations)` (camelCase JS keys, DB columns snake_case). */
+export type InvitationSelect = InferSelectModel<typeof invitations>;
 
 export const seatingTables = pgTable('seating_tables', {
     id: uuid('id').defaultRandom().primaryKey(),
