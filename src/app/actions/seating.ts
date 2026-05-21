@@ -95,6 +95,10 @@ export async function deleteTable(id: string, accessToken?: string) {
         if (!existing) throw new Error("Table not found.");
         await enforceSlugFeature(existing.slug, 'seating', accessToken);
 
+        await db.update(guests)
+            .set({ tableId: null, seatNumber: null, updatedAt: new Date() })
+            .where(eq(guests.tableId, id));
+
         await db.delete(seatingTables).where(eq(seatingTables.id, id));
         revalidatePath(`/dashboard`);
         revalidatePath(`/admin`);
@@ -105,7 +109,51 @@ export async function deleteTable(id: string, accessToken?: string) {
     }
 }
 
-export async function assignGuestToTable(guestId: string, tableId: string | null, accessToken?: string) {
+export type SeatingGuestSaveRow = {
+    guestId: string;
+    tableId: string | null;
+    seatNumber: number | null;
+};
+
+export async function saveSeatingAssignments(
+    slug: string,
+    rows: SeatingGuestSaveRow[],
+    accessToken?: string
+) {
+    try {
+        await enforceSlugFeature(slug, 'seating', accessToken);
+        const [invitation] = await db.select({ id: invitations.id })
+            .from(invitations)
+            .where(eq(invitations.slug, slug))
+            .limit(1);
+        if (!invitation) throw new Error("Invitation not found.");
+
+        await db.transaction(async (tx) => {
+            for (const row of rows) {
+                const tid = row.tableId;
+                const sn = tid == null ? null : row.seatNumber;
+                await tx.update(guests)
+                    .set({ tableId: tid, seatNumber: sn, updatedAt: new Date() })
+                    .where(and(eq(guests.id, row.guestId), eq(guests.invitationId, invitation.id)));
+            }
+        });
+
+        revalidatePath(`/dashboard`);
+        revalidatePath(`/admin`);
+        return { success: true as const };
+    } catch (error) {
+        console.error("Error saving seating assignments:", error);
+        throw new Error("Failed to save seating.");
+    }
+}
+
+/** @deprecated Prefer saveSeatingAssignments for batched UI saves. */
+export async function assignGuestToTable(
+    guestId: string,
+    tableId: string | null,
+    accessToken?: string,
+    seatNumber?: number | null
+) {
     try {
         const [guestRow] = await db.select().from(guests).where(eq(guests.id, guestId)).limit(1);
         if (!guestRow) throw new Error("Guest not found.");
@@ -113,8 +161,10 @@ export async function assignGuestToTable(guestId: string, tableId: string | null
         if (!inv) throw new Error("Invitation not found.");
         await enforceSlugFeature(inv.slug, 'seating', accessToken);
 
+        const sn = tableId == null ? null : (seatNumber ?? null);
+
         const [updated] = await db.update(guests)
-            .set({ tableId, updatedAt: new Date() })
+            .set({ tableId, seatNumber: sn, updatedAt: new Date() })
             .where(eq(guests.id, guestId))
             .returning();
 

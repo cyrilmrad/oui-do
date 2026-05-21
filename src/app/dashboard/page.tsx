@@ -1091,6 +1091,7 @@ export default function DashboardPage() {
                 initialTables={seatingData.tables}
                 initialGuests={seatingData.guests}
                 accessToken={accessToken}
+                canManageTables={false}
             />
         );
     };

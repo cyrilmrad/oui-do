@@ -79,6 +79,8 @@ export const guests = pgTable('guests', {
     lastName: varchar('last_name', { length: 255 }).notNull(),
     pax: integer('pax').notNull().default(1),
     tableId: uuid('table_id').references(() => seatingTables.id, { onDelete: 'set null' }),
+    /** 1-based first seat when seated; null when unseated */
+    seatNumber: integer('seat_number'),
     status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending', 'attending', 'declined'
     message: text('message'),
     createdAt: timestamp('created_at').defaultNow(),

@@ -2323,7 +2323,7 @@ export default function AdminDashboard() {
 
                     {activeTab === 'seating' && !isCreatingClient && (
                         <div className="w-full h-full overflow-y-auto p-8 bg-surface-container-low">
-                            <TableSeating slug={liveData.slug} initialTables={seatingTables} initialGuests={seatingGuests} accessToken={accessToken} />
+                            <TableSeating slug={liveData.slug} initialTables={seatingTables} initialGuests={seatingGuests} accessToken={accessToken} canManageTables />
                         </div>
                     )}
                 </div>
