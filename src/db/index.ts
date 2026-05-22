@@ -8,6 +8,8 @@ if (!connectionString) {
     throw new Error("Missing DATABASE_URL entirely - Drizzle ORM cannot connect.");
 }
 
-// Disable prefetch as it is not supported for "Transaction" pool mode if used
-const client = postgres(connectionString, { prepare: false });
+// max:1 limits each serverless function instance to one connection,
+// preventing connection exhaustion across concurrent Vercel invocations.
+// prepare:false is required for Supabase Transaction mode pooler.
+const client = postgres(connectionString, { prepare: false, max: 1 });
 export const db = drizzle(client, { schema });
