@@ -20,7 +20,7 @@ export async function POST(request: Request) {
         }
 
         // Explicit allowlist — only known invitation columns may be written
-        const allowedFields: (keyof typeof body)[] = [
+        const allowedFields = [
             'bride', 'groom', 'date', 'time',
             'venue', 'location',
             'receptionTime', 'receptionVenue', 'receptionLocation', 'receptionAddress',
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
             'showFormalInvitation', 'formalInvitationImage', 'preCeremonyMedia',
             'showHouses', 'housesData', 'showNavigation', 'navigationPages',
             'customSections', 'footnote', 'showRsvp', 'rsvpClosedMessage',
-        ];
+        ] as const;
 
         const updateData: Record<string, unknown> = {};
         for (const key of allowedFields) {
