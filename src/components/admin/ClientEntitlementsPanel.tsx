@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import type { FeatureKey } from '@/lib/features';
 import { FEATURE_KEYS } from '@/lib/features';
-import { Search, Loader2, Shield } from 'lucide-react';
+import { Search, Loader2, Shield, KeyRound, Copy, Check, X } from 'lucide-react';
 
 type Row = {
     id: number;
@@ -42,6 +42,8 @@ export default function ClientEntitlementsPanel() {
     const [clientsLoading, setClientsLoading] = useState(false);
     const [pickerQuery, setPickerQuery] = useState('');
     const [pickerOpen, setPickerOpen] = useState(false);
+    const [resetState, setResetState] = useState<{ slug: string; loading: boolean; link?: string; email?: string } | null>(null);
+    const [copied, setCopied] = useState(false);
 
     const authHeader = useCallback(async () => {
         const { data: { session } } = await supabase.auth.getSession();
@@ -176,6 +178,32 @@ export default function ClientEntitlementsPanel() {
         const d = drafts[slug];
         if (!d) return;
         patch(slug, d);
+    };
+
+    const handleResetPassword = async (slug: string) => {
+        setResetState({ slug, loading: true });
+        setCopied(false);
+        try {
+            const h = await authHeader();
+            const res = await fetch('/api/admin/reset-password', {
+                method: 'POST',
+                headers: h,
+                body: JSON.stringify({ slug }),
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.error || 'Failed to generate link');
+            setResetState({ slug, loading: false, link: json.link, email: json.email });
+        } catch (e: any) {
+            setMessage({ type: 'err', text: e.message || 'Failed to generate reset link' });
+            setResetState(null);
+        }
+    };
+
+    const copyLink = () => {
+        if (!resetState?.link) return;
+        navigator.clipboard.writeText(resetState.link);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     return (
@@ -330,14 +358,28 @@ export default function ClientEntitlementsPanel() {
                                             </td>
                                         ))}
                                         <td className="px-4 py-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => saveDraft(row.slug)}
-                                                disabled={savingSlug === row.slug}
-                                                className="text-[0.65rem] font-label uppercase tracking-widest font-bold text-primary hover:underline disabled:opacity-50"
-                                            >
-                                                {savingSlug === row.slug ? 'Saving…' : 'Save'}
-                                            </button>
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => saveDraft(row.slug)}
+                                                    disabled={savingSlug === row.slug}
+                                                    className="text-[0.65rem] font-label uppercase tracking-widest font-bold text-primary hover:underline disabled:opacity-50"
+                                                >
+                                                    {savingSlug === row.slug ? 'Saving…' : 'Save'}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    title="Generate password reset link"
+                                                    onClick={() => handleResetPassword(row.slug)}
+                                                    disabled={resetState?.slug === row.slug && resetState.loading}
+                                                    className="text-secondary hover:text-primary disabled:opacity-50"
+                                                >
+                                                    {resetState?.slug === row.slug && resetState.loading
+                                                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                        : <KeyRound className="w-3.5 h-3.5" />
+                                                    }
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );
@@ -347,6 +389,50 @@ export default function ClientEntitlementsPanel() {
                     {filtered.length === 0 && (
                         <p className="p-8 text-center text-secondary text-sm">No matching slugs. Initialize one above or open a client in the builder first.</p>
                     )}
+                </div>
+            )}
+
+            {/* Reset password link modal */}
+            {resetState && !resetState.loading && resetState.link && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                    <div className="bg-surface rounded-2xl shadow-2xl border border-outline-variant/20 p-8 max-w-lg w-full mx-4 space-y-5">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 className="font-headline text-xl text-primary">Password Reset Link</h3>
+                                <p className="text-secondary text-sm mt-1">
+                                    Generated for <span className="font-mono text-primary">{resetState.email}</span>
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setResetState(null)}
+                                className="text-secondary hover:text-primary mt-0.5"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="rounded-xl bg-surface-container-low border border-outline-variant/20 p-3 flex items-center gap-3">
+                            <p className="font-mono text-xs text-primary break-all flex-1 select-all">{resetState.link}</p>
+                            <button
+                                type="button"
+                                onClick={copyLink}
+                                className="shrink-0 text-secondary hover:text-primary"
+                                title="Copy link"
+                            >
+                                {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                            </button>
+                        </div>
+                        <p className="text-xs text-secondary">
+                            This link is single-use and expires after 24 hours. Share it directly with the client — do not store or forward it.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => setResetState(null)}
+                            className="w-full py-2.5 rounded-full text-xs font-label uppercase tracking-widest font-bold bg-primary text-on-primary"
+                        >
+                            Done
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

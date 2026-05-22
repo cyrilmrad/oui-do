@@ -275,7 +275,7 @@ export default function AdminDashboard() {
         setOnboardMessage(null);
 
         try {
-            const response = await fetch('/api/admin/create-client', {
+            const response = await fetchWithAuth('/api/admin/create-client', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newClientForm)
