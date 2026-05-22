@@ -236,7 +236,7 @@ export default function AdminDashboard() {
 
     const fetchClients = async () => {
         try {
-            const res = await fetch('/api/admin/clients');
+            const res = await fetchWithAuth('/api/admin/clients');
             if (res.ok) {
                 const data = await res.json();
                 setRealClients(data);
