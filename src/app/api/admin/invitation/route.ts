@@ -50,7 +50,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: 'Invitation updated successfully' });
         } else {
             // Insert new
-            await db.insert(invitations).values({ slug, ...updateData });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await db.insert(invitations).values({ slug, ...updateData } as any);
             return NextResponse.json({ message: 'Invitation created successfully' });
         }
 
