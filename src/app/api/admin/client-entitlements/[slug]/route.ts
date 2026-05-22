@@ -17,7 +17,7 @@ export async function GET(_request: Request, ctx: Ctx) {
         return NextResponse.json(payload, { status: 200 });
     } catch (e: any) {
         console.error('GET /admin/client-entitlements/[slug]', e);
-        return NextResponse.json({ error: e.message ?? 'Server error' }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 
@@ -42,7 +42,6 @@ export async function PATCH(request: Request, ctx: Ctx) {
         return NextResponse.json(payload, { status: 200 });
     } catch (e: any) {
         console.error('PATCH /admin/client-entitlements/[slug]', e);
-        const status = typeof e?.statusCode === 'number' ? e.statusCode : 500;
-        return NextResponse.json({ error: e.message ?? 'Server error' }, { status });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

@@ -27,7 +27,7 @@ export async function GET(request: Request) {
         return NextResponse.json(guestList, { status: 200 });
     } catch (error: any) {
         console.error("Failed fetching guests:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: 'Guests added successfully' }, { status: 201 });
     } catch (error: any) {
         console.error("Failed adding guests:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 
@@ -101,7 +101,7 @@ export async function PUT(request: Request) {
         return NextResponse.json({ message: 'Guest updated successfully' }, { status: 200 });
     } catch (error: any) {
         console.error("Failed updating guest:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 
@@ -133,6 +133,6 @@ export async function DELETE(request: Request) {
         return NextResponse.json({ message: 'Guest deleted successfully' }, { status: 200 });
     } catch (error: any) {
         console.error("Failed deleting guest:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

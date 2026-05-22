@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdmin } from '@/lib/entitlements/guard';
 
 // We must use the SERVICE_ROLE_KEY to bypass RLS and create users securely on the backend
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -20,16 +21,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Supabase is not correctly configured. Missing environment variables.' }, { status: 500 });
     }
 
+    const authGuard = await requireAdmin(request);
+    if (!authGuard.ok) {
+        return NextResponse.json({ error: authGuard.message }, { status: authGuard.status });
+    }
+
     try {
-        // 1. Verify Authorization Header (The requesting Admin)
-        const authHeader = request.headers.get('Authorization');
-
-        // Note: For a fully secure App, we should verify the JWT token from the Authorization header 
-        // to confirm the requester is legitimately an admin. For MVP, we'll extract the token.
-        // const token = authHeader?.split('Bearer ')[1];
-        // const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-        // if (authError || user?.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
         const body = await request.json();
         const { email, password, slug } = body;
 

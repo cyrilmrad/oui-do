@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdmin } from '@/lib/entitlements/guard';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -16,9 +17,14 @@ const supabaseAdmin = supabaseUrl && supabaseUrl.startsWith('http')
 import { db } from '@/db';
 import { invitations } from '@/db/schema';
 
-export async function GET() {
+export async function GET(request: Request) {
     if (!supabaseAdmin) {
         return NextResponse.json({ error: 'Supabase is not correctly configured.' }, { status: 500 });
+    }
+
+    const authGuard = await requireAdmin(request);
+    if (!authGuard.ok) {
+        return NextResponse.json({ error: authGuard.message }, { status: authGuard.status });
     }
 
     try {
@@ -50,6 +56,6 @@ export async function GET() {
 
     } catch (err: any) {
         console.error('GET /api/admin/clients failed', err);
-        return NextResponse.json({ error: err?.message || 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

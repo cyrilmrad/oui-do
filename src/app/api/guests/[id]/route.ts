@@ -23,14 +23,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
             return NextResponse.json({ error: guard.message }, { status: guard.status });
         }
 
-        const updateData = await request.json();
+        const body = await request.json();
+
+        const allowedFields = ['firstName', 'lastName', 'pax', 'status', 'message', 'tableId'] as const;
+        const updateData: Record<string, unknown> = {};
+        for (const key of allowedFields) {
+            if (key in body) updateData[key] = body[key];
+        }
 
         await db.update(guests).set({ ...updateData, updatedAt: new Date() }).where(eq(guests.id, id));
 
         return NextResponse.json({ message: 'Guest updated successfully' }, { status: 200 });
     } catch (error: any) {
         console.error("Failed updating guest:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 
@@ -58,6 +64,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
         return NextResponse.json({ message: 'Guest deleted successfully' }, { status: 200 });
     } catch (error: any) {
         console.error("Failed deleting guest:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
