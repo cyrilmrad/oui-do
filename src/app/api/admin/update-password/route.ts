@@ -2,14 +2,6 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/auth/supabaseAdmin';
 import { requireAdmin } from '@/lib/entitlements/guard';
 
-// Resolves the canonical site URL for the recovery link redirect.
-// Set NEXT_PUBLIC_SITE_URL in Vercel env vars to your production domain.
-function siteUrl(): string {
-    if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
-    if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-    return 'http://localhost:3000';
-}
-
 export async function POST(request: Request) {
     if (!supabaseAdmin) {
         return NextResponse.json({ error: 'Supabase is not correctly configured.' }, { status: 500 });
@@ -21,9 +13,12 @@ export async function POST(request: Request) {
     }
 
     try {
-        const { slug } = await request.json();
+        const { slug, password } = await request.json();
         if (!slug?.trim()) {
             return NextResponse.json({ error: 'Missing slug' }, { status: 400 });
+        }
+        if (!password || password.length < 8) {
+            return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
         }
 
         const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
@@ -32,21 +27,16 @@ export async function POST(request: Request) {
         }
 
         const user = users.find(u => u.app_metadata?.slug === slug && u.app_metadata?.role === 'client');
-        if (!user?.email) {
+        if (!user) {
             return NextResponse.json({ error: 'No client found for this slug' }, { status: 404 });
         }
 
-        const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-            type: 'recovery',
-            email: user.email,
-            options: { redirectTo: siteUrl() },
-        });
-
-        if (error || !data?.properties?.action_link) {
+        const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, { password });
+        if (error) {
             return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
         }
 
-        return NextResponse.json({ link: data.properties.action_link, email: user.email });
+        return NextResponse.json({ message: 'Password updated successfully' });
 
     } catch {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
