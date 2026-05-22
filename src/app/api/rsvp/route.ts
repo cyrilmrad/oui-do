@@ -31,7 +31,17 @@ export async function POST(request: Request) {
         const paxCount = attending === 'yes' ? parseInt(guests, 10) || 1 : 0;
 
         if (guestId) {
-            // Personalized Link Update
+            // Verify guestId belongs to this invitation before updating
+            const [guestCheck] = await db
+                .select({ invitationId: guestsTable.invitationId })
+                .from(guestsTable)
+                .where(eq(guestsTable.id, guestId))
+                .limit(1);
+
+            if (!guestCheck || guestCheck.invitationId !== invitationId) {
+                return NextResponse.json({ error: 'Invalid guest link' }, { status: 403 });
+            }
+
             await db.update(guestsTable)
                 .set({ status, pax: paxCount, message: message || '', updatedAt: new Date() })
                 .where(eq(guestsTable.id, guestId));
@@ -51,6 +61,6 @@ export async function POST(request: Request) {
 
     } catch (error: any) {
         console.error("Failed saving RSVP:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

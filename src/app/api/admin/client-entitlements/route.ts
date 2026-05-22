@@ -26,7 +26,7 @@ export async function GET(request: Request) {
         return NextResponse.json(enriched, { status: 200 });
     } catch (e: any) {
         console.error('GET /admin/client-entitlements', e);
-        return NextResponse.json({ error: e.message ?? 'Server error' }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 
@@ -54,7 +54,6 @@ export async function POST(request: Request) {
         return NextResponse.json(payload, { status: 201 });
     } catch (e: any) {
         console.error('POST /admin/client-entitlements', e);
-        const status = typeof e?.statusCode === 'number' ? e.statusCode : 500;
-        return NextResponse.json({ error: e.message ?? 'Server error' }, { status });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
 
-        const { slug, id, createdAt, updatedAt, ...updateData } = body;
+        const { slug } = body;
 
         if (!slug) {
             return NextResponse.json({ error: 'Missing client slug' }, { status: 400 });
@@ -17,6 +17,26 @@ export async function POST(request: Request) {
         const guard = await requireFeatureForSlug(request, slug, 'settings');
         if (!guard.ok) {
             return NextResponse.json({ error: guard.message }, { status: guard.status });
+        }
+
+        // Explicit allowlist — only known invitation columns may be written
+        const allowedFields = [
+            'bride', 'groom', 'date', 'time',
+            'venue', 'location',
+            'receptionTime', 'receptionVenue', 'receptionLocation', 'receptionAddress',
+            'mapLink', 'heroImage', 'metadataImageUrl', 'heroVideo',
+            'detailsBackgroundUrl', 'audioUrl',
+            'message', 'giftMessage',
+            'bankAccountName', 'bankAccountNumber', 'mobileTransferNumber', 'giftOptions',
+            'theme', 'heroLogoUrl', 'showHeroLogo', 'showHeroDate',
+            'showFormalInvitation', 'formalInvitationImage', 'preCeremonyMedia',
+            'showHouses', 'housesData', 'showNavigation', 'navigationPages',
+            'customSections', 'footnote', 'showRsvp', 'rsvpClosedMessage',
+        ] as const;
+
+        const updateData: Record<string, unknown> = {};
+        for (const key of allowedFields) {
+            if (key in body) updateData[key] = body[key];
         }
 
         // Check if invitation already exists for this slug
@@ -30,13 +50,14 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: 'Invitation updated successfully' });
         } else {
             // Insert new
-            await db.insert(invitations).values({ slug, ...updateData });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await db.insert(invitations).values({ slug, ...updateData } as any);
             return NextResponse.json({ message: 'Invitation created successfully' });
         }
 
     } catch (error: any) {
         console.error("Failed saving invitation:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 

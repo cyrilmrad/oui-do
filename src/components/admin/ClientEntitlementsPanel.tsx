@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import type { FeatureKey } from '@/lib/features';
 import { FEATURE_KEYS } from '@/lib/features';
-import { Search, Loader2, Shield } from 'lucide-react';
+import { Search, Loader2, Shield, KeyRound, Copy, Check, X } from 'lucide-react';
 
 type Row = {
     id: number;
@@ -42,6 +42,15 @@ export default function ClientEntitlementsPanel() {
     const [clientsLoading, setClientsLoading] = useState(false);
     const [pickerQuery, setPickerQuery] = useState('');
     const [pickerOpen, setPickerOpen] = useState(false);
+
+    type PwModal =
+        | { slug: string; email?: string; view: 'options' }
+        | { slug: string; email?: string; view: 'link'; loading: boolean; link?: string }
+        | { slug: string; email?: string; view: 'set-password'; loading: boolean; done: boolean };
+
+    const [pwModal, setPwModal] = useState<PwModal | null>(null);
+    const [copied, setCopied] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
 
     const authHeader = useCallback(async () => {
         const { data: { session } } = await supabase.auth.getSession();
@@ -176,6 +185,61 @@ export default function ClientEntitlementsPanel() {
         const d = drafts[slug];
         if (!d) return;
         patch(slug, d);
+    };
+
+    const openPwModal = (slug: string) => {
+        const email = adminClients.find(c => c.slug === slug)?.email ?? undefined;
+        setPwModal({ slug, email, view: 'options' });
+        setNewPassword('');
+        setCopied(false);
+    };
+
+    const generateLink = async () => {
+        if (!pwModal) return;
+        const { slug, email } = pwModal;
+        setPwModal({ slug, email, view: 'link', loading: true });
+        try {
+            const h = await authHeader();
+            const res = await fetch('/api/admin/reset-password', {
+                method: 'POST',
+                headers: h,
+                body: JSON.stringify({ slug }),
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.error || 'Failed to generate link');
+            setPwModal({ slug, email: json.email ?? email, view: 'link', loading: false, link: json.link });
+        } catch (e: any) {
+            setMessage({ type: 'err', text: e.message || 'Failed to generate reset link' });
+            setPwModal(null);
+        }
+    };
+
+    const handleSetPassword = async () => {
+        if (!pwModal || pwModal.view !== 'set-password') return;
+        const { slug, email } = pwModal;
+        setPwModal({ slug, email, view: 'set-password', loading: true, done: false });
+        try {
+            const h = await authHeader();
+            const res = await fetch('/api/admin/update-password', {
+                method: 'POST',
+                headers: h,
+                body: JSON.stringify({ slug, password: newPassword }),
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.error || 'Failed to update password');
+            setPwModal({ slug, email, view: 'set-password', loading: false, done: true });
+            setNewPassword('');
+        } catch (e: any) {
+            setMessage({ type: 'err', text: e.message || 'Failed to update password' });
+            setPwModal(null);
+        }
+    };
+
+    const copyLink = () => {
+        if (pwModal?.view !== 'link' || !pwModal.link) return;
+        navigator.clipboard.writeText(pwModal.link);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     return (
@@ -330,14 +394,24 @@ export default function ClientEntitlementsPanel() {
                                             </td>
                                         ))}
                                         <td className="px-4 py-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => saveDraft(row.slug)}
-                                                disabled={savingSlug === row.slug}
-                                                className="text-[0.65rem] font-label uppercase tracking-widest font-bold text-primary hover:underline disabled:opacity-50"
-                                            >
-                                                {savingSlug === row.slug ? 'Saving…' : 'Save'}
-                                            </button>
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => saveDraft(row.slug)}
+                                                    disabled={savingSlug === row.slug}
+                                                    className="text-[0.65rem] font-label uppercase tracking-widest font-bold text-primary hover:underline disabled:opacity-50"
+                                                >
+                                                    {savingSlug === row.slug ? 'Saving…' : 'Save'}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    title="Manage client password"
+                                                    onClick={() => openPwModal(row.slug)}
+                                                    className="text-secondary hover:text-primary"
+                                                >
+                                                    <KeyRound className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );
@@ -347,6 +421,128 @@ export default function ClientEntitlementsPanel() {
                     {filtered.length === 0 && (
                         <p className="p-8 text-center text-secondary text-sm">No matching slugs. Initialize one above or open a client in the builder first.</p>
                     )}
+                </div>
+            )}
+
+            {/* Password management modal */}
+            {pwModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                    <div className="bg-surface rounded-2xl shadow-2xl border border-outline-variant/20 p-8 max-w-lg w-full mx-4 space-y-5">
+
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 className="font-headline text-xl text-primary">Manage Password</h3>
+                                <p className="text-secondary text-sm mt-1">
+                                    <span className="font-mono text-primary">{pwModal.slug}</span>
+                                    {pwModal.email && <span className="text-secondary"> · {pwModal.email}</span>}
+                                </p>
+                            </div>
+                            <button type="button" onClick={() => setPwModal(null)} className="text-secondary hover:text-primary mt-0.5">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Options view */}
+                        {pwModal.view === 'options' && (
+                            <div className="space-y-3">
+                                <button
+                                    type="button"
+                                    onClick={generateLink}
+                                    className="w-full flex items-center gap-4 rounded-xl border border-outline-variant/20 bg-surface-container-low hover:bg-surface-container-high/40 p-4 text-left transition-colors"
+                                >
+                                    <KeyRound className="w-5 h-5 text-primary shrink-0" />
+                                    <div>
+                                        <p className="text-sm font-semibold text-primary">Generate reset link</p>
+                                        <p className="text-xs text-secondary mt-0.5">Creates a one-time recovery link to share with the client.</p>
+                                    </div>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setPwModal({ ...pwModal, view: 'set-password', loading: false, done: false })}
+                                    className="w-full flex items-center gap-4 rounded-xl border border-outline-variant/20 bg-surface-container-low hover:bg-surface-container-high/40 p-4 text-left transition-colors"
+                                >
+                                    <Shield className="w-5 h-5 text-primary shrink-0" />
+                                    <div>
+                                        <p className="text-sm font-semibold text-primary">Set password directly</p>
+                                        <p className="text-xs text-secondary mt-0.5">Immediately overrides the client's password. Takes effect on next login.</p>
+                                    </div>
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Recovery link view */}
+                        {pwModal.view === 'link' && (
+                            <div className="space-y-4">
+                                {pwModal.loading ? (
+                                    <div className="flex justify-center py-6"><Loader2 className="w-6 h-6 animate-spin text-secondary" /></div>
+                                ) : (
+                                    <>
+                                        <div className="rounded-xl bg-surface-container-low border border-outline-variant/20 p-3 flex items-center gap-3">
+                                            <p className="font-mono text-xs text-primary break-all flex-1 select-all">{pwModal.link}</p>
+                                            <button type="button" onClick={copyLink} className="shrink-0 text-secondary hover:text-primary" title="Copy link">
+                                                {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-secondary">Single-use link, expires in 24 hours. Share directly with the client.</p>
+                                        <div className="flex gap-3">
+                                            <button type="button" onClick={() => setPwModal({ ...pwModal, view: 'options' })} className="flex-1 py-2.5 rounded-full text-xs font-label uppercase tracking-widest font-bold border border-outline-variant/30 text-secondary hover:text-primary">
+                                                Back
+                                            </button>
+                                            <button type="button" onClick={() => setPwModal(null)} className="flex-1 py-2.5 rounded-full text-xs font-label uppercase tracking-widest font-bold bg-primary text-on-primary">
+                                                Done
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Set password view */}
+                        {pwModal.view === 'set-password' && (
+                            <div className="space-y-4">
+                                {pwModal.done ? (
+                                    <>
+                                        <div className="flex items-center gap-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4">
+                                            <Check className="w-5 h-5 text-emerald-600 shrink-0" />
+                                            <p className="text-sm text-emerald-900">Password updated successfully.</p>
+                                        </div>
+                                        <button type="button" onClick={() => setPwModal(null)} className="w-full py-2.5 rounded-full text-xs font-label uppercase tracking-widest font-bold bg-primary text-on-primary">
+                                            Done
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="space-y-2">
+                                            <label className="text-[0.65rem] font-label uppercase tracking-widest text-secondary font-bold block">New password</label>
+                                            <input
+                                                type="password"
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                placeholder="Min. 8 characters"
+                                                className="w-full border border-outline-variant/30 rounded-lg px-4 py-2.5 bg-surface text-sm"
+                                                autoComplete="new-password"
+                                            />
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <button type="button" onClick={() => setPwModal({ ...pwModal, view: 'options' })} className="flex-1 py-2.5 rounded-full text-xs font-label uppercase tracking-widest font-bold border border-outline-variant/30 text-secondary hover:text-primary" disabled={pwModal.loading}>
+                                                Back
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleSetPassword}
+                                                disabled={pwModal.loading || newPassword.length < 8}
+                                                className="flex-1 py-2.5 rounded-full text-xs font-label uppercase tracking-widest font-bold bg-primary text-on-primary disabled:opacity-50 flex items-center justify-center gap-2"
+                                            >
+                                                {pwModal.loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Set password'}
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                    </div>
                 </div>
             )}
         </div>

@@ -25,6 +25,6 @@ export async function GET(request: Request) {
         return NextResponse.json(payload, { status: 200 });
     } catch (e: any) {
         console.error('GET /me/entitlements', e);
-        return NextResponse.json({ error: e.message ?? 'Server error' }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
