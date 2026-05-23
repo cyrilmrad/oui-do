@@ -38,3 +38,59 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/*
+ * Sonner toast theming — keep it editorial:
+ * default = warm off-white card with sage outline,
+ * success = muted emerald (matches the "Attending" status badge),
+ * error = muted rose (matches the "Declined" status badge),
+ * warning = muted amber,
+ * info = same as default.
+ * Tailwind palette refs: emerald-50/200/900, rose-50/200/900, amber-50/200/900.
+ */
+[data-sonner-toaster] {
+  --normal-bg: #faf9f6;            /* surface */
+  --normal-text: #1a1c1a;          /* on-surface */
+  --normal-border: #c1c8c4;        /* outline-variant */
+
+  --success-bg: #ecfdf5;           /* emerald-50 */
+  --success-text: #064e3b;         /* emerald-900 */
+  --success-border: #a7f3d0;       /* emerald-200 */
+
+  --error-bg: #fff1f2;             /* rose-50 */
+  --error-text: #881337;           /* rose-900 */
+  --error-border: #fecdd3;         /* rose-200 */
+
+  --warning-bg: #fffbeb;           /* amber-50 */
+  --warning-text: #78350f;         /* amber-900 */
+  --warning-border: #fde68a;       /* amber-200 */
+
+  --info-bg: #faf9f6;
+  --info-text: #1a1c1a;
+  --info-border: #c1c8c4;
+}
+
+[data-sonner-toast] {
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  border-radius: 0.75rem !important;       /* matches app's rounded-xl cards */
+  box-shadow: 0 10px 30px -12px rgba(0, 21, 15, 0.18) !important;
+  padding: 14px 16px !important;
+}
+
+[data-sonner-toast] [data-title] {
+  font-family: var(--font-noto-serif), Georgia, serif;
+  font-weight: 500;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+}
+
+[data-sonner-toast] [data-description] {
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  font-size: 0.8rem;
+  opacity: 0.78;
+  margin-top: 2px;
+}
+
+[data-sonner-toast] [data-icon] {
+  margin-right: 10px;
+}
