@@ -138,6 +138,35 @@ export const clientEntitlements = pgTable('client_entitlements', {
     updatedAt: timestamp('updated_at').defaultNow()
 });
 
+/**
+ * 1:1 subscription / billing record per invitation.
+ * Note: `invitations.id` is a serial integer (not uuid), so `invitationId` is integer
+ * even though the plan called for uuid. The subscription's own `id` is uuid for consistency
+ * with the rest of the uuid-keyed tables (guests, payments, seating).
+ */
+export const subscriptions = pgTable('subscriptions', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    invitationId: integer('invitation_id')
+        .references(() => invitations.id, { onDelete: 'cascade' })
+        .notNull()
+        .unique(),
+    planTier: varchar('plan_tier', { length: 50 }).notNull().default('basic'),
+    /** Whole-dollar price (no decimals). Aligns with the rest of the schema (`expenses.actualCost`, etc.). */
+    price: integer('price').notNull().default(0),
+    isPaid: boolean('is_paid').notNull().default(false),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+}, (t) => [
+    pgPolicy("Admins have full access to subscriptions", {
+        as: 'permissive',
+        for: 'all',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`,
+        withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`
+    })
+]).enableRLS();
+
+export type SubscriptionSelect = InferSelectModel<typeof subscriptions>;
+
 export const payments = pgTable('payments', {
     id: uuid('id').defaultRandom().primaryKey(),
     expenseId: uuid('expense_id').references(() => expenses.id, { onDelete: 'cascade' }).notNull(),
