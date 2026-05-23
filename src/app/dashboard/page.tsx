@@ -8,8 +8,6 @@ import {
     CheckCircle2,
     XCircle,
     Clock,
-    Search,
-    Filter,
     LayoutDashboard,
     Settings,
     LogOut,
@@ -21,17 +19,10 @@ import {
     Plus,
     Calculator,
     Armchair,
-    Edit2,
     Trash2,
-    Lock,
-    Loader2,
-    Download,
     ChevronDown
 } from 'lucide-react';
 import InvitationPreview, {
-    createEmptyDynamicPage,
-    EMPTY_EXPLORING_SPOT,
-    EMPTY_LODGING_HOTEL,
     GIFT_DEFAULT_ACCOUNT_NUMBER_LABEL,
     GIFT_DEFAULT_SWIFT_LABEL,
     giftResolvedAccountNumberLabel,
@@ -39,10 +30,6 @@ import InvitationPreview, {
     InvitationData,
     Theme,
     mergeNavigationPages,
-    NavigationBlogBody,
-    NavigationDynamicPage,
-    NavigationExploringSpot,
-    NavigationLodgingHotel,
     NavigationPagesContent
 } from '@/components/InvitationPreview';
 import { InvitationBlogEditor } from '@/components/blog/InvitationBlogEditor';
@@ -53,26 +40,14 @@ import { getExpensesBySlug } from '@/app/actions/budget';
 import { getSeatingData } from '@/app/actions/seating';
 import type { SelectSeatingTable, SelectGuest } from '@/app/actions/seating';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
-import {
-    parseGuestImportCsv,
-    parseGuestImportFromExcelRows,
-    type GuestImportRow,
-    GUEST_CSV_TEMPLATE_DOWNLOAD_URL,
-} from '@/lib/guestCsvImport';
 import { useEntitlements } from '@/components/entitlements/EntitlementsContext';
 import type { FeatureKey } from '@/lib/features';
-type RsvpStatus = 'all' | 'attending' | 'declined' | 'pending';
+import { useNavigationPages } from '@/hooks/useNavigationPages';
+import { useGiftOptions } from '@/hooks/useGiftOptions';
+import { FeatureLockedMessage } from '@/components/dashboard/FeatureLockedMessage';
+import { getStatusBadge } from '@/components/dashboard/GuestStatusBadge';
+import { GuestsTab } from '@/components/dashboard/GuestsTab';
 type DashboardTab = 'overview' | 'guests' | 'messages' | 'budget' | 'seating' | 'settings';
-
-function FeatureLockedMessage({ label }: { label: string }) {
-    return (
-        <div className="rounded-xl border border-stone-200 bg-stone-50 p-12 text-center max-w-lg mx-auto">
-            <Lock className="w-10 h-10 mx-auto text-stone-400 mb-4" />
-            <p className="text-stone-800 font-medium">{label} is not enabled for your account.</p>
-            <p className="text-sm text-stone-500 mt-2">Contact your administrator if you need access.</p>
-        </div>
-    );
-}
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -90,8 +65,6 @@ export default function DashboardPage() {
     const [rsvps, setRsvps] = useState<any[]>([]);
     const [expenses, setExpenses] = useState<any[]>([]);
     const [seatingData, setSeatingData] = useState<{ tables: SelectSeatingTable[]; guests: SelectGuest[] }>({ tables: [], guests: [] });
-    const [filterStatus, setFilterStatus] = useState<RsvpStatus>('all');
-    const [searchQuery, setSearchQuery] = useState('');
 
     // Settings State
     const [weddingDetails, setWeddingDetails] = useState<InvitationData>({
@@ -132,167 +105,6 @@ export default function DashboardPage() {
     const [userSlug, setUserSlug] = useState("");
     const [accessToken, setAccessToken] = useState<string | null>(null);
     const { hasFeature, loading: entitlementsLoading, features } = useEntitlements();
-
-    // Guests State & Handlers
-    const [isAddingGuest, setIsAddingGuest] = useState(false);
-    const [newGuestData, setNewGuestData] = useState({ firstName: '', lastName: '', pax: 1 });
-    const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
-    const [editGuestData, setEditGuestData] = useState<any>({});
-    const [csvImportPreview, setCsvImportPreview] = useState<{
-        fileName: string;
-        guests: GuestImportRow[];
-        skippedLineCount: number;
-    } | null>(null);
-    const [isGuestCsvImporting, setIsGuestCsvImporting] = useState(false);
-    const [deletingGuestId, setDeletingGuestId] = useState<string | null>(null);
-
-    const handleEditGuest = (guest: any) => {
-        setEditingGuestId(guest.id);
-        setEditGuestData(guest);
-    };
-
-    const handleSaveEditGuest = async () => {
-        try {
-            const res = await fetchWithAuth('/api/guests', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(editGuestData)
-            });
-            if (res.ok) {
-                const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
-                setRsvps(await updatedRes.json());
-                setEditingGuestId(null);
-            }
-        } catch (error) {
-            console.error(error);
-            alert("Failed to update guest.");
-        }
-    };
-
-    const handleDeleteGuest = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this guest?")) return;
-        setDeletingGuestId(id);
-        try {
-            const res = await fetchWithAuth(`/api/guests?id=${id}`, {
-                method: 'DELETE'
-            });
-            if (res.ok) {
-                const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
-                setRsvps(await updatedRes.json());
-            } else {
-                alert("Failed to delete guest.");
-            }
-        } catch (error) {
-            console.error(error);
-            alert("Failed to delete guest.");
-        } finally {
-            setDeletingGuestId(null);
-        }
-    };
-
-    const handleAddGuest = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            const res = await fetchWithAuth('/api/guests', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slug: userSlug, guests: [newGuestData] })
-            });
-            if (res.ok) {
-                const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
-                setRsvps(await updatedRes.json());
-                setIsAddingGuest(false);
-                setNewGuestData({ firstName: '', lastName: '', pax: 1 });
-            }
-        } catch (error) {
-            console.error(error);
-            alert("Failed to add guest.");
-        }
-    };
-
-    const CSV_PREVIEW_LIMIT = 50;
-
-    const GUEST_IMPORT_FORMAT_HINT =
-        'Use a header row, then columns: firstName, lastName, pax (CSV or first sheet of an .xlsx file).';
-
-    const handleGuestImportFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const input = e.target;
-        const lower = file.name.toLowerCase();
-        const isExcel =
-            lower.endsWith('.xlsx') ||
-            file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-
-        const openPreview = (guests: GuestImportRow[], skippedLineCount: number) => {
-            if (guests.length === 0) {
-                alert(`No valid guests found. ${GUEST_IMPORT_FORMAT_HINT}`);
-            } else {
-                setCsvImportPreview({ fileName: file.name, guests, skippedLineCount });
-            }
-        };
-
-        try {
-            if (isExcel) {
-                const { default: readXlsxFile } = await import('read-excel-file/browser');
-                const sheets = await readXlsxFile(file);
-                const data = sheets[0]?.data;
-                if (!data || !Array.isArray(data)) {
-                    alert('Could not read this workbook. Try saving as .xlsx with guest data on the first sheet.');
-                    return;
-                }
-                const parsed = parseGuestImportFromExcelRows(data as unknown[][]);
-                openPreview(parsed.guests, parsed.skippedLineCount);
-            } else {
-                const text = await file.text();
-                const parsed = parseGuestImportCsv(text);
-                openPreview(parsed.guests, parsed.skippedLineCount);
-            }
-        } catch (err) {
-            console.error(err);
-            alert(
-                isExcel
-                    ? `Could not read this Excel file. ${GUEST_IMPORT_FORMAT_HINT}`
-                    : `Could not read this file. ${GUEST_IMPORT_FORMAT_HINT}`,
-            );
-        } finally {
-            input.value = '';
-        }
-    };
-
-    const confirmCsvImport = async () => {
-        if (!csvImportPreview || !userSlug) return;
-        const { guests } = csvImportPreview;
-        setIsGuestCsvImporting(true);
-        try {
-            const res = await fetchWithAuth('/api/guests', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slug: userSlug, guests }),
-            });
-            if (res.ok) {
-                const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
-                setRsvps(await updatedRes.json());
-                alert('Guests imported successfully!');
-                setCsvImportPreview(null);
-            } else {
-                const err = await res.json().catch(() => ({}));
-                alert(typeof err?.error === 'string' ? err.error : 'Failed to import CSV.');
-            }
-        } catch (error) {
-            console.error(error);
-            alert('Failed to import CSV.');
-        } finally {
-            setIsGuestCsvImporting(false);
-        }
-    };
-
-    const copyGuestLink = (guestId: string) => {
-        const origin = window.location.origin;
-        navigator.clipboard.writeText(`${origin}/invite/${userSlug}?guest=${guestId}`);
-        alert('Personalized link copied to clipboard!');
-    };
 
     // Auth & Data Fetch Check
     useEffect(() => {
@@ -458,227 +270,37 @@ export default function DashboardPage() {
         };
     }, [rsvps]);
 
-    // Filtered Data for Table
-    const filteredRsvps = useMemo(() => {
-        return rsvps.filter(rsvp => {
-            const matchesStatus = filterStatus === 'all' || rsvp.status === filterStatus;
-            const matchesSearch = `${rsvp.firstName} ${rsvp.lastName}`.toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesStatus && matchesSearch;
-        });
-    }, [filterStatus, searchQuery, rsvps]);
-
     // Messages with actual content (regardless of attendance)
     const guestMessages = useMemo(() => {
         return rsvps.filter(rsvp => rsvp.message && rsvp.message.trim() !== "" && rsvp.message !== "-");
     }, [rsvps]);
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'attending':
-                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">Attending</span>;
-            case 'declined':
-                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 border border-rose-200">Declined</span>;
-            case 'pending':
-                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-800 border border-stone-200">Pending</span>;
-            default:
-                return null;
-        }
-    };
-
-    const handleAddSection = () => {
-        setWeddingDetails(prev => ({
-            ...prev,
-            customSections: [
-                ...(prev.customSections || []),
-                {
-                    id: Math.random().toString(36).substring(7),
-                    backgroundUrl: '',
-                    backgroundType: 'image',
-                    showOverlay: true,
-                    isFullBleed: false,
-                    overlayType: 'text',
-                    textContent: '',
-                    fontFamily: 'font-serif'
-                }
-            ]
-        }));
-    };
-
-    const handleRemoveSection = (index: number) => {
-        setWeddingDetails(prev => {
-            const arr = [...(prev.customSections || [])];
-            arr.splice(index, 1);
-            return { ...prev, customSections: arr };
-        });
-    };
-
-    const handleSectionChange = (index: number, field: string, value: any) => {
-        setWeddingDetails(prev => {
-            const arr = [...(prev.customSections || [])];
-            arr[index] = { ...arr[index], [field]: value };
-            return { ...prev, customSections: arr };
-        });
-    };
+    // Note: useCustomSections is not consumed here — the dashboard settings tab does not render
+    // custom-section editing UI (that lives only in the admin builder). The original dashboard
+    // had unused inline handlers for the same reason; removing the destructure keeps lint clean.
 
     const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setWeddingDetails((prev: InvitationData) => ({ ...prev, [name]: value }));
     };
 
-    const handleAddGiftOption = (type: 'bank' | 'mobile') => {
-        setWeddingDetails(prev => ({
-            ...prev,
-            giftOptions: [
-                ...(prev.giftOptions || []),
-                {
-                    id: Math.random().toString(36).substring(7),
-                    type,
-                    bankName: '',
-                    accountName: '',
-                    accountNumber: '',
-                    swiftCode: '',
-                    accountNumberLabel: '',
-                    swiftCodeLabel: '',
-                    mobileNumber: '',
-                    mobileAccountName: '',
-                    serviceName: ''
-                }
-            ]
-        }));
-    };
-
-    const handleRemoveGiftOption = (index: number) => {
-        setWeddingDetails(prev => {
-            const arr = [...(prev.giftOptions || [])];
-            arr.splice(index, 1);
-            return { ...prev, giftOptions: arr };
-        });
-    };
-
-    const handleGiftOptionChange = (index: number, field: string, value: string) => {
-        setWeddingDetails(prev => {
-            const arr = [...(prev.giftOptions || [])];
-            arr[index] = { ...arr[index], [field]: value };
-            return { ...prev, giftOptions: arr };
-        });
-    };
+    const { handleAddGiftOption, handleRemoveGiftOption, handleGiftOptionChange } = useGiftOptions(setWeddingDetails);
 
     const navDraft = mergeNavigationPages(weddingDetails.navigationPages);
 
-    const updateNavigationPages = (patch: Partial<NavigationPagesContent>) => {
-        setWeddingDetails((prev) => ({
-            ...prev,
-            navigationPages: { ...mergeNavigationPages(prev.navigationPages), ...patch }
-        }));
-    };
-
-    const updateLodgingHotel = (index: number, field: keyof NavigationLodgingHotel, value: string) => {
-        setWeddingDetails((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            const lodgingHotels = base.lodgingHotels.map((h, i) => (i === index ? { ...h, [field]: value } : h));
-            return { ...prev, navigationPages: { ...base, lodgingHotels } };
-        });
-    };
-
-    const updateExploringSpot = (index: number, field: keyof NavigationExploringSpot, value: string) => {
-        setWeddingDetails((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            const exploringSpots = base.exploringSpots.map((s, i) => (i === index ? { ...s, [field]: value } : s));
-            return { ...prev, navigationPages: { ...base, exploringSpots } };
-        });
-    };
-
-    const addLodgingHotel = () => {
-        setWeddingDetails((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            return {
-                ...prev,
-                navigationPages: {
-                    ...base,
-                    lodgingHotels: [...base.lodgingHotels, { ...EMPTY_LODGING_HOTEL }]
-                }
-            };
-        });
-    };
-
-    const removeLodgingHotel = (index: number) => {
-        setWeddingDetails((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            if (base.lodgingHotels.length <= 1) return prev;
-            return {
-                ...prev,
-                navigationPages: {
-                    ...base,
-                    lodgingHotels: base.lodgingHotels.filter((_, i) => i !== index)
-                }
-            };
-        });
-    };
-
-    const addExploringSpot = () => {
-        setWeddingDetails((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            return {
-                ...prev,
-                navigationPages: {
-                    ...base,
-                    exploringSpots: [...base.exploringSpots, { ...EMPTY_EXPLORING_SPOT }]
-                }
-            };
-        });
-    };
-
-    const removeExploringSpot = (index: number) => {
-        setWeddingDetails((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            if (base.exploringSpots.length <= 1) return prev;
-            return {
-                ...prev,
-                navigationPages: {
-                    ...base,
-                    exploringSpots: base.exploringSpots.filter((_, i) => i !== index)
-                }
-            };
-        });
-    };
-
-    const updateDynamicPage = (id: string, patch: Partial<NavigationDynamicPage>) => {
-        setWeddingDetails((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            const dynamicNavPages = base.dynamicNavPages.map((p) => (p.id === id ? { ...p, ...patch } : p));
-            return { ...prev, navigationPages: { ...base, dynamicNavPages } };
-        });
-    };
-
-    const updateDynamicPageBody = (id: string, body: NavigationBlogBody) => {
-        updateDynamicPage(id, { body });
-    };
-
-    const addDynamicPage = () => {
-        setWeddingDetails((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            return {
-                ...prev,
-                navigationPages: {
-                    ...base,
-                    dynamicNavPages: [...base.dynamicNavPages, createEmptyDynamicPage()]
-                }
-            };
-        });
-    };
-
-    const removeDynamicPage = (id: string) => {
-        setWeddingDetails((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            return {
-                ...prev,
-                navigationPages: {
-                    ...base,
-                    dynamicNavPages: base.dynamicNavPages.filter((p) => p.id !== id)
-                }
-            };
-        });
-    };
+    const {
+        updateNavigationPages,
+        updateLodgingHotel,
+        updateExploringSpot,
+        addLodgingHotel,
+        removeLodgingHotel,
+        addExploringSpot,
+        removeExploringSpot,
+        updateDynamicPage,
+        updateDynamicPageBody,
+        addDynamicPage,
+        removeDynamicPage
+    } = useNavigationPages(setWeddingDetails);
 
     const handleSaveSettings = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -792,261 +414,6 @@ export default function DashboardPage() {
 
         </>
     );
-
-    const renderGuests = () => {
-        if (!hasFeature('guests')) {
-            return <FeatureLockedMessage label="Guests" />;
-        }
-        return (
-        <>
-            {isGuestCsvImporting && (
-                <div
-                    className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-stone-900/55 backdrop-blur-[2px] px-6"
-                    role="status"
-                    aria-live="polite"
-                    aria-busy="true"
-                >
-                    <div className="relative bg-white rounded-2xl shadow-2xl px-12 py-10 flex flex-col items-center gap-6 border border-stone-200/90 max-w-sm w-full">
-                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-50/80 via-white to-stone-50/60 pointer-events-none" aria-hidden />
-                        <div className="relative flex flex-col items-center gap-6">
-                            <div className="relative">
-                                <div className="absolute inset-0 rounded-full bg-emerald-400/20 scale-150 animate-pulse" aria-hidden />
-                                <Loader2 className="relative w-14 h-14 text-emerald-600 animate-spin" strokeWidth={1.25} />
-                            </div>
-                            <div className="text-center space-y-1">
-                                <p className="text-base font-serif text-stone-900">Importing your guests</p>
-                                <p className="text-sm text-stone-500">This usually takes just a moment.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-            {csvImportPreview && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-[1px]" role="dialog" aria-modal="true" aria-labelledby="csv-import-title">
-                    <div className="bg-white rounded-xl shadow-xl border border-stone-200 max-w-2xl w-full max-h-[min(90vh,640px)] flex flex-col">
-                        <div className="px-6 py-4 border-b border-stone-100 shrink-0">
-                            <h3 id="csv-import-title" className="text-lg font-serif text-stone-900">Review import</h3>
-                            <p className="text-sm text-stone-500 mt-1 truncate" title={csvImportPreview.fileName}>{csvImportPreview.fileName}</p>
-                        </div>
-                        <div className="px-6 py-3 border-b border-stone-100 shrink-0 space-y-2">
-                            <p className="text-sm text-stone-700">
-                                <span className="font-medium">{csvImportPreview.guests.length}</span> guest{csvImportPreview.guests.length === 1 ? '' : 's'} will be added.
-                            </p>
-                            {csvImportPreview.skippedLineCount > 0 && (
-                                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-                                    {csvImportPreview.skippedLineCount} row{csvImportPreview.skippedLineCount === 1 ? '' : 's'} skipped (empty first or last name).
-                                </p>
-                            )}
-                        </div>
-                        <div className="overflow-auto flex-1 min-h-0 px-6 py-3">
-                            <table className="w-full text-left text-sm border-collapse">
-                                <thead>
-                                    <tr className="border-b border-stone-200 text-stone-500">
-                                        <th className="py-2 pr-4 font-semibold uppercase tracking-wider text-xs">First name</th>
-                                        <th className="py-2 pr-4 font-semibold uppercase tracking-wider text-xs">Last name</th>
-                                        <th className="py-2 font-semibold uppercase tracking-wider text-xs text-center w-20">Pax</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-stone-100">
-                                    {csvImportPreview.guests.slice(0, CSV_PREVIEW_LIMIT).map((g, i) => (
-                                        <tr key={`${g.firstName}-${g.lastName}-${i}`}>
-                                            <td className="py-2 pr-4 text-stone-900">{g.firstName}</td>
-                                            <td className="py-2 pr-4 text-stone-900">{g.lastName}</td>
-                                            <td className="py-2 text-center text-stone-700">{g.pax}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                            {csvImportPreview.guests.length > CSV_PREVIEW_LIMIT && (
-                                <p className="text-xs text-stone-500 mt-3">
-                                    Showing first {CSV_PREVIEW_LIMIT} rows. All {csvImportPreview.guests.length} will be imported if you confirm.
-                                </p>
-                            )}
-                        </div>
-                        <div className="px-6 py-4 border-t border-stone-100 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 shrink-0">
-                            <button
-                                type="button"
-                                onClick={() => setCsvImportPreview(null)}
-                                className="w-full sm:w-auto px-4 py-2.5 rounded-md text-sm font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                disabled={isGuestCsvImporting}
-                                onClick={() => void confirmCsvImport()}
-                                className="w-full sm:w-auto px-4 py-2.5 rounded-md text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-60 disabled:pointer-events-none"
-                            >
-                                Import {csvImportPreview.guests.length} guest{csvImportPreview.guests.length === 1 ? '' : 's'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-            <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                <div>
-                    <h2 className="text-3xl font-serif text-stone-900">Guest Management</h2>
-                    <p className="mt-2 text-sm text-stone-500">Add guests manually or import a CSV / Excel (.xlsx) file to generate secure personalized RSVP links.</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                    <a
-                        href={GUEST_CSV_TEMPLATE_DOWNLOAD_URL}
-                        download
-                        className="inline-flex items-center gap-2 bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 hover:border-stone-300 uppercase tracking-widest text-xs font-semibold py-2.5 px-4 rounded-md transition-colors"
-                    >
-                        <Download className="w-3.5 h-3.5" aria-hidden />
-                        Template
-                    </a>
-                    <label className="cursor-pointer bg-stone-100 text-stone-600 hover:bg-stone-200 uppercase tracking-widest text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center">
-                        <input
-                            type="file"
-                            accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                            className="hidden"
-                            onChange={(ev) => void handleGuestImportFileSelected(ev)}
-                        />
-                        Import
-                    </label>
-                    <button onClick={() => setIsAddingGuest(!isAddingGuest)} className="bg-stone-900 text-white hover:bg-stone-800 uppercase tracking-widest text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center gap-2">
-                        <Plus className="w-4 h-4" /> Add Guest
-                    </button>
-                </div>
-            </div>
-
-            {isAddingGuest && (
-                <div className="mb-6 bg-white p-5 rounded-xl border border-stone-200 shadow-sm flex flex-col sm:flex-row gap-4 items-end">
-                    <div className="w-full sm:w-1/3 space-y-2">
-                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">First Name</label>
-                        <input type="text" value={newGuestData.firstName} onChange={e => setNewGuestData({ ...newGuestData, firstName: e.target.value })} className="w-full border border-stone-200 p-2.5 rounded-md text-sm focus:ring-2 focus:ring-stone-500 outline-none" placeholder="John" />
-                    </div>
-                    <div className="w-full sm:w-1/3 space-y-2">
-                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Last Name</label>
-                        <input type="text" value={newGuestData.lastName} onChange={e => setNewGuestData({ ...newGuestData, lastName: e.target.value })} className="w-full border border-stone-200 p-2.5 rounded-md text-sm focus:ring-2 focus:ring-stone-500 outline-none" placeholder="Doe" />
-                    </div>
-                    <div className="w-full sm:w-1/4 space-y-2">
-                        <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Pax (Guests)</label>
-                        <input type="number" min="1" value={newGuestData.pax} onChange={e => setNewGuestData({ ...newGuestData, pax: parseInt(e.target.value) || 1 })} className="w-full border border-stone-200 p-2.5 rounded-md text-sm focus:ring-2 focus:ring-stone-500 outline-none" />
-                    </div>
-                    <button onClick={handleAddGuest} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-6 rounded-md transition-colors text-sm">Save</button>
-                </div>
-            )}
-
-            <div className="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden">
-                <div className="px-6 py-5 border-b border-stone-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <h3 className="text-lg font-serif text-stone-900">Guest List</h3>
-                    <div className="flex flex-col sm:flex-row items-center gap-4">
-                        <div className="relative w-full sm:w-64">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Search className="h-4 w-4 text-stone-400" />
-                            </div>
-                            <input type="text" placeholder="Search guests..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="block w-full pl-10 pr-3 py-2 border border-stone-200 rounded-lg text-sm placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-500 focus:border-stone-500 bg-stone-50/50" />
-                        </div>
-                        <div className="relative w-full sm:w-auto">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Filter className="h-4 w-4 text-stone-400" />
-                            </div>
-                            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as RsvpStatus)} className="block w-full pl-10 pr-10 py-2 border border-stone-200 rounded-lg text-sm text-stone-700 bg-white focus:outline-none focus:ring-1 focus:ring-stone-500 focus:border-stone-500 appearance-none cursor-pointer">
-                                <option value="all">All Guests</option>
-                                <option value="attending">Attending</option>
-                                <option value="declined">Declined</option>
-                                <option value="pending">Pending</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-stone-50/50 border-b border-stone-100">
-                                <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider">Guest Name</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider text-center">Party Size</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider">Message</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider text-right">Link</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-stone-100">
-                            {filteredRsvps.length > 0 ? (
-                                filteredRsvps.map((rsvp) => (
-                                    editingGuestId === rsvp.id ? (
-                                        <tr key={rsvp.id} className="bg-stone-50 transition-colors">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex gap-2">
-                                                    <input type="text" value={editGuestData.firstName || ""} onChange={e => setEditGuestData({...editGuestData, firstName: e.target.value})} className="w-full border border-stone-200 p-1.5 rounded text-sm outline-none" placeholder="First" />
-                                                    <input type="text" value={editGuestData.lastName || ""} onChange={e => setEditGuestData({...editGuestData, lastName: e.target.value})} className="w-full border border-stone-200 p-1.5 rounded text-sm outline-none" placeholder="Last" />
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <select value={editGuestData.status} onChange={e => setEditGuestData({...editGuestData, status: e.target.value})} className="border border-stone-200 p-1.5 rounded text-sm outline-none">
-                                                    <option value="pending">Pending</option>
-                                                    <option value="attending">Attending</option>
-                                                    <option value="declined">Declined</option>
-                                                </select>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                <input type="number" min="1" value={editGuestData.pax || 1} onChange={e => setEditGuestData({...editGuestData, pax: parseInt(e.target.value) || 1})} className="w-16 border border-stone-200 p-1.5 rounded text-sm outline-none mx-auto block text-center" />
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <input type="text" value={editGuestData.message || ""} onChange={e => setEditGuestData({...editGuestData, message: e.target.value})} className="w-full border border-stone-200 p-1.5 rounded text-sm outline-none" placeholder="No message" />
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                <div className="flex items-center gap-3 justify-end">
-                                                    <button onClick={handleSaveEditGuest} className="text-emerald-600 hover:text-emerald-700 font-medium text-sm transition-colors">Save</button>
-                                                    <button onClick={() => setEditingGuestId(null)} className="text-stone-500 hover:text-stone-700 font-medium text-sm transition-colors">Cancel</button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        <tr key={rsvp.id} className="hover:bg-stone-50/50 transition-colors">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-stone-900">{rsvp.firstName} {rsvp.lastName}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(rsvp.status)}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                <div className="text-sm text-stone-600 font-serif">{rsvp.pax}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-stone-500 truncate max-w-[150px]">{rsvp.message || "-"}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                {deletingGuestId === rsvp.id ? (
-                                                    <div className="flex items-center justify-end gap-2 text-sm text-stone-500">
-                                                        <Loader2 className="w-4 h-4 shrink-0 animate-spin text-rose-500" strokeWidth={2} aria-hidden />
-                                                        <span>Deleting…</span>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-center justify-end gap-3">
-                                                        <button type="button" onClick={() => copyGuestLink(rsvp.id)} className="text-stone-400 hover:text-stone-700 transition-colors" title="Copy Personalized Link">
-                                                            <Copy className="w-4 h-4" />
-                                                        </button>
-                                                        <button type="button" onClick={() => handleEditGuest(rsvp)} className="text-stone-400 hover:text-stone-700 transition-colors" title="Edit Guest">
-                                                            <Edit2 className="w-4 h-4" />
-                                                        </button>
-                                                        <button type="button" onClick={() => void handleDeleteGuest(rsvp.id)} className="text-stone-400 hover:text-rose-600 transition-colors" title="Delete Guest">
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    )
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-stone-500 text-sm">
-                                        No guests found.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-                <div className="px-6 py-4 border-t border-stone-100 bg-stone-50/30">
-                    <p className="text-xs text-stone-500">Showing {filteredRsvps.length} results</p>
-                </div>
-            </div>
-        </>
-        );
-    };
 
     const renderMessages = () => {
         if (!hasFeature('messages')) {
@@ -1904,7 +1271,7 @@ export default function DashboardPage() {
             <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto bg-stone-50/50 pt-16 md:pt-0">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
                     {activeTab === 'overview' && renderOverview()}
-                    {activeTab === 'guests' && renderGuests()}
+                    {activeTab === 'guests' && <GuestsTab userSlug={userSlug} rsvps={rsvps} setRsvps={setRsvps} />}
                     {activeTab === 'messages' && renderMessages()}
                     {activeTab === 'budget' && renderBudget()}
                     {activeTab === 'seating' && renderSeating()}

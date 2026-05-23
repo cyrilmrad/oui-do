@@ -4,9 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import InvitationPreview, {
-    createEmptyDynamicPage,
-    EMPTY_EXPLORING_SPOT,
-    EMPTY_LODGING_HOTEL,
     GIFT_DEFAULT_ACCOUNT_NUMBER_LABEL,
     GIFT_DEFAULT_SWIFT_LABEL,
     giftResolvedAccountNumberLabel,
@@ -14,15 +11,11 @@ import InvitationPreview, {
     InvitationData,
     Theme,
     mergeNavigationPages,
-    NavigationBlogBody,
-    NavigationDynamicPage,
-    NavigationExploringSpot,
-    NavigationLodgingHotel,
     NavigationPagesContent
 } from '@/components/InvitationPreview';
 import { InvitationBlogEditor } from '@/components/blog/InvitationBlogEditor';
 import { wrapMarkdownBoldSegment } from '@/lib/rsvpClosedMessageBold';
-import { LogOut, Users, Plus, LayoutDashboard, Search, ChevronRight, ChevronDown, Copy, Link, QrCode, Download, Share, Lock, Trash2, Shield, Loader2 } from 'lucide-react';
+import { LogOut, Users, Plus, LayoutDashboard, ChevronRight, ChevronDown, Copy, Link, QrCode, Download, Share, Lock, Trash2, Shield, Loader2 } from 'lucide-react';
 import BudgetTracker from '@/components/BudgetTracker';
 import TableSeating from '@/components/TableSeating';
 import ClientEntitlementsPanel from '@/components/admin/ClientEntitlementsPanel';
@@ -30,6 +23,22 @@ import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import { getExpensesBySlug, SelectExpense } from '@/app/actions/budget';
 import { getSeatingData } from '@/app/actions/seating';
 import type { SelectSeatingTable, SelectGuest } from '@/app/actions/seating';
+import { useNavigationPages } from '@/hooks/useNavigationPages';
+import { useGiftOptions } from '@/hooks/useGiftOptions';
+import { useCustomSections } from '@/hooks/useCustomSections';
+import { CustomSectionBlock, type CustomSectionFiles } from '@/components/admin/CustomSectionBlock';
+import { ClientList } from '@/components/admin/ClientList';
+import { NewClientForm } from '@/components/admin/NewClientForm';
+import { CoupleSection } from '@/components/admin/builder/CoupleSection';
+import { CeremonyDetailsSection } from '@/components/admin/builder/CeremonyDetailsSection';
+import { FormalReceptionSection } from '@/components/admin/builder/FormalReceptionSection';
+import { FootnoteSection } from '@/components/admin/builder/FootnoteSection';
+import { HousesSection } from '@/components/admin/builder/HousesSection';
+import { PreCeremonySection } from '@/components/admin/builder/PreCeremonySection';
+import { FormalInvitationSection } from '@/components/admin/builder/FormalInvitationSection';
+import { HeroSection } from '@/components/admin/builder/HeroSection';
+import { GiftOptionsSection } from '@/components/admin/builder/GiftOptionsSection';
+import { NavigationEditorSection } from '@/components/admin/builder/NavigationEditorSection';
 
 const THEME_PRESETS: Record<string, Theme> = {
     emerald: { primaryText: "text-stone-800", accent: "text-emerald-700", bgAccent: "bg-emerald-700/10", borderAccent: "border-emerald-700", background: "bg-stone-50" },
@@ -122,14 +131,6 @@ export default function AdminDashboard() {
     const [detailsBgPreview, setDetailsBgPreview] = useState<string | null>(null);
     const rsvpClosedMessageRef = useRef<HTMLTextAreaElement>(null);
 
-    type CustomSectionFiles = {
-        bgFile?: File;
-        bgPreview?: string;
-        overlayFile?: File;
-        overlayPreview?: string;
-        slideshowFiles?: File[];
-        slideshowPreviews?: string[];
-    };
     const [customFiles, setCustomFiles] = useState<Record<string, CustomSectionFiles>>({});
     const customFilesRef = useRef(customFiles);
     customFilesRef.current = customFiles;
@@ -301,40 +302,7 @@ export default function AdminDashboard() {
         }
     };
 
-    const handleAddSection = () => {
-        setLiveData(prev => ({
-            ...prev,
-            customSections: [
-                ...(prev.customSections || []),
-                {
-                    id: Math.random().toString(36).substring(7),
-                    backgroundUrl: '',
-                    backgroundType: 'image',
-                    showOverlay: true,
-                    isFullBleed: false,
-                    overlayType: 'text',
-                    textContent: '',
-                    fontFamily: 'font-serif'
-                }
-            ]
-        }));
-    };
-
-    const handleRemoveSection = (index: number) => {
-        setLiveData(prev => {
-            const arr = [...(prev.customSections || [])];
-            arr.splice(index, 1);
-            return { ...prev, customSections: arr };
-        });
-    };
-
-    const handleSectionChange = (index: number, field: string, value: any) => {
-        setLiveData(prev => {
-            const arr = [...(prev.customSections || [])];
-            arr[index] = { ...arr[index], [field]: value };
-            return { ...prev, customSections: arr };
-        });
-    };
+    const { handleAddSection, handleRemoveSection, handleSectionChange } = useCustomSections(setLiveData);
 
     const handleSlideshowToggle = (idx: number, sectionId: string, enabled: boolean) => {
         if (!enabled) {
@@ -441,43 +409,7 @@ export default function AdminDashboard() {
         });
     };
 
-    const handleAddGiftOption = (type: 'bank' | 'mobile') => {
-        setLiveData(prev => ({
-            ...prev,
-            giftOptions: [
-                ...(prev.giftOptions || []),
-                {
-                    id: Math.random().toString(36).substring(7),
-                    type,
-                    bankName: '',
-                    accountName: '',
-                    accountNumber: '',
-                    swiftCode: '',
-                    accountNumberLabel: '',
-                    swiftCodeLabel: '',
-                    mobileNumber: '',
-                    mobileAccountName: '',
-                    serviceName: ''
-                }
-            ]
-        }));
-    };
-
-    const handleRemoveGiftOption = (index: number) => {
-        setLiveData(prev => {
-            const arr = [...(prev.giftOptions || [])];
-            arr.splice(index, 1);
-            return { ...prev, giftOptions: arr };
-        });
-    };
-
-    const handleGiftOptionChange = (index: number, field: string, value: string) => {
-        setLiveData(prev => {
-            const arr = [...(prev.giftOptions || [])];
-            arr[index] = { ...arr[index], [field]: value };
-            return { ...prev, giftOptions: arr };
-        });
-    };
+    const { handleAddGiftOption, handleRemoveGiftOption, handleGiftOptionChange } = useGiftOptions(setLiveData);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -486,120 +418,19 @@ export default function AdminDashboard() {
 
     const np = mergeNavigationPages(liveData.navigationPages);
 
-    const updateNavigationPages = (patch: Partial<NavigationPagesContent>) => {
-        setLiveData((prev) => ({
-            ...prev,
-            navigationPages: { ...mergeNavigationPages(prev.navigationPages), ...patch }
-        }));
-    };
-
-    const updateLodgingHotel = (index: number, field: keyof NavigationLodgingHotel, value: string) => {
-        setLiveData((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            const lodgingHotels = base.lodgingHotels.map((h, i) => (i === index ? { ...h, [field]: value } : h));
-            return { ...prev, navigationPages: { ...base, lodgingHotels } };
-        });
-    };
-
-    const updateExploringSpot = (index: number, field: keyof NavigationExploringSpot, value: string) => {
-        setLiveData((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            const exploringSpots = base.exploringSpots.map((s, i) => (i === index ? { ...s, [field]: value } : s));
-            return { ...prev, navigationPages: { ...base, exploringSpots } };
-        });
-    };
-
-    const addLodgingHotel = () => {
-        setLiveData((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            return {
-                ...prev,
-                navigationPages: {
-                    ...base,
-                    lodgingHotels: [...base.lodgingHotels, { ...EMPTY_LODGING_HOTEL }]
-                }
-            };
-        });
-    };
-
-    const removeLodgingHotel = (index: number) => {
-        setLiveData((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            if (base.lodgingHotels.length <= 1) return prev;
-            return {
-                ...prev,
-                navigationPages: {
-                    ...base,
-                    lodgingHotels: base.lodgingHotels.filter((_, i) => i !== index)
-                }
-            };
-        });
-    };
-
-    const addExploringSpot = () => {
-        setLiveData((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            return {
-                ...prev,
-                navigationPages: {
-                    ...base,
-                    exploringSpots: [...base.exploringSpots, { ...EMPTY_EXPLORING_SPOT }]
-                }
-            };
-        });
-    };
-
-    const removeExploringSpot = (index: number) => {
-        setLiveData((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            if (base.exploringSpots.length <= 1) return prev;
-            return {
-                ...prev,
-                navigationPages: {
-                    ...base,
-                    exploringSpots: base.exploringSpots.filter((_, i) => i !== index)
-                }
-            };
-        });
-    };
-
-    const updateDynamicPage = (id: string, patch: Partial<NavigationDynamicPage>) => {
-        setLiveData((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            const dynamicNavPages = base.dynamicNavPages.map((p) => (p.id === id ? { ...p, ...patch } : p));
-            return { ...prev, navigationPages: { ...base, dynamicNavPages } };
-        });
-    };
-
-    const updateDynamicPageBody = (id: string, body: NavigationBlogBody) => {
-        updateDynamicPage(id, { body });
-    };
-
-    const addDynamicPage = () => {
-        setLiveData((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            return {
-                ...prev,
-                navigationPages: {
-                    ...base,
-                    dynamicNavPages: [...base.dynamicNavPages, createEmptyDynamicPage()]
-                }
-            };
-        });
-    };
-
-    const removeDynamicPage = (id: string) => {
-        setLiveData((prev) => {
-            const base = mergeNavigationPages(prev.navigationPages);
-            return {
-                ...prev,
-                navigationPages: {
-                    ...base,
-                    dynamicNavPages: base.dynamicNavPages.filter((p) => p.id !== id)
-                }
-            };
-        });
-    };
+    const {
+        updateNavigationPages,
+        updateLodgingHotel,
+        updateExploringSpot,
+        addLodgingHotel,
+        removeLodgingHotel,
+        addExploringSpot,
+        removeExploringSpot,
+        updateDynamicPage,
+        updateDynamicPageBody,
+        addDynamicPage,
+        removeDynamicPage
+    } = useNavigationPages(setLiveData);
 
     const handleThemeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedTheme = e.target.value;
@@ -946,232 +777,64 @@ export default function AdminDashboard() {
                     )}
 
                     {activeTab === 'clients-list' && !isCreatingClient && (
-                        <div className="w-full h-full overflow-y-auto w-full max-w-[1600px] mx-auto p-8 md:p-12 lg:p-16">
-                            {/* Header Section */}
-                            <header className="mb-16">
-                                <div className="flex justify-between items-end mb-8">
-                                    <div>
-                                        <span className="font-label uppercase tracking-[0.2em] text-[0.7rem] font-semibold text-secondary mb-3 block">Portfolio Management</span>
-                                        <h2 className="font-headline text-[3.5rem] leading-tight text-primary">Active Clients</h2>
-                                    </div>
-                                    <div className="hidden md:flex items-center gap-4 bg-surface-container-low p-2 rounded-full px-6 py-3 border border-outline-variant/10">
-                                        <Search className="w-5 h-5 text-primary" />
-                                        <input
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="bg-transparent border-none focus:ring-0 text-sm font-body w-64 placeholder:text-secondary/50 outline-none"
-                                            placeholder="Search clients or dates..."
-                                            type="text"
-                                        />
-                                        <span className="w-px h-6 bg-outline-variant/30"></span>
-                                        <button className="flex items-center gap-2 text-secondary hover:text-primary transition-colors">
-                                            <span className="text-[0.75rem] font-bold uppercase tracking-wider">Filter</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Insight Row */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                    <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 relative overflow-hidden group">
-                                        <div className="relative z-10">
-                                            <p className="font-label uppercase tracking-widest text-[0.7rem] font-bold text-secondary mb-4">Total Active Weddings</p>
-                                            <h3 className="font-headline text-5xl text-primary">24</h3>
-                                            <p className="mt-4 text-[0.8rem] text-secondary flex items-center gap-1 italic">
-                                                <span className="text-green-600 text-sm font-bold mr-1">↑</span> +3 from last month
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 hidden md:block">
-                                        <p className="font-label uppercase tracking-widest text-[0.7rem] font-bold text-secondary mb-4">Upcoming This Week</p>
-                                        <h3 className="font-headline text-5xl text-primary">02</h3>
-                                        <p className="mt-4 text-[0.8rem] text-secondary">Awaiting final confirmations</p>
-                                    </div>
-                                    <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 hidden md:block">
-                                        <p className="font-label uppercase tracking-widest text-[0.7rem] font-bold text-secondary mb-4">Client Satisfaction</p>
-                                        <h3 className="font-headline text-5xl text-primary">98%</h3>
-                                        <p className="mt-4 text-[0.8rem] text-secondary italic">Editorial Benchmark: High</p>
-                                    </div>
-                                </div>
-                            </header>
-
-                            {/* Editorial Grid / Table */}
-                            <section>
-                                <div className="mb-6 flex items-center justify-between px-4">
-                                    <div className="flex gap-8">
-                                        <button className="text-[0.75rem] font-bold uppercase tracking-wider text-primary border-b-2 border-primary pb-2">All Clients</button>
-                                        <button className="text-[0.75rem] font-bold uppercase tracking-wider text-secondary hover:text-primary transition-colors pb-2">In Progress</button>
-                                        <button className="text-[0.75rem] font-bold uppercase tracking-wider text-secondary hover:text-primary transition-colors pb-2">Live</button>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    {(useMocks ? mockClients : realClients).filter(c => c.slug.includes(searchQuery.toLowerCase())).map(client => (
-                                        <div key={client.id} className="group bg-surface-container-lowest hover:bg-surface-container-low transition-all duration-300 rounded-xl p-6 flex items-center justify-between border border-transparent hover:border-outline-variant/20 shadow-sm cursor-pointer" onClick={async () => {
-                                            setIsLoadingClientDetails(true);
-                                            try {
-                                                const res = await fetch(`/api/invitation?slug=${client.slug}`);
-                                                if (res.ok) {
-                                                    const dbData = await res.json();
-                                                    if (dbData) {
-                                                        setThemeSelection(getThemeSelectionFromTheme(dbData.theme as Theme | null));
-                                                        setLiveData({
-                                                            ...defaultData,
-                                                            ...dbData,
-                                                            theme: dbData.theme || THEME_PRESETS.emerald,
-                                                            navigationPages: mergeNavigationPages((dbData as InvitationData).navigationPages)
-                                                        });
-                                                    } else {
-                                                        setLiveData({ ...defaultData, slug: client.slug, bride: client.bride, groom: client.groom });
-                                                    }
-                                                    setHeroImageFile(null); setHeroImagePreview(null);
-                                                    setMetadataImageFile(null); setMetadataImagePreview(null);
-                                                    setHeroVideoFile(null); setHeroVideoPreview(null);
-                                                    setHeroLogoFile(null); setHeroLogoPreview(null);
-                                                    setAudioFile(null); setAudioPreview(null);
-                                                    const { data: { session: s } } = await supabase.auth.getSession();
-                                                    const token = s?.access_token;
-                                                    const exp = await getExpensesBySlug(client.slug, token);
-                                                    setExpenses(exp);
-                                                    const seatData = await getSeatingData(client.slug, token);
-                                                    setSeatingTables(seatData.tables);
-                                                    setSeatingGuests(seatData.guests);
-                                                    setActiveTab('builder'); // Transition to Builder
-                                                }
-                                            } catch (e) { console.error(e); }
-                                            finally {
-                                                setIsLoadingClientDetails(false);
-                                            }
-                                        }}>
-                                            <div className="flex items-center gap-6 w-[60%] md:w-1/3">
-                                                <div className="w-16 h-16 rounded-full bg-surface-container-high overflow-hidden flex-shrink-0 border border-outline-variant/10">
-                                                    {client.heroImage ? (
-                                                        <img src={client.heroImage} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt="Hero" />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-outline-variant"><Users className="w-6 h-6 opacity-40" /></div>
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-headline text-xl text-primary">{client.bride} & {client.groom}</h4>
-                                                    <p className="font-body text-xs text-secondary mt-1 tracking-widest lowercase">slug: /{client.slug}</p>
-                                                </div>
-                                            </div>
-                                            <div className="hidden md:block w-1/4">
-                                                <span className="font-label uppercase tracking-widest text-[0.65rem] font-bold text-secondary block mb-1">Wedding Date</span>
-                                                <p className="font-body text-sm font-semibold text-primary">{client.date || 'TBD'}</p>
-                                            </div>
-                                            <div className="hidden md:block w-1/6">
-                                                <span className="font-label uppercase tracking-widest text-[0.65rem] font-bold text-secondary block mb-1">Status</span>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-full bg-blue-400"></span>
-                                                    <span className="font-body text-xs font-bold text-primary">In Progress</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-3">
-                                                <button className="p-3 rounded-full text-secondary hover:bg-surface-container-highest hover:text-primary transition-all">
-                                                    <ChevronRight className="w-5 h-5" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </section>
-                        </div>
+                        <ClientList
+                            clients={useMocks ? mockClients : realClients}
+                            searchQuery={searchQuery}
+                            onSearchChange={setSearchQuery}
+                            onSelectClient={async (client) => {
+                                setIsLoadingClientDetails(true);
+                                try {
+                                    const res = await fetch(`/api/invitation?slug=${client.slug}`);
+                                    if (res.ok) {
+                                        const dbData = await res.json();
+                                        if (dbData) {
+                                            setThemeSelection(getThemeSelectionFromTheme(dbData.theme as Theme | null));
+                                            setLiveData({
+                                                ...defaultData,
+                                                ...dbData,
+                                                theme: dbData.theme || THEME_PRESETS.emerald,
+                                                navigationPages: mergeNavigationPages((dbData as InvitationData).navigationPages)
+                                            });
+                                        } else {
+                                            setLiveData({ ...defaultData, slug: client.slug, bride: client.bride, groom: client.groom });
+                                        }
+                                        setHeroImageFile(null); setHeroImagePreview(null);
+                                        setMetadataImageFile(null); setMetadataImagePreview(null);
+                                        setHeroVideoFile(null); setHeroVideoPreview(null);
+                                        setHeroLogoFile(null); setHeroLogoPreview(null);
+                                        setAudioFile(null); setAudioPreview(null);
+                                        const { data: { session: s } } = await supabase.auth.getSession();
+                                        const token = s?.access_token;
+                                        const exp = await getExpensesBySlug(client.slug, token);
+                                        setExpenses(exp);
+                                        const seatData = await getSeatingData(client.slug, token);
+                                        setSeatingTables(seatData.tables);
+                                        setSeatingGuests(seatData.guests);
+                                        setActiveTab('builder'); // Transition to Builder
+                                    }
+                                } catch (e) { console.error(e); }
+                                finally {
+                                    setIsLoadingClientDetails(false);
+                                }
+                            }}
+                        />
                     )}
 
                     {(activeTab === 'builder' || isCreatingClient) && (
                         <>
                             {/* Onboard Client Form Native */}
                             {isCreatingClient && (
-                                <div className="absolute inset-0 z-50 flex flex-col overflow-y-auto bg-surface backdrop-blur-sm px-6 py-12 md:py-24 animate-in fade-in duration-300">
-                                    <div className="max-w-4xl mx-auto w-full space-y-16">
-
-                                        <div className="flex justify-between items-start">
-                                            <div className="space-y-4">
-                                                <h2 className="text-5xl font-headline text-primary tracking-tight">New Client Instance</h2>
-                                                <p className="text-lg text-secondary max-w-xl leading-relaxed">This securely generates a new user account with client permissions and binds it to a unique URL slug.</p>
-                                            </div>
-                                            <button onClick={() => setIsCreatingClient(false)} className="text-secondary hover:text-primary font-bold uppercase tracking-widest text-sm p-4">✕ Close</button>
-                                        </div>
-
-                                        {onboardMessage && (
-                                            <div className={`p-4 text-sm rounded-xl border ${onboardMessage.type === 'error' ? 'bg-error-container/20 text-error border-error/30' : 'bg-primary-fixed/30 text-primary border-primary/20'}`}>
-                                                {onboardMessage.text}
-                                            </div>
-                                        )}
-
-                                        <form onSubmit={handleCreateClient} className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                                            <div className="space-y-3">
-                                                <label className="text-[0.75rem] font-label font-bold uppercase tracking-[0.1em] text-secondary ml-1">Client Email</label>
-                                                <input type="email" required value={newClientForm.email} onChange={e => setNewClientForm({ ...newClientForm, email: e.target.value })} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-6 py-5 text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-lg font-body" placeholder="client@example.com" />
-                                            </div>
-                                            <div className="space-y-3 relative">
-                                                <label className="text-[0.75rem] font-label font-bold uppercase tracking-[0.1em] text-secondary ml-1">Assigned Wedding Slug</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-outline-variant text-lg font-body">oui-do.com/</span>
-                                                    <input
-                                                        type="text"
-                                                        required
-                                                        value={newClientForm.slug}
-                                                        onChange={e => {
-                                                            setNewClientForm({ ...newClientForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') });
-                                                            setShowSlugDropdown(true);
-                                                        }}
-                                                        onFocus={() => setShowSlugDropdown(true)}
-                                                        onBlur={() => setTimeout(() => setShowSlugDropdown(false), 200)}
-                                                        className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg pl-[8.5rem] pr-6 py-5 text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-lg font-body"
-                                                        placeholder="maya-and-john"
-                                                    />
-                                                </div>
-
-                                                {/* Suggestions Dropdown */}
-                                                {showSlugDropdown && (
-                                                    <div className="absolute top-[100%] left-0 mt-2 w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-[60] font-body">
-                                                        {(useMocks ? mockClients : realClients)
-                                                            .filter(c => c.slug.includes(newClientForm.slug.toLowerCase()))
-                                                            .map(c => (
-                                                                <button
-                                                                    key={c.id}
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setNewClientForm({ ...newClientForm, slug: c.slug });
-                                                                        setShowSlugDropdown(false);
-                                                                    }}
-                                                                    className="w-full text-left px-6 py-3 text-sm hover:bg-surface-container-low flex justify-between items-center border-b border-surface-variant/50 last:border-0 transition-colors"
-                                                                >
-                                                                    <span className="font-medium text-primary text-base">{c.slug}</span>
-                                                                    <span className="text-secondary">{c.bride} & {c.groom}</span>
-                                                                </button>
-                                                            ))}
-                                                        {newClientForm.slug && !(useMocks ? mockClients : realClients).some(c => c.slug === newClientForm.slug) && (
-                                                            <div className="px-6 py-4 text-sm text-secondary italic border-t border-surface-variant/50">
-                                                                Create new slug: "{newClientForm.slug}"
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className="space-y-3 md:col-span-2">
-                                                <label className="text-[0.75rem] font-label font-bold uppercase tracking-[0.1em] text-secondary ml-1">Temporary Password</label>
-                                                <input type="password" required value={newClientForm.password} onChange={e => setNewClientForm({ ...newClientForm, password: e.target.value })} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-6 py-5 text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-lg font-body" placeholder="••••••••••••" minLength={6} />
-                                                <p className="text-xs text-secondary/70 mt-3 px-1">We recommend a secure, auto-generated string for the first login.</p>
-                                            </div>
-
-                                            <div className="md:col-span-2 flex flex-col md:flex-row items-center gap-8 pt-10 border-t border-surface-container-high">
-                                                <button type="submit" disabled={onboardLoading} style={{ background: 'linear-gradient(135deg, #00150F 0%, #062C22 100%)' }} className="w-full md:w-auto px-12 py-5 text-on-primary rounded-full text-sm font-label font-bold uppercase tracking-widest shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity disabled:opacity-50">
-                                                    {onboardLoading ? 'Provisioning...' : 'Create Account'}
-                                                </button>
-                                                <button type="button" onClick={() => setIsCreatingClient(false)} className="text-sm font-label font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors">
-                                                    Cancel & Return
-                                                </button>
-                                            </div>
-                                        </form>
-
-                                        <div className="mt-32 opacity-20 flex justify-center pb-24">
-                                            <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=2669&auto=format&fit=crop" className="w-64 h-64 object-cover rounded-full filter grayscale sepia mix-blend-multiply" alt="Elegant flair" />
-                                        </div>
-                                    </div>
-                                </div>
+                                <NewClientForm
+                                    form={newClientForm}
+                                    setForm={setNewClientForm}
+                                    loading={onboardLoading}
+                                    message={onboardMessage}
+                                    showSlugDropdown={showSlugDropdown}
+                                    setShowSlugDropdown={setShowSlugDropdown}
+                                    clients={useMocks ? mockClients : realClients}
+                                    onSubmit={handleCreateClient}
+                                    onCancel={() => setIsCreatingClient(false)}
+                                />
                             )}
 
                             {/* Center Column - Builder Form */}
@@ -1223,375 +886,81 @@ export default function AdminDashboard() {
                                             </div>
                                         </div>
 
-                                        {/* Section 01: The Couple */}
-                                        <section>
-                                            <div className="flex justify-between items-center mb-8">
-                                                <h2 className="text-2xl font-headline text-primary">The Couple</h2>
-                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 01</span>
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Partner One Name</label>
-                                                    <input required type="text" name="bride" value={liveData.bride} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Partner Two Name</label>
-                                                    <input required type="text" name="groom" value={liveData.groom} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                </div>
-                                            </div>
-                                        </section>
+                                        <CoupleSection bride={liveData.bride} groom={liveData.groom} onChange={handleInputChange} />
 
-                                        {/* Section 02: HERO Section */}
-                                        <section>
-                                            <div className="flex justify-between items-center mb-8">
-                                                <h2 className="text-2xl font-headline text-primary">HERO Section</h2>
-                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 02</span>
-                                            </div>
-                                            <div className="bg-surface-container-low p-8 rounded-xl space-y-6">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Event Hero Image</label>
-                                                    {heroImagePreview || liveData.heroImage ? (
-                                                        <div className="mb-2">
-                                                            <img src={heroImagePreview || liveData.heroImage} alt="Hero Preview" className="h-24 w-auto rounded-md object-cover border border-outline-variant/20" />
-                                                        </div>
-                                                    ) : null}
-                                                    <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setHeroImageFile, setHeroImagePreview, heroImagePreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Hero Video Render</label>
-                                                    {heroVideoPreview || liveData.heroVideo ? (
-                                                        <div className="mb-2 text-sm text-primary font-medium break-all">
-                                                            Current: {heroVideoFile?.name || liveData.heroVideo}
-                                                        </div>
-                                                    ) : null}
-                                                    <input type="file" accept="video/mp4,video/*" onChange={(e) => handleFileChange(e, setHeroVideoFile, setHeroVideoPreview, heroVideoPreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Metadata Share Image (Open Graph / Twitter)</label>
-                                                    {metadataImagePreview || liveData.metadataImageUrl ? (
-                                                        <div className="mb-2">
-                                                            <img src={metadataImagePreview || liveData.metadataImageUrl} alt="Metadata Share Preview" className="h-24 w-auto rounded-md object-cover border border-outline-variant/20" />
-                                                        </div>
-                                                    ) : null}
-                                                    <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setMetadataImageFile, setMetadataImagePreview, metadataImagePreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
-                                                    <p className="text-xs text-secondary">If empty, invite metadata falls back to Hero image, then default image.</p>
-                                                </div>
+                                        <HeroSection
+                                            heroImageUrl={liveData.heroImage || ''}
+                                            heroImagePreview={heroImagePreview}
+                                            onHeroImageChange={(e) => handleFileChange(e, setHeroImageFile, setHeroImagePreview, heroImagePreview)}
+                                            heroVideoUrl={liveData.heroVideo || ''}
+                                            heroVideoPreview={heroVideoPreview}
+                                            heroVideoFile={heroVideoFile}
+                                            onHeroVideoChange={(e) => handleFileChange(e, setHeroVideoFile, setHeroVideoPreview, heroVideoPreview)}
+                                            metadataImageUrl={liveData.metadataImageUrl || ''}
+                                            metadataImagePreview={metadataImagePreview}
+                                            onMetadataImageChange={(e) => handleFileChange(e, setMetadataImageFile, setMetadataImagePreview, metadataImagePreview)}
+                                            showHeroLogo={liveData.showHeroLogo || false}
+                                            onToggleHeroLogo={(checked) => setLiveData(prev => ({ ...prev, showHeroLogo: checked }))}
+                                            heroLogoUrl={liveData.heroLogoUrl || ''}
+                                            heroLogoPreview={heroLogoPreview}
+                                            onHeroLogoChange={(e) => handleFileChange(e, setHeroLogoFile, setHeroLogoPreview, heroLogoPreview)}
+                                            showHeroDate={liveData.showHeroDate !== false}
+                                            onToggleHeroDate={(checked) => setLiveData(prev => ({ ...prev, showHeroDate: checked }))}
+                                            themeSelection={themeSelection}
+                                            onThemeChange={handleThemeChange}
+                                            rawPrimary={(liveData.theme as any)?.rawPrimary || '#1a1a1a'}
+                                            rawAccent={(liveData.theme as any)?.rawAccent || '#9ca3af'}
+                                            rawBackground={(liveData.theme as any)?.rawBackground || '#ffffff'}
+                                            onCustomColorChange={handleCustomThemeColorChange}
+                                        />
 
-                                                <div className="flex items-center justify-between mt-6">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Hero Render Customization</label>
-                                                    <div className="flex gap-4">
-                                                        <label className="relative inline-flex items-center cursor-pointer">
-                                                            <input
-                                                                type="checkbox"
-                                                                name="showHeroLogo"
-                                                                className="sr-only peer"
-                                                                checked={liveData.showHeroLogo || false}
-                                                                onChange={(e) => setLiveData(prev => ({ ...prev, showHeroLogo: e.target.checked }))}
-                                                            />
-                                                            <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                                            <span className="ms-3 text-[0.75rem] font-label uppercase text-primary font-bold">Graphic Overlay</span>
-                                                        </label>
-                                                        <label className="relative inline-flex items-center cursor-pointer">
-                                                            <input
-                                                                type="checkbox"
-                                                                name="showHeroDate"
-                                                                className="sr-only peer"
-                                                                checked={liveData.showHeroDate !== false}
-                                                                onChange={(e) => setLiveData(prev => ({ ...prev, showHeroDate: e.target.checked }))}
-                                                            />
-                                                            <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                                            <span className="ms-3 text-[0.75rem] font-label uppercase text-primary font-bold">Date Ribbon</span>
-                                                        </label>
-                                                    </div>
-                                                </div>
+                                        <FormalInvitationSection
+                                            showFormalInvitation={liveData.showFormalInvitation || false}
+                                            onToggleFormalInvitation={(checked) => setLiveData(prev => ({ ...prev, showFormalInvitation: checked }))}
+                                            formalImageUrl={liveData.formalInvitationImage || ''}
+                                            formalImagePreview={formalImagePreview}
+                                            formalImageFile={formalImageFile}
+                                            onFormalImageChange={(e) => handleFileChange(e, setFormalImageFile, setFormalImagePreview, formalImagePreview)}
+                                            detailsBgUrl={liveData.detailsBackgroundUrl || ''}
+                                            detailsBgPreview={detailsBgPreview}
+                                            onDetailsBgChange={(e) => handleFileChange(e, setDetailsBgFile, setDetailsBgPreview, detailsBgPreview)}
+                                            audioUrl={liveData.audioUrl || ''}
+                                            audioPreview={audioPreview}
+                                            audioFile={audioFile}
+                                            onAudioChange={(e) => handleFileChange(e, setAudioFile, setAudioPreview, audioPreview)}
+                                        />
 
-                                                {liveData.showHeroLogo && (
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Hero Logo (PNG Formatted)</label>
-                                                        {heroLogoPreview || liveData.heroLogoUrl ? (
-                                                            <div className="mb-2 bg-surface-container-highest p-2 rounded-md inline-block">
-                                                                <img src={heroLogoPreview || liveData.heroLogoUrl} alt="Logo Preview" className="h-16 w-auto object-contain" />
-                                                            </div>
-                                                        ) : null}
-                                                        <input type="file" accept="image/png" onChange={(e) => handleFileChange(e, setHeroLogoFile, setHeroLogoPreview, heroLogoPreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
-                                                    </div>
-                                                )}
+                                        <PreCeremonySection
+                                            mediaUrl={liveData.preCeremonyMedia || ''}
+                                            mediaPreview={preCeremonyMediaPreview}
+                                            file={preCeremonyMediaFile}
+                                            onFileChange={(e) => handleFileChange(e, setPreCeremonyMediaFile, setPreCeremonyMediaPreview, preCeremonyMediaPreview)}
+                                        />
 
-                                                <div className="space-y-1.5 pt-4 border-t border-outline-variant/20">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Styling Theme Token</label>
-                                                    <select name="themeSelection" value={themeSelection} onChange={handleThemeChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body font-semibold">
-                                                        <option value="emerald">Emerald & Stone (Default Pattern)</option>
-                                                        <option value="slate">Slate & Monochrome</option>
-                                                        <option value="rose">Rose & Blush</option>
-                                                        <option value="custom">Custom Brand Colors</option>
-                                                    </select>
-                                                    {themeSelection === 'custom' && (
-                                                        <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-outline-variant/10">
-                                                            <div className="space-y-1.5 flex flex-col">
-                                                                <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Primary Text</label>
-                                                                <input type="color" value={(liveData.theme as any)?.rawPrimary || '#1a1a1a'} onChange={(e) => handleCustomThemeColorChange('rawPrimary', e.target.value)} className="w-full h-10 rounded-md cursor-pointer" />
-                                                            </div>
-                                                            <div className="space-y-1.5 flex flex-col">
-                                                                <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Accent / Brand</label>
-                                                                <input type="color" value={(liveData.theme as any)?.rawAccent || '#9ca3af'} onChange={(e) => handleCustomThemeColorChange('rawAccent', e.target.value)} className="w-full h-10 rounded-md cursor-pointer" />
-                                                            </div>
-                                                            <div className="space-y-1.5 flex flex-col">
-                                                                <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Global Background</label>
-                                                                <input type="color" value={(liveData.theme as any)?.rawBackground || '#ffffff'} onChange={(e) => handleCustomThemeColorChange('rawBackground', e.target.value)} className="w-full h-10 rounded-md cursor-pointer" />
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </section>
+                                        <HousesSection
+                                            showHouses={liveData.showHouses || false}
+                                            housesData={liveData.housesData}
+                                            onToggle={(checked) => setLiveData(prev => ({ ...prev, showHouses: checked }))}
+                                            onFieldChange={(field, value) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, [field]: value } }))}
+                                        />
 
-                                        {/* Section 03: Formal Invitation */}
-                                        <section>
-                                            <div className="flex justify-between items-center mb-8">
-                                                <div className="flex items-center gap-4">
-                                                    <h2 className="text-2xl font-headline text-primary">Formal Invitation</h2>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            name="showFormalInvitation"
-                                                            className="sr-only peer"
-                                                            checked={liveData.showFormalInvitation || false}
-                                                            onChange={(e) => setLiveData(prev => ({ ...prev, showFormalInvitation: e.target.checked }))}
-                                                        />
-                                                        <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                                        <span className="ms-3 text-[0.75rem] font-label uppercase text-primary tracking-widest font-bold">Formal Image Override</span>
-                                                    </label>
-                                                </div>
-                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 03</span>
-                                            </div>
-                                            <div className="bg-surface-container-low p-8 rounded-xl space-y-6">
-                                                {liveData.showFormalInvitation && (
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Formal Invitation Media</label>
-                                                        {formalImagePreview || liveData.formalInvitationImage ? (
-                                                            <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block relative">
-                                                                {(formalImagePreview || liveData.formalInvitationImage || '').match(/\.(mp4|webm|ogg|mov)$/i) || formalImageFile?.type.startsWith('video/') ? (
-                                                                    <video src={formalImagePreview || liveData.formalInvitationImage} className="h-48 w-auto object-cover" controls playsInline muted />
-                                                                ) : (
-                                                                    <img src={formalImagePreview || liveData.formalInvitationImage} alt="Formal Invite" className="h-32 w-auto object-cover" />
-                                                                )}
-                                                            </div>
-                                                        ) : null}
-                                                        <input type="file" accept="image/*,video/mp4,video/quicktime,video/webm,video/*" onChange={(e) => handleFileChange(e, setFormalImageFile, setFormalImagePreview, formalImagePreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
-                                                        <p className="text-[10px] text-secondary/70 mt-2 font-label tracking-widest uppercase">Provides a full-screen media fallback instead of native UI text blocks.</p>
-                                                    </div>
-                                                )}
+                                        <CeremonyDetailsSection
+                                            date={liveData.date}
+                                            time={liveData.time}
+                                            venue={liveData.venue}
+                                            location={liveData.location}
+                                            mapLink={liveData.mapLink || ''}
+                                            onChange={handleInputChange}
+                                        />
 
-                                                {!liveData.showFormalInvitation && (
-                                                    <div className="space-y-6">
-                                                        <div className="space-y-1.5">
-                                                            <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Event Specific Detail Texture Background Image</label>
-                                                            {detailsBgPreview || liveData.detailsBackgroundUrl ? (
-                                                                <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block">
-                                                                    <img src={detailsBgPreview || liveData.detailsBackgroundUrl} alt="Details Bg" className="h-24 w-auto object-cover" />
-                                                                </div>
-                                                            ) : null}
-                                                            <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setDetailsBgFile, setDetailsBgPreview, detailsBgPreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                <div className="space-y-1.5 pt-4 border-t border-outline-variant/20">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Background Audio</label>
-                                                    {audioPreview || liveData.audioUrl ? (
-                                                        <div className="mb-2 text-sm text-primary font-medium break-all">
-                                                            Current: {audioFile?.name || liveData.audioUrl}
-                                                        </div>
-                                                    ) : null}
-                                                    <input type="file" accept="audio/*" onChange={(e) => handleFileChange(e, setAudioFile, setAudioPreview, audioPreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
-                                                </div>
-                                            </div>
-                                        </section>
-
-                                        {/* Section 04: Pre-Ceremony Media */}
-                                        <section>
-                                            <div className="flex justify-between items-center mb-8">
-                                                <h2 className="text-2xl font-headline text-primary">Pre-Ceremony Feature</h2>
-                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 04</span>
-                                            </div>
-                                            <div className="bg-surface-container-low p-8 rounded-xl space-y-6">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Pre-Ceremony Media</label>
-                                                    {preCeremonyMediaPreview || liveData.preCeremonyMedia ? (
-                                                        <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block relative">
-                                                            {(preCeremonyMediaPreview || liveData.preCeremonyMedia || '').match(/\.(mp4|webm|ogg|mov)$/i) || preCeremonyMediaFile?.type.startsWith('video/') ? (
-                                                                <video src={preCeremonyMediaPreview || liveData.preCeremonyMedia} className="h-48 w-auto object-cover" controls playsInline muted />
-                                                            ) : (
-                                                                <img src={preCeremonyMediaPreview || liveData.preCeremonyMedia} alt="Pre-Ceremony Feature" className="h-32 w-auto object-cover" />
-                                                            )}
-                                                        </div>
-                                                    ) : null}
-                                                    <input type="file" accept="image/*,video/mp4,video/quicktime,video/webm,video/*" onChange={(e) => handleFileChange(e, setPreCeremonyMediaFile, setPreCeremonyMediaPreview, preCeremonyMediaPreview)} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
-                                                    <p className="text-[10px] text-secondary/70 mt-2 font-label tracking-widest uppercase">Displays a full-bleed border-to-border image or video before the Ceremony Details block.</p>
-                                                </div>
-                                            </div>
-                                        </section>
-
-                                        {/* Section 04.5: The Houses */}
-                                        <section>
-                                            <div className="flex justify-between items-center mb-8">
-                                                <div className="flex items-center gap-4">
-                                                    <h2 className="text-2xl font-headline text-primary">The Houses</h2>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={liveData.showHouses || false}
-                                                            onChange={(e) => setLiveData(prev => ({ ...prev, showHouses: e.target.checked }))}
-                                                            className="sr-only peer"
-                                                        />
-                                                        <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                                        <span className="ms-3 text-[0.75rem] font-label uppercase text-primary tracking-widest font-bold">Enable Section</span>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            
-                                            {liveData.showHouses && (
-                                                <div className="space-y-12">
-                                                    {/* Bride's House */}
-                                                    <div className="space-y-6">
-                                                        <h3 className="font-headline text-lg text-primary mb-4 pb-2 border-b border-outline-variant/20">The Bride's House</h3>
-                                                        <div className="grid grid-cols-2 gap-8">
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Top Label (Optional)</label>
-                                                                <input type="text" value={liveData.housesData?.brideLabel || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, brideLabel: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="e.g. THE ESTATE OF..." />
-                                                            </div>
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Heading Override</label>
-                                                                <input type="text" value={liveData.housesData?.brideName || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, brideName: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="Defaults to The Bride's House" />
-                                                            </div>
-                                                        </div>
-                                                        <div className="space-y-1.5">
-                                                            <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Address / Location</label>
-                                                            <textarea value={liveData.housesData?.brideAddress || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, brideAddress: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 min-h-[100px] focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="128 Willow Creek Road..." />
-                                                        </div>
-                                                        <div className="grid grid-cols-2 gap-8">
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Arrival Time</label>
-                                                                <input type="text" value={liveData.housesData?.brideTime || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, brideTime: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="e.g. 2:30 PM" />
-                                                            </div>
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Map URL</label>
-                                                                <input type="url" value={liveData.housesData?.brideMapLink || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, brideMapLink: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="https://maps.google.com/..." />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Groom's House */}
-                                                    <div className="space-y-6 pt-6 border-t border-outline-variant/20">
-                                                        <h3 className="font-headline text-lg text-primary mb-4 pb-2 border-b border-outline-variant/20">The Groom's House</h3>
-                                                        <div className="grid grid-cols-2 gap-8">
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Top Label (Optional)</label>
-                                                                <input type="text" value={liveData.housesData?.groomLabel || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, groomLabel: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="e.g. THE ESTATE OF..." />
-                                                            </div>
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Heading Override</label>
-                                                                <input type="text" value={liveData.housesData?.groomName || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, groomName: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="Defaults to The Groom's House" />
-                                                            </div>
-                                                        </div>
-                                                        <div className="space-y-1.5">
-                                                            <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Address / Location</label>
-                                                            <textarea value={liveData.housesData?.groomAddress || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, groomAddress: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 min-h-[100px] focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="42 Pine Crest Ridge..." />
-                                                        </div>
-                                                        <div className="grid grid-cols-2 gap-8">
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Arrival Time</label>
-                                                                <input type="text" value={liveData.housesData?.groomTime || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, groomTime: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="e.g. 6:00 PM" />
-                                                            </div>
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Map URL</label>
-                                                                <input type="url" value={liveData.housesData?.groomMapLink || ''} onChange={(e) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, groomMapLink: e.target.value } }))} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" placeholder="https://maps.google.com/..." />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </section>
-
-                                        {/* Section 05: Ceremony Details */}
-                                        <section>
-                                            <div className="flex justify-between items-center mb-8">
-                                                <h2 className="text-2xl font-headline text-primary">Ceremony Details</h2>
-                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 05</span>
-                                            </div>
-                                            <div className="space-y-8">
-                                                <div className="grid grid-cols-2 gap-8">
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Ceremony Date</label>
-                                                        <input type="date" name="date" value={liveData.date} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                    </div>
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Starting Time</label>
-                                                        <input type="time" name="time" value={liveData.time} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Venue name</label>
-                                                    <p className="text-[0.7rem] text-secondary/80 font-body normal-case tracking-normal">
-                                                        Use a new line for an alternate script or second line (e.g. Arabic under English).
-                                                    </p>
-                                                    <textarea
-                                                        name="venue"
-                                                        value={liveData.venue}
-                                                        onChange={handleInputChange}
-                                                        rows={3}
-                                                        dir="auto"
-                                                        className="w-full min-h-[7rem] resize-y bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body leading-relaxed"
-                                                    />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Geographical Details</label>
-                                                    <input type="text" name="location" value={liveData.location} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Google Maps Itinerary URL</label>
-                                                    <input type="text" name="mapLink" value={liveData.mapLink || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                </div>
-                                            </div>
-                                        </section>
-
-                                        <section>
-                                            <div className="flex justify-between items-center mb-8">
-                                                <h2 className="text-2xl font-headline text-primary">Formal Reception</h2>
-                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 06</span>
-                                            </div>
-                                            <div className="bg-surface-container-lowest border border-outline-variant/20 p-8 rounded-xl space-y-6">
-                                                <div className="grid grid-cols-2 gap-8">
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception Time</label>
-                                                        <input type="time" name="receptionTime" value={liveData.receptionTime || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                    </div>
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception venue</label>
-                                                        <textarea
-                                                            name="receptionVenue"
-                                                            value={liveData.receptionVenue || ''}
-                                                            onChange={handleInputChange}
-                                                            rows={3}
-                                                            dir="auto"
-                                                            className="w-full min-h-[7rem] resize-y bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body leading-relaxed"
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception Physical Address</label>
-                                                    <input type="text" name="receptionAddress" value={liveData.receptionAddress || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Reception Google Maps Link</label>
-                                                    <input type="text" name="receptionLocation" value={liveData.receptionLocation || ''} onChange={handleInputChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Welcome Note</label>
-                                                    <textarea name="message" value={liveData.message} onChange={handleInputChange} rows={3} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body resize-none" />
-                                                </div>
-                                            </div>
-                                        </section>
+                                        <FormalReceptionSection
+                                            receptionTime={liveData.receptionTime || ''}
+                                            receptionVenue={liveData.receptionVenue || ''}
+                                            receptionAddress={liveData.receptionAddress || ''}
+                                            receptionLocation={liveData.receptionLocation || ''}
+                                            message={liveData.message}
+                                            onChange={handleInputChange}
+                                        />
 
                                         {/* Section 06: Custom Editor */}
                                         <section>
@@ -1614,632 +983,68 @@ export default function AdminDashboard() {
                                             ) : (
                                                 <div className="space-y-8">
                                                     {liveData.customSections?.map((section, idx) => (
-                                                        <div key={section.id} className="p-8 border border-outline-variant/20 rounded-2xl bg-surface-container-lowest shadow-sm space-y-6 relative group overflow-hidden">
-                                                            <div className="absolute top-0 left-0 w-2 h-full bg-primary/10"></div>
-                                                            <button
-                                                                onClick={() => handleRemoveSection(idx)}
-                                                                className="absolute top-6 right-6 text-secondary hover:text-error transition-colors"
-                                                                title="Remove Script"
-                                                            >
-                                                                <span className="text-xs font-label uppercase tracking-widest font-bold">Remove</span>
-                                                            </button>
-
-                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-surface-container-high pb-4 gap-4 pr-20">
-                                                                <span className="text-[0.75rem] font-label font-bold text-primary uppercase tracking-[0.1em]">Editorial Block 0{idx + 1}</span>
-                                                                <div className="flex flex-wrap items-center gap-4">
-                                                                    <label className="flex items-center gap-2 cursor-pointer">
-                                                                        <input 
-                                                                            type="checkbox" 
-                                                                            checked={section.showOverlay !== false} 
-                                                                            onChange={(e) => handleSectionChange(idx, 'showOverlay', e.target.checked)}
-                                                                            className="sr-only peer"
-                                                                        />
-                                                                        <div className="w-8 h-4 bg-surface-container-highest rounded-full peer peer-checked:bg-primary relative transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
-                                                                        <span className="text-[0.65rem] font-label uppercase text-secondary font-bold">Overlay</span>
-                                                                    </label>
-                                                                    <label className="flex items-center gap-2 cursor-pointer">
-                                                                        <input 
-                                                                            type="checkbox" 
-                                                                            checked={section.isFullBleed === true} 
-                                                                            onChange={(e) => handleSectionChange(idx, 'isFullBleed', e.target.checked)}
-                                                                            className="sr-only peer"
-                                                                        />
-                                                                        <div className="w-8 h-4 bg-surface-container-highest rounded-full peer peer-checked:bg-primary relative transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
-                                                                        <span className="text-[0.65rem] font-label uppercase text-secondary font-bold">Full Bleed</span>
-                                                                    </label>
-                                                                    <label className="flex items-center gap-2 cursor-pointer">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={section.backgroundType === 'slideshow'}
-                                                                            onChange={(e) => handleSlideshowToggle(idx, section.id, e.target.checked)}
-                                                                            className="sr-only peer"
-                                                                        />
-                                                                        <div className="w-8 h-4 bg-surface-container-highest rounded-full peer peer-checked:bg-primary relative transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
-                                                                        <span className="text-[0.65rem] font-label uppercase text-secondary font-bold">Slideshow</span>
-                                                                    </label>
-                                                                    <select
-                                                                        value={section.overlayType}
-                                                                        onChange={(e) => handleSectionChange(idx, 'overlayType', e.target.value)}
-                                                                        className="text-[0.75rem] font-label uppercase tracking-widest font-medium border border-outline-variant/30 rounded-md px-3 py-1.5 text-on-surface focus:outline-none focus:border-primary bg-surface"
-                                                                    >
-                                                                        <option value="text">Textual Mode</option>
-                                                                        <option value="image">Graphic Mode</option>
-                                                                        <option value="none">No Content (Clean Media)</option>
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-
-                                                            {section.backgroundType === 'slideshow' ? (
-                                                                <div className="space-y-4">
-                                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Slideshow images</label>
-                                                                    <p className="text-xs text-secondary">Add multiple images. Use arrows or autoplay on the public invite.</p>
-                                                                    <div className="flex flex-wrap gap-3">
-                                                                        {(section.slideshowUrls || []).map((url, si) => (
-                                                                            <div key={`slide-saved-${section.id}-${si}`} className="relative group/thumb">
-                                                                                <img src={url} alt="" className="h-20 w-20 object-cover rounded-md border border-outline-variant/20" />
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => handleSlideshowRemoveSlide(idx, si)}
-                                                                                    className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-error text-white text-xs font-bold leading-6 shadow opacity-90 hover:opacity-100"
-                                                                                    title="Remove slide"
-                                                                                >
-                                                                                    ×
-                                                                                </button>
-                                                                            </div>
-                                                                        ))}
-                                                                        {(customFiles[section.id]?.slideshowPreviews || []).map((p, pi) => {
-                                                                            const combinedIdx = (section.slideshowUrls || []).length + pi;
-                                                                            return (
-                                                                                <div key={`slide-pending-${section.id}-${pi}`} className="relative group/thumb">
-                                                                                    <img src={p} alt="" className="h-20 w-20 object-cover rounded-md border border-primary/30" />
-                                                                                    <button
-                                                                                        type="button"
-                                                                                        onClick={() => handleSlideshowRemoveSlide(idx, combinedIdx)}
-                                                                                        className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-error text-white text-xs font-bold leading-6 shadow opacity-90 hover:opacity-100"
-                                                                                        title="Remove slide"
-                                                                                    >
-                                                                                        ×
-                                                                                    </button>
-                                                                                </div>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                    <input
-                                                                        type="file"
-                                                                        accept="image/*"
-                                                                        multiple
-                                                                        onChange={(e) => handleSlideshowFilesAdd(section.id, e)}
-                                                                        className="w-full bg-surface border-outline-variant/30 border rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90"
-                                                                    />
-                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                                        <div className="space-y-1.5">
-                                                                            <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Interval (seconds)</label>
-                                                                            <input
-                                                                                type="number"
-                                                                                min={2}
-                                                                                max={60}
-                                                                                value={section.slideshowIntervalSec ?? 5}
-                                                                                onChange={(e) => {
-                                                                                    const v = parseInt(e.target.value, 10);
-                                                                                    handleSectionChange(
-                                                                                        idx,
-                                                                                        'slideshowIntervalSec',
-                                                                                        Number.isFinite(v) ? Math.min(60, Math.max(2, v)) : 5
-                                                                                    );
-                                                                                }}
-                                                                                className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 text-on-surface font-body"
-                                                                            />
-                                                                        </div>
-                                                                        <label className="flex items-center gap-2 cursor-pointer mt-6 sm:mt-8">
-                                                                            <input
-                                                                                type="checkbox"
-                                                                                checked={section.slideshowAutoplay !== false}
-                                                                                onChange={(e) => handleSectionChange(idx, 'slideshowAutoplay', e.target.checked)}
-                                                                                className="rounded border-outline-variant"
-                                                                            />
-                                                                            <span className="text-[0.75rem] font-label uppercase text-secondary font-bold">Autoplay</span>
-                                                                        </label>
-                                                                    </div>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="space-y-1.5">
-                                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Cinematic Background Media (Image/Video)</label>
-                                                                    {customFiles[section.id]?.bgPreview || section.backgroundUrl ? (
-                                                                        <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block bg-black relative">
-                                                                            {section.backgroundType === 'video' || (section.backgroundUrl || '').match(/\.(mp4|webm|ogg|mov)$/i) || customFiles[section.id]?.bgFile?.type.startsWith('video/') ? (
-                                                                                <video src={customFiles[section.id]?.bgPreview || section.backgroundUrl} className="h-24 w-auto object-cover opacity-80" muted playsInline />
-                                                                            ) : (
-                                                                                <img src={customFiles[section.id]?.bgPreview || section.backgroundUrl} alt={`Custom bg ${idx}`} className="h-24 w-auto object-cover opacity-80" />
-                                                                            )}
-                                                                        </div>
-                                                                    ) : null}
-                                                                    <input
-                                                                        type="file"
-                                                                        accept="image/*,video/*"
-                                                                        onChange={(e) => handleCustomFileChange(e, section.id, 'bg')}
-                                                                        className="w-full bg-surface border-outline-variant/30 border rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90"
-                                                                    />
-                                                                </div>
-                                                            )}
-
-                                                            {section.overlayType === 'text' ? (
-                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                                    <div className="md:col-span-2 space-y-1.5">
-                                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Editorial Script content</label>
-                                                                        <textarea
-                                                                            value={section.textContent || ''}
-                                                                            onChange={(e) => handleSectionChange(idx, 'textContent', e.target.value)}
-                                                                            rows={2}
-                                                                            className="w-full bg-surface border-outline-variant/30 border rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body resize-none"
-                                                                        />
-                                                                    </div>
-                                                                    <div className="space-y-1.5">
-                                                                        <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Typography Style</label>
-                                                                        <select
-                                                                            value={section.fontFamily || 'font-sans'}
-                                                                            onChange={(e) => handleSectionChange(idx, 'fontFamily', e.target.value)}
-                                                                            className="w-full bg-surface border-outline-variant/30 border rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body"
-                                                                        >
-                                                                            <option value="font-sans">Modern Sans</option>
-                                                                            <option value="font-serif">Elegant Serif</option>
-                                                                            <option value="font-script">Signature Script</option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="space-y-1.5">
-                                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Foreground Transparency Graphic (PNG)</label>
-                                                                    {customFiles[section.id]?.overlayPreview || section.overlayImageUrl ? (
-                                                                        <div className="mb-2 bg-surface-container-highest p-2 rounded-md inline-block">
-                                                                            <img src={customFiles[section.id]?.overlayPreview || section.overlayImageUrl} alt={`Overlay ${idx}`} className="h-16 w-auto object-contain" />
-                                                                        </div>
-                                                                    ) : null}
-                                                                    <input
-                                                                        type="file"
-                                                                        accept="image/png"
-                                                                        onChange={(e) => handleCustomFileChange(e, section.id, 'overlay')}
-                                                                        className="w-full bg-surface border-outline-variant/30 border rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90"
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                                        <CustomSectionBlock
+                                                            key={section.id}
+                                                            section={section}
+                                                            idx={idx}
+                                                            files={customFiles[section.id]}
+                                                            onSectionChange={handleSectionChange}
+                                                            onRemove={handleRemoveSection}
+                                                            onSlideshowToggle={handleSlideshowToggle}
+                                                            onSlideshowFilesAdd={handleSlideshowFilesAdd}
+                                                            onSlideshowRemoveSlide={handleSlideshowRemoveSlide}
+                                                            onCustomFileChange={handleCustomFileChange}
+                                                        />
                                                     ))}
                                                 </div>
                                             )}
                                         </section>
 
-                                        {/* Section 07: Registry Blocks */}
-                                        <section>
-                                            <div className="flex justify-between items-center mb-8">
-                                                <h2 className="text-2xl font-headline text-primary">Registry Details</h2>
-                                                <div className="flex gap-2">
-                                                    <button type="button" onClick={() => handleAddGiftOption('bank')} className="text-[0.75rem] bg-surface-container font-label uppercase text-primary hover:bg-surface-container-high px-3 py-1.5 rounded transition-colors flex items-center gap-1">
-                                                        <Plus className="w-3 h-3" /> Bank
-                                                    </button>
-                                                    <button type="button" onClick={() => handleAddGiftOption('mobile')} className="text-[0.75rem] bg-surface-container font-label uppercase text-primary hover:bg-surface-container-high px-3 py-1.5 rounded transition-colors flex items-center gap-1">
-                                                        <Plus className="w-3 h-3" /> Mobile
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div className="bg-surface-container-latest p-8 space-y-6">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Message & Gratitude Tone</label>
-                                                    <textarea name="giftMessage" value={liveData.giftMessage || ''} onChange={handleInputChange} rows={2} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body resize-none" />
-                                                </div>
+                                        <GiftOptionsSection
+                                            giftMessage={liveData.giftMessage || ''}
+                                            giftOptions={liveData.giftOptions || []}
+                                            onInputChange={handleInputChange}
+                                            onAddGiftOption={handleAddGiftOption}
+                                            onRemoveGiftOption={handleRemoveGiftOption}
+                                            onGiftOptionChange={handleGiftOptionChange}
+                                            showRsvp={liveData.showRsvp !== false}
+                                            onToggleRsvp={(checked) => setLiveData(prev => ({ ...prev, showRsvp: checked }))}
+                                            rsvpClosedMessage={liveData.rsvpClosedMessage || ''}
+                                            rsvpClosedMessageRef={rsvpClosedMessageRef}
+                                            onBoldRsvpMessage={() => {
+                                                const el = rsvpClosedMessageRef.current;
+                                                if (!el) return;
+                                                const cur = liveData.rsvpClosedMessage ?? '';
+                                                const { value, caret } = wrapMarkdownBoldSegment(cur, el.selectionStart, el.selectionEnd);
+                                                setLiveData((p) => ({ ...p, rsvpClosedMessage: value }));
+                                                queueMicrotask(() => {
+                                                    el.focus();
+                                                    el.setSelectionRange(caret, caret);
+                                                });
+                                            }}
+                                        />
 
-                                                {(liveData.giftOptions || []).length === 0 && (
-                                                    <p className="text-sm text-secondary italic text-center py-4">No transfer options added yet.</p>
-                                                )}
+                                        <NavigationEditorSection
+                                            showNavigation={liveData.showNavigation || false}
+                                            onToggleShowNavigation={(checked) => setLiveData(prev => ({ ...prev, showNavigation: checked }))}
+                                            isOpen={navigationEditorOpen}
+                                            onToggleOpen={() => setNavigationEditorOpen((open) => !open)}
+                                            np={np}
+                                            slug={liveData.slug || ''}
+                                            updateNavigationPages={updateNavigationPages}
+                                            addLodgingHotel={addLodgingHotel}
+                                            removeLodgingHotel={removeLodgingHotel}
+                                            updateLodgingHotel={updateLodgingHotel}
+                                            addExploringSpot={addExploringSpot}
+                                            removeExploringSpot={removeExploringSpot}
+                                            updateExploringSpot={updateExploringSpot}
+                                            addDynamicPage={addDynamicPage}
+                                            removeDynamicPage={removeDynamicPage}
+                                            updateDynamicPage={updateDynamicPage}
+                                            updateDynamicPageBody={updateDynamicPageBody}
+                                        />
 
-                                                <div className="space-y-4">
-                                                    {(liveData.giftOptions || []).map((option, idx) => (
-                                                        <div key={option.id} className="p-4 border border-outline-variant/30 rounded-lg bg-surface-container-lowest relative group">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleRemoveGiftOption(idx)}
-                                                                className="absolute top-4 right-4 text-secondary hover:text-error transition-colors"
-                                                            >
-                                                                ✕
-                                                            </button>
-                                                            <h4 className="text-xs font-bold text-secondary uppercase tracking-widest mb-4">
-                                                                {option.type === 'bank'
-                                                                    ? 'Bank transfer'
-                                                                    : option.serviceName?.trim() || 'Mobile transfer'}
-                                                            </h4>
-                                                            {option.type === 'bank' ? (
-                                                                <div className="space-y-3">
-                                                                    <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-4 py-3">
-                                                                        <label className="text-[10px] font-label font-bold uppercase tracking-[0.18em] text-secondary mb-2 block">Bank name</label>
-                                                                        <input type="text" value={option.bankName || ''} onChange={(e) => handleGiftOptionChange(idx, 'bankName', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-on-surface tracking-wide placeholder:text-secondary/60 focus:ring-0 outline-none" placeholder="e.g. Doha Bank" />
-                                                                    </div>
-                                                                    <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-4 py-3">
-                                                                        <label className="text-[10px] font-label font-bold uppercase tracking-[0.18em] text-secondary mb-2 block">Account holder</label>
-                                                                        <input type="text" value={option.accountName || ''} onChange={(e) => handleGiftOptionChange(idx, 'accountName', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-on-surface tracking-wide placeholder:text-secondary/60 focus:ring-0 outline-none" placeholder="Full name on account" />
-                                                                    </div>
-                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                                        <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-4 py-3">
-                                                                            <label className="text-[10px] font-label font-bold uppercase tracking-[0.18em] text-secondary mb-2 block">First row label (optional)</label>
-                                                                            <input
-                                                                                type="text"
-                                                                                value={option.accountNumberLabel || ''}
-                                                                                onChange={(e) => handleGiftOptionChange(idx, 'accountNumberLabel', e.target.value)}
-                                                                                className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-on-surface tracking-wide placeholder:text-secondary/60 focus:ring-0 outline-none"
-                                                                                placeholder={GIFT_DEFAULT_ACCOUNT_NUMBER_LABEL}
-                                                                            />
-                                                                        </div>
-                                                                        <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-4 py-3">
-                                                                            <label className="text-[10px] font-label font-bold uppercase tracking-[0.18em] text-secondary mb-2 block">Second row label (optional)</label>
-                                                                            <input
-                                                                                type="text"
-                                                                                value={option.swiftCodeLabel || ''}
-                                                                                onChange={(e) => handleGiftOptionChange(idx, 'swiftCodeLabel', e.target.value)}
-                                                                                className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-on-surface tracking-wide placeholder:text-secondary/60 focus:ring-0 outline-none"
-                                                                                placeholder={GIFT_DEFAULT_SWIFT_LABEL}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-4 py-3">
-                                                                        <label className="text-[10px] font-label font-bold uppercase tracking-[0.18em] text-secondary mb-2 block">{giftResolvedAccountNumberLabel(option)}</label>
-                                                                        <input type="text" value={option.accountNumber || ''} onChange={(e) => handleGiftOptionChange(idx, 'accountNumber', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-on-surface tracking-wide placeholder:text-secondary/60 focus:ring-0 outline-none" placeholder="IBAN, account number, etc." />
-                                                                    </div>
-                                                                    <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-4 py-3">
-                                                                        <label className="text-[10px] font-label font-bold uppercase tracking-[0.18em] text-secondary mb-2 block">{giftResolvedSwiftLabel(option)}</label>
-                                                                        <input type="text" value={option.swiftCode || ''} onChange={(e) => handleGiftOptionChange(idx, 'swiftCode', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-on-surface tracking-wide placeholder:text-secondary/60 focus:ring-0 outline-none" placeholder="SWIFT, routing number, etc." />
-                                                                    </div>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="space-y-3">
-                                                                    <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-4 py-3">
-                                                                        <label className="text-[10px] font-label font-bold uppercase tracking-[0.18em] text-secondary mb-2 block">Service (header)</label>
-                                                                        <input type="text" value={option.serviceName || ''} onChange={(e) => handleGiftOptionChange(idx, 'serviceName', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-on-surface tracking-wide placeholder:text-secondary/60 focus:ring-0 outline-none" placeholder="e.g. Whish" />
-                                                                    </div>
-                                                                    <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-4 py-3">
-                                                                        <label className="text-[10px] font-label font-bold uppercase tracking-[0.18em] text-secondary mb-2 block">Account name (optional)</label>
-                                                                        <input type="text" value={option.mobileAccountName || ''} onChange={(e) => handleGiftOptionChange(idx, 'mobileAccountName', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-on-surface tracking-wide placeholder:text-secondary/60 focus:ring-0 outline-none" placeholder="Optional" />
-                                                                    </div>
-                                                                    <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-4 py-3">
-                                                                        <label className="text-[10px] font-label font-bold uppercase tracking-[0.18em] text-secondary mb-2 block">Mobile / handle</label>
-                                                                        <input type="text" value={option.mobileNumber || ''} onChange={(e) => handleGiftOptionChange(idx, 'mobileNumber', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-on-surface tracking-wide placeholder:text-secondary/60 focus:ring-0 outline-none" placeholder="@johndoe or phone" />
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-
-                                                <div className="pt-6 border-t border-outline-variant/15 space-y-2">
-                                                    <label className="flex items-center gap-3 cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={liveData.showRsvp !== false}
-                                                            onChange={(e) => setLiveData((prev) => ({ ...prev, showRsvp: e.target.checked }))}
-                                                            className="rounded border-outline-variant text-primary focus:ring-primary/20"
-                                                        />
-                                                        <span className="text-[0.8rem] font-body text-on-surface font-medium">Show RSVP form on the live invitation</span>
-                                                    </label>
-                                                    <p className="text-xs text-secondary pl-7 max-w-xl">
-                                                        Disable if this couple collects responses elsewhere. The API will reject RSVP submissions when this is off.
-                                                    </p>
-                                                    {liveData.showRsvp === false && (
-                                                        <div className="pl-7 pt-4 space-y-2 max-w-2xl">
-                                                            <label htmlFor="admin-rsvp-closed-message" className="text-[0.75rem] font-label font-bold uppercase tracking-[0.1em] text-secondary block">
-                                                                RSVP message on the invite (no form)
-                                                            </label>
-                                                            <textarea
-                                                                id="admin-rsvp-closed-message"
-                                                                ref={rsvpClosedMessageRef}
-                                                                name="rsvpClosedMessage"
-                                                                rows={5}
-                                                                value={liveData.rsvpClosedMessage || ''}
-                                                                onChange={handleInputChange}
-                                                                className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body resize-y min-h-[7rem]"
-                                                                placeholder={'e.g. Please RSVP by phone…\nUse **important** for bold.'}
-                                                            />
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        const el = rsvpClosedMessageRef.current;
-                                                                        if (!el) return;
-                                                                        const cur = liveData.rsvpClosedMessage ?? '';
-                                                                        const { value, caret } = wrapMarkdownBoldSegment(cur, el.selectionStart, el.selectionEnd);
-                                                                        setLiveData((p) => ({ ...p, rsvpClosedMessage: value }));
-                                                                        queueMicrotask(() => {
-                                                                            el.focus();
-                                                                            el.setSelectionRange(caret, caret);
-                                                                        });
-                                                                    }}
-                                                                    className="text-[0.7rem] font-label uppercase tracking-widest px-3 py-1.5 rounded-md border border-outline-variant/40 text-secondary hover:bg-surface-container-high transition-colors"
-                                                                >
-                                                                    Bold selection (**)
-                                                                </button>
-                                                                <span className="text-[0.65rem] text-secondary/90">
-                                                                    Wrap selected text in **double asterisks** for bold on the live invite.
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </section>
-
-
-                                        {/* Section 08: Extensibility & Navigation */}
-                                        <section>
-                                            <div className="flex justify-between items-center mb-8">
-                                                <div className="flex items-center gap-4">
-                                                    <h2 className="text-2xl font-headline text-primary">Multi-Page Navigation (Beta)</h2>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={liveData.showNavigation || false}
-                                                            onChange={(e) => setLiveData(prev => ({ ...prev, showNavigation: e.target.checked }))}
-                                                            className="sr-only peer"
-                                                        />
-                                                        <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                                        <span className="ms-3 text-[0.75rem] font-label uppercase text-primary tracking-widest font-bold">Enable Navigation</span>
-                                                    </label>
-                                                </div>
-                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 08</span>
-                                            </div>
-                                            <div className="rounded-xl border border-outline-variant/20 bg-surface-container-latest overflow-hidden">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setNavigationEditorOpen((open) => !open)}
-                                                    className="w-full flex items-center justify-between gap-4 px-6 py-4 text-left hover:bg-surface-container-high/40 transition-colors border-b border-outline-variant/10"
-                                                    aria-expanded={navigationEditorOpen}
-                                                >
-                                                    <div className="min-w-0">
-                                                        <span className="text-sm font-semibold text-on-surface">Navigation content & pages</span>
-                                                        <p className="text-xs text-secondary mt-0.5">
-                                                            Menu labels, lodging, exploring, and custom pages
-                                                        </p>
-                                                    </div>
-                                                    <ChevronDown
-                                                        className={`w-5 h-5 text-secondary shrink-0 transition-transform duration-200 ${navigationEditorOpen ? 'rotate-180' : ''}`}
-                                                        aria-hidden
-                                                    />
-                                                </button>
-                                                {navigationEditorOpen && (
-                                                <div className="p-8 space-y-8 border-t border-outline-variant/10">
-                                                <p className="text-sm text-secondary">
-                                                    When navigation is on, the menu lists Main, any enabled Lodging/Exploring pages, plus each custom page you add (e.g. Cars, Stays, Food). Each custom page is one full screen with its own title, intro, date, and rich body. Existing invitations without section toggles keep Lodging and Exploring on until you save.
-                                                </p>
-                                                <div className="flex flex-wrap gap-6">
-                                                    {(
-                                                        [
-                                                            ['lodgingEnabled', 'Lodging page', np.lodgingEnabled],
-                                                            ['exploringEnabled', 'Exploring page', np.exploringEnabled]
-                                                        ] as const
-                                                    ).map(([key, label, checked]) => (
-                                                        <label key={key} className="flex items-center gap-2 cursor-pointer text-sm text-on-surface">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={checked}
-                                                                onChange={(e) =>
-                                                                    updateNavigationPages({ [key]: e.target.checked } as Partial<NavigationPagesContent>)
-                                                                }
-                                                                className="rounded border-outline-variant text-primary"
-                                                            />
-                                                            {label}
-                                                        </label>
-                                                    ))}
-                                                </div>
-
-                                                <div className="space-y-4">
-                                                    <h3 className="text-[0.7rem] font-label uppercase tracking-[0.12em] text-primary font-bold">Menu labels</h3>
-                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                        <div className="space-y-1.5">
-                                                            <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Main</label>
-                                                            <input type="text" value={np.mainNavLabel} onChange={(e) => updateNavigationPages({ mainNavLabel: e.target.value })} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" />
-                                                        </div>
-                                                        <div className="space-y-1.5">
-                                                            <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Lodging</label>
-                                                            <input type="text" value={np.lodgingNavLabel} onChange={(e) => updateNavigationPages({ lodgingNavLabel: e.target.value })} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" />
-                                                        </div>
-                                                        <div className="space-y-1.5">
-                                                            <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Exploring</label>
-                                                            <input type="text" value={np.exploringNavLabel} onChange={(e) => updateNavigationPages({ exploringNavLabel: e.target.value })} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" />
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-4 pt-2 border-t border-outline-variant/15">
-                                                    <h3 className="text-[0.7rem] font-label uppercase tracking-[0.12em] text-primary font-bold">Lodging page</h3>
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Heading</label>
-                                                        <input type="text" value={np.lodgingTitle} onChange={(e) => updateNavigationPages({ lodgingTitle: e.target.value })} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" />
-                                                    </div>
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Introduction</label>
-                                                        <textarea value={np.lodgingIntro} onChange={(e) => updateNavigationPages({ lodgingIntro: e.target.value })} rows={3} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface resize-y min-h-[4.5rem]" />
-                                                    </div>
-                                                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                                                        <span className="text-[0.65rem] font-label uppercase tracking-widest text-secondary font-bold">Hotels</span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={addLodgingHotel}
-                                                            className="inline-flex items-center gap-1.5 rounded-md border border-outline-variant/30 bg-surface px-3 py-2 text-[0.65rem] font-label font-bold uppercase tracking-widest text-primary hover:bg-surface-container-high"
-                                                        >
-                                                            <Plus className="w-3.5 h-3.5" />
-                                                            Add hotel
-                                                        </button>
-                                                    </div>
-                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
-                                                        {np.lodgingHotels.map((hotel, idx) => (
-                                                            <div key={idx} className="rounded-xl border border-outline-variant/20 p-5 space-y-3 bg-surface/50">
-                                                                <div className="flex items-center justify-between gap-2">
-                                                                    <p className="text-[0.65rem] font-label uppercase tracking-widest text-secondary font-bold">Hotel {idx + 1}</p>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => removeLodgingHotel(idx)}
-                                                                        disabled={np.lodgingHotels.length <= 1}
-                                                                        className="rounded-md p-1.5 text-secondary hover:bg-error-container/30 hover:text-error disabled:pointer-events-none disabled:opacity-30"
-                                                                        title={np.lodgingHotels.length <= 1 ? 'At least one hotel required' : 'Remove hotel'}
-                                                                    >
-                                                                        <Trash2 className="w-4 h-4" />
-                                                                    </button>
-                                                                </div>
-                                                                <input type="text" placeholder="Title" value={hotel.title} onChange={(e) => updateLodgingHotel(idx, 'title', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
-                                                                <input type="text" placeholder="Subtitle / distance" value={hotel.subtitle} onChange={(e) => updateLodgingHotel(idx, 'subtitle', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
-                                                                <textarea placeholder="Description" value={hotel.description} onChange={(e) => updateLodgingHotel(idx, 'description', e.target.value)} rows={3} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface resize-y" />
-                                                                <div className="grid grid-cols-2 gap-2">
-                                                                    <input type="text" placeholder="Link label" value={hotel.linkText} onChange={(e) => updateLodgingHotel(idx, 'linkText', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
-                                                                    <input type="text" placeholder="URL" value={hotel.linkUrl} onChange={(e) => updateLodgingHotel(idx, 'linkUrl', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-4 pt-2 border-t border-outline-variant/15">
-                                                    <h3 className="text-[0.7rem] font-label uppercase tracking-[0.12em] text-primary font-bold">Exploring page</h3>
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Heading</label>
-                                                        <input type="text" value={np.exploringTitle} onChange={(e) => updateNavigationPages({ exploringTitle: e.target.value })} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface" />
-                                                    </div>
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[0.65rem] font-label uppercase text-secondary tracking-[0.05em]">Introduction</label>
-                                                        <textarea value={np.exploringIntro} onChange={(e) => updateNavigationPages({ exploringIntro: e.target.value })} rows={3} className="w-full border border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 text-on-surface text-sm bg-surface resize-y min-h-[4.5rem]" />
-                                                    </div>
-                                                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                                                        <span className="text-[0.65rem] font-label uppercase tracking-widest text-secondary font-bold">Spots</span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={addExploringSpot}
-                                                            className="inline-flex items-center gap-1.5 rounded-md border border-outline-variant/30 bg-surface px-3 py-2 text-[0.65rem] font-label font-bold uppercase tracking-widest text-primary hover:bg-surface-container-high"
-                                                        >
-                                                            <Plus className="w-3.5 h-3.5" />
-                                                            Add spot
-                                                        </button>
-                                                    </div>
-                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                                                        {np.exploringSpots.map((spot, idx) => (
-                                                            <div key={idx} className="rounded-xl border border-outline-variant/20 p-5 space-y-3 bg-surface/50">
-                                                                <div className="flex items-center justify-between gap-2">
-                                                                    <p className="text-[0.65rem] font-label uppercase tracking-widest text-secondary font-bold">Spot {idx + 1}</p>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => removeExploringSpot(idx)}
-                                                                        disabled={np.exploringSpots.length <= 1}
-                                                                        className="rounded-md p-1.5 text-secondary hover:bg-error-container/30 hover:text-error disabled:pointer-events-none disabled:opacity-30"
-                                                                        title={np.exploringSpots.length <= 1 ? 'At least one spot required' : 'Remove spot'}
-                                                                    >
-                                                                        <Trash2 className="w-4 h-4" />
-                                                                    </button>
-                                                                </div>
-                                                                <input type="text" placeholder="Title" value={spot.title} onChange={(e) => updateExploringSpot(idx, 'title', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
-                                                                <input type="text" placeholder="Category" value={spot.category} onChange={(e) => updateExploringSpot(idx, 'category', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
-                                                                <textarea placeholder="Description" value={spot.description} onChange={(e) => updateExploringSpot(idx, 'description', e.target.value)} rows={2} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface resize-y" />
-                                                                <input type="text" placeholder="Image URL" value={spot.imageUrl} onChange={(e) => updateExploringSpot(idx, 'imageUrl', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-4 pt-2 border-t border-outline-variant/15">
-                                                    <div className="flex flex-wrap items-center justify-between gap-3">
-                                                        <h3 className="text-[0.7rem] font-label uppercase tracking-[0.12em] text-primary font-bold">
-                                                            Custom pages (one menu item + full page each)
-                                                        </h3>
-                                                        <button
-                                                            type="button"
-                                                            onClick={addDynamicPage}
-                                                            className="inline-flex items-center gap-1.5 rounded-md border border-outline-variant/30 bg-surface px-3 py-2 text-[0.65rem] font-label font-bold uppercase tracking-widest text-primary hover:bg-surface-container-high"
-                                                        >
-                                                            <Plus className="w-3.5 h-3.5" />
-                                                            Add page
-                                                        </button>
-                                                    </div>
-                                                    <div className="space-y-6 pt-2">
-                                                        {np.dynamicNavPages.map((page) => (
-                                                            <div key={page.id} className="rounded-xl border border-outline-variant/20 p-5 space-y-3 bg-surface/50">
-                                                                <div className="flex items-center justify-between gap-2">
-                                                                    <p className="text-[0.65rem] font-label uppercase tracking-widest text-secondary font-bold">Custom page</p>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => removeDynamicPage(page.id)}
-                                                                        className="rounded-md p-1.5 text-secondary hover:bg-error-container/30 hover:text-error"
-                                                                        title="Remove page"
-                                                                    >
-                                                                        <Trash2 className="w-4 h-4" />
-                                                                    </button>
-                                                                </div>
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="Menu label (e.g. Cars, Stays)"
-                                                                    value={page.navLabel}
-                                                                    onChange={(e) => updateDynamicPage(page.id, { navLabel: e.target.value })}
-                                                                    className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface"
-                                                                />
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="Page title (heading)"
-                                                                    value={page.title}
-                                                                    onChange={(e) => updateDynamicPage(page.id, { title: e.target.value })}
-                                                                    className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface"
-                                                                />
-                                                                <textarea
-                                                                    placeholder="Introduction"
-                                                                    value={page.introduction}
-                                                                    onChange={(e) => updateDynamicPage(page.id, { introduction: e.target.value })}
-                                                                    rows={3}
-                                                                    className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface resize-y"
-                                                                />
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="Date (optional)"
-                                                                    value={page.date}
-                                                                    onChange={(e) => updateDynamicPage(page.id, { date: e.target.value })}
-                                                                    className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface"
-                                                                />
-                                                                {liveData.slug ? (
-                                                                    <InvitationBlogEditor
-                                                                        slug={liveData.slug}
-                                                                        instanceKey={page.id}
-                                                                        content={page.body}
-                                                                        onChange={(body) => updateDynamicPageBody(page.id, body)}
-                                                                    />
-                                                                ) : (
-                                                                    <p className="text-xs text-secondary">Select a client with a slug to upload images.</p>
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                </div>
-                                                )}
-                                            </div>
-                                        </section>
-
-                                        {/* Section 09: Footnote */}
-                                        <section>
-                                            <div className="flex justify-between items-center mb-8">
-                                                <h2 className="text-2xl font-headline text-primary">Footnote</h2>
-                                                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 09</span>
-                                            </div>
-                                            <div className="bg-surface-container-latest p-8 space-y-4">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Footer Message</label>
-                                                    <textarea
-                                                        name="footnote"
-                                                        value={liveData.footnote || ''}
-                                                        onChange={handleInputChange}
-                                                        rows={4}
-                                                        placeholder={"e.g. Don't forget to check the section\n\n[THE HOUSES](nav:page:YOUR_PAGE_ID)"}
-                                                        className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body resize-none"
-                                                    />
-                                                    <p className="text-xs text-secondary mt-1">
-                                                        Shown centered below the RSVP card. Intro line plus optional button:{' '}
-                                                        <code className="bg-surface-container-high px-1 py-0.5 rounded text-[0.65rem]">[label](nav:lodging)</code>,{' '}
-                                                        <code className="bg-surface-container-high px-1 py-0.5 rounded text-[0.65rem]">nav:exploring</code>,{' '}
-                                                        <code className="bg-surface-container-high px-1 py-0.5 rounded text-[0.65rem]">nav:main</code>, or{' '}
-                                                        <code className="bg-surface-container-high px-1 py-0.5 rounded text-[0.65rem]">nav:page:…</code>
-                                                        for in-app pages; use a normal URL for an external link button.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </section>
+                                        <FootnoteSection footnote={liveData.footnote || ''} onChange={handleInputChange} />
                                     </div>
                                 </div>
                                 {/* Right Column - Live Preview */}
