@@ -13,6 +13,7 @@ import { useEntitlements } from '@/components/entitlements/EntitlementsContext';
 import { FeatureLockedMessage } from './FeatureLockedMessage';
 import { getStatusBadge } from './GuestStatusBadge';
 import { CsvImportModal, type CsvImportPreview } from './CsvImportModal';
+import { toast } from 'sonner';
 
 type RsvpStatus = 'all' | 'attending' | 'declined' | 'pending';
 
@@ -63,10 +64,15 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
                 const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
                 setRsvps(await updatedRes.json());
                 setEditingGuestId(null);
+                toast.success("Guest updated", {
+                    description: `${editGuestData.firstName ?? ''} ${editGuestData.lastName ?? ''}`.trim() || undefined
+                });
+            } else {
+                toast.error("Failed to update guest");
             }
         } catch (error) {
             console.error(error);
-            alert("Failed to update guest.");
+            toast.error("Failed to update guest");
         }
     };
 
@@ -80,12 +86,13 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
             if (res.ok) {
                 const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
                 setRsvps(await updatedRes.json());
+                toast.success("Guest deleted");
             } else {
-                alert("Failed to delete guest.");
+                toast.error("Failed to delete guest");
             }
         } catch (error) {
             console.error(error);
-            alert("Failed to delete guest.");
+            toast.error("Failed to delete guest");
         } finally {
             setDeletingGuestId(null);
         }
@@ -102,12 +109,16 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
             if (res.ok) {
                 const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
                 setRsvps(await updatedRes.json());
+                const guestName = `${newGuestData.firstName} ${newGuestData.lastName}`.trim();
                 setIsAddingGuest(false);
                 setNewGuestData({ firstName: '', lastName: '', pax: 1 });
+                toast.success("Guest added", { description: guestName || undefined });
+            } else {
+                toast.error("Failed to add guest");
             }
         } catch (error) {
             console.error(error);
-            alert("Failed to add guest.");
+            toast.error("Failed to add guest");
         }
     };
 
@@ -123,7 +134,7 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
 
         const openPreview = (guests: GuestImportRow[], skippedLineCount: number) => {
             if (guests.length === 0) {
-                alert(`No valid guests found. ${GUEST_IMPORT_FORMAT_HINT}`);
+                toast.error("No valid guests found", { description: GUEST_IMPORT_FORMAT_HINT });
             } else {
                 setCsvImportPreview({ fileName: file.name, guests, skippedLineCount });
             }
@@ -135,7 +146,9 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
                 const sheets = await readXlsxFile(file);
                 const data = sheets[0]?.data;
                 if (!data || !Array.isArray(data)) {
-                    alert('Could not read this workbook. Try saving as .xlsx with guest data on the first sheet.');
+                    toast.error("Could not read this workbook", {
+                        description: "Try saving as .xlsx with guest data on the first sheet."
+                    });
                     return;
                 }
                 const parsed = parseGuestImportFromExcelRows(data as unknown[][]);
@@ -147,11 +160,9 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
             }
         } catch (err) {
             console.error(err);
-            alert(
-                isExcel
-                    ? `Could not read this Excel file. ${GUEST_IMPORT_FORMAT_HINT}`
-                    : `Could not read this file. ${GUEST_IMPORT_FORMAT_HINT}`,
-            );
+            toast.error(isExcel ? "Could not read this Excel file" : "Could not read this file", {
+                description: GUEST_IMPORT_FORMAT_HINT
+            });
         } finally {
             input.value = '';
         }
@@ -170,15 +181,20 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
             if (res.ok) {
                 const updatedRes = await fetchWithAuth(`/api/guests?slug=${userSlug}`);
                 setRsvps(await updatedRes.json());
-                alert('Guests imported successfully!');
+                const count = guests.length;
+                toast.success("Guests imported", {
+                    description: `${count} guest${count === 1 ? '' : 's'} added.`
+                });
                 setCsvImportPreview(null);
             } else {
                 const err = await res.json().catch(() => ({}));
-                alert(typeof err?.error === 'string' ? err.error : 'Failed to import CSV.');
+                toast.error("Failed to import CSV", {
+                    description: typeof err?.error === 'string' ? err.error : undefined
+                });
             }
         } catch (error) {
             console.error(error);
-            alert('Failed to import CSV.');
+            toast.error("Failed to import CSV");
         } finally {
             setIsGuestCsvImporting(false);
         }
@@ -186,8 +202,9 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
 
     const copyGuestLink = (guestId: string) => {
         const origin = window.location.origin;
-        navigator.clipboard.writeText(`${origin}/invite/${userSlug}?guest=${guestId}`);
-        alert('Personalized link copied to clipboard!');
+        const url = `${origin}/invite/${userSlug}?guest=${guestId}`;
+        navigator.clipboard.writeText(url);
+        toast.success("Personalized link copied", { description: url });
     };
 
     if (!hasFeature('guests')) {

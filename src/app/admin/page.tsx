@@ -39,6 +39,7 @@ import { FormalInvitationSection } from '@/components/admin/builder/FormalInvita
 import { HeroSection } from '@/components/admin/builder/HeroSection';
 import { GiftOptionsSection } from '@/components/admin/builder/GiftOptionsSection';
 import { NavigationEditorSection } from '@/components/admin/builder/NavigationEditorSection';
+import { toast } from 'sonner';
 
 const THEME_PRESETS: Record<string, Theme> = {
     emerald: { primaryText: "text-stone-800", accent: "text-emerald-700", bgAccent: "bg-emerald-700/10", borderAccent: "border-emerald-700", background: "bg-stone-50" },
@@ -458,12 +459,12 @@ export default function AdminDashboard() {
 
     const handleSaveInvitation = async () => {
         if (!liveData.slug) {
-            alert("No client selected");
+            toast.error("No client selected");
             return;
         }
 
         if (!liveData.bride.trim() || !liveData.groom.trim()) {
-            alert("Bride and Groom names are mandatory fields.");
+            toast.error("Bride and Groom names are mandatory fields.");
             return;
         }
 
@@ -588,9 +589,9 @@ export default function AdminDashboard() {
             }
             
             setLiveData(payloadToSave);
-            alert("Invitation Saved Successfully!");
+            toast.success("Invitation saved", { description: `Updated /${liveData.slug}` });
         } catch (error: any) {
-            alert(error.message);
+            toast.error("Failed to save invitation", { description: error.message });
         } finally {
             setIsSaving(false);
         }

@@ -47,6 +47,7 @@ import { useGiftOptions } from '@/hooks/useGiftOptions';
 import { FeatureLockedMessage } from '@/components/dashboard/FeatureLockedMessage';
 import { getStatusBadge } from '@/components/dashboard/GuestStatusBadge';
 import { GuestsTab } from '@/components/dashboard/GuestsTab';
+import { toast } from 'sonner';
 type DashboardTab = 'overview' | 'guests' | 'messages' | 'budget' | 'seating' | 'settings';
 
 export default function DashboardPage() {
@@ -306,12 +307,12 @@ export default function DashboardPage() {
         e.preventDefault();
 
         if (!userSlug) {
-            alert("Error: Client slug missing.");
+            toast.error("Client slug missing", { description: "Please refresh the page and try again." });
             return;
         }
 
         if (!weddingDetails.bride.trim() || !weddingDetails.groom.trim()) {
-            alert("Bride and Groom names are mandatory fields.");
+            toast.error("Bride and Groom names are mandatory fields.");
             return;
         }
 
@@ -327,9 +328,9 @@ export default function DashboardPage() {
             if (!response.ok) {
                 throw new Error(result.error || 'Failed to update settings');
             }
-            alert("Settings updated successfully!");
+            toast.success("Settings updated", { description: "Your invitation will refresh shortly." });
         } catch (error: any) {
-            alert(error.message);
+            toast.error("Failed to save settings", { description: error.message });
         } finally {
             setIsSaving(false);
         }
@@ -343,7 +344,7 @@ export default function DashboardPage() {
         if (typeof window !== 'undefined' && userSlug) {
             const url = `${window.location.origin}/invite/${userSlug}`;
             navigator.clipboard.writeText(url).then(() => {
-                alert('Invite link copied to clipboard!');
+                toast.success("Invite link copied", { description: url });
             }).catch(err => {
                 console.error('Could not copy text: ', err);
             });
@@ -362,7 +363,7 @@ export default function DashboardPage() {
                         onClick={() => {
                             const url = `${window.location.origin}/invite/${userSlug}`;
                             navigator.clipboard.writeText(url);
-                            alert("General Invitation Link copied!");
+                            toast.success("General invitation link copied", { description: url });
                         }}
                         className="flex flex-shrink-0 items-center justify-center gap-2 px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-md transition-colors text-sm"
                     >

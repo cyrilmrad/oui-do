@@ -6,6 +6,7 @@ import { getInvitationBlogExtensions } from '@/lib/invitationBlogExtensions';
 import { uploadInvitationAsset } from '@/lib/uploadInvitationAsset';
 import type { NavigationBlogBody } from '@/lib/navigationPages';
 import { EMPTY_BLOG_BODY } from '@/lib/navigationPages';
+import { toast } from 'sonner';
 import {
     Bold,
     Italic,
@@ -79,7 +80,7 @@ export function InvitationBlogEditor({
                 editor.chain().focus().setImage({ src: url }).run();
             } catch (e) {
                 console.error(e);
-                alert('Image upload failed. Please try again.');
+                toast.error("Image upload failed", { description: "Please try again." });
             }
         };
         input.click();
