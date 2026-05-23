@@ -45,7 +45,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${notoSerif.variable} ${manrope.variable} antialiased`}
       >
         {children}
-        <Toaster richColors closeButton position="top-right" />
+        <Toaster
+          richColors
+          closeButton
+          position="top-right"
+          offset={24}
+          gap={10}
+          duration={4500}
+          visibleToasts={4}
+        />
       </body>
     </html>
   );
