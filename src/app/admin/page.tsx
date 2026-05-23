@@ -228,7 +228,7 @@ export default function AdminDashboard() {
     };
 
     // Budget State
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'clients-list' | 'builder' | 'budget' | 'seating' | 'entitlements'>('clients-list');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'clients-list' | 'builder' | 'budget' | 'seating' | 'entitlements'>('dashboard');
     const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
     const [dashboardLoading, setDashboardLoading] = useState(false);
     const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -299,6 +299,7 @@ export default function AdminDashboard() {
             }
             setAccessToken(session.access_token ?? null);
             fetchClients();
+            void loadDashboardData();
             setLoadingAuth(false);
         };
         checkAdminAuth();
