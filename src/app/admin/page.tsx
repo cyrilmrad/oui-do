@@ -40,6 +40,7 @@ import { HeroSection } from '@/components/admin/builder/HeroSection';
 import { GiftOptionsSection } from '@/components/admin/builder/GiftOptionsSection';
 import { NavigationEditorSection } from '@/components/admin/builder/NavigationEditorSection';
 import { DashboardOverview } from '@/components/admin/DashboardOverview';
+import { ScheduleBuilder } from '@/components/admin/ScheduleBuilder';
 import {
     getAdminDashboardData,
     updateSubscription,
@@ -228,7 +229,7 @@ export default function AdminDashboard() {
     };
 
     // Budget State
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'clients-list' | 'builder' | 'budget' | 'seating' | 'entitlements'>('dashboard');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'clients-list' | 'builder' | 'budget' | 'seating' | 'entitlements' | 'schedule'>('dashboard');
     const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
     const [dashboardLoading, setDashboardLoading] = useState(false);
     const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -817,6 +818,12 @@ export default function AdminDashboard() {
                             >
                                 Table Seating
                             </button>
+                            <button
+                                onClick={() => setActiveTab('schedule')}
+                                className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'schedule' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-primary'}`}
+                            >
+                                Day-of Schedule
+                            </button>
                         </div>
                     </div>
                 )}
@@ -1192,6 +1199,14 @@ export default function AdminDashboard() {
                         <div className="w-full h-full overflow-y-auto p-8 bg-surface-container-low">
                             <TableSeating slug={liveData.slug} initialTables={seatingTables} initialGuests={seatingGuests} accessToken={accessToken} />
                         </div>
+                    )}
+
+                    {activeTab === 'schedule' && !isCreatingClient && liveData.slug && (
+                        <ScheduleBuilder
+                            slug={liveData.slug}
+                            brideGroom={`${liveData.bride} & ${liveData.groom}`}
+                            accessToken={accessToken}
+                        />
                     )}
                 </div>
             </main>
