@@ -138,6 +138,66 @@ export const clientEntitlements = pgTable('client_entitlements', {
     updatedAt: timestamp('updated_at').defaultNow()
 });
 
+/**
+ * 1:1 subscription / billing record per invitation.
+ * Note: `invitations.id` is a serial integer (not uuid), so `invitationId` is integer
+ * even though the plan called for uuid. The subscription's own `id` is uuid for consistency
+ * with the rest of the uuid-keyed tables (guests, payments, seating).
+ */
+export const subscriptions = pgTable('subscriptions', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    invitationId: integer('invitation_id')
+        .references(() => invitations.id, { onDelete: 'cascade' })
+        .notNull()
+        .unique(),
+    planTier: varchar('plan_tier', { length: 50 }).notNull().default('basic'),
+    /** Whole-dollar price (no decimals). Aligns with the rest of the schema (`expenses.actualCost`, etc.). */
+    price: integer('price').notNull().default(0),
+    isPaid: boolean('is_paid').notNull().default(false),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+}, (t) => [
+    pgPolicy("Admins have full access to subscriptions", {
+        as: 'permissive',
+        for: 'all',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`,
+        withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`
+    })
+]).enableRLS();
+
+export type SubscriptionSelect = InferSelectModel<typeof subscriptions>;
+
+/** Day-of runsheet for suppliers — one per invitation slug. */
+export const weddingSchedules = pgTable('wedding_schedules', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    slug: varchar('slug', { length: 255 })
+        .references(() => invitations.slug, { onDelete: 'cascade' })
+        .notNull()
+        .unique(),
+    title: text('title').notNull().default(''),
+    weddingDate: text('wedding_date'), // ISO date string YYYY-MM-DD
+    backgroundColor: text('background_color').notNull().default('#cfe8e0'),
+    backgroundImageUrl: text('background_image_url'),
+    accentColor: text('accent_color').notNull().default('#00150f'),
+    textColor: text('text_color').notNull().default('#1a2e25'),
+    /** Array of ScheduleItem objects stored as JSONB. */
+    items: jsonb('items').notNull().default([]),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+}, (t) => [
+    pgPolicy("admin_all_schedule", {
+        as: 'permissive',
+        for: 'all',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`,
+        withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`
+    }),
+    pgPolicy("public_read_schedule", {
+        as: 'permissive',
+        for: 'select',
+        using: sql`true`
+    })
+]).enableRLS();
+
 export const payments = pgTable('payments', {
     id: uuid('id').defaultRandom().primaryKey(),
     expenseId: uuid('expense_id').references(() => expenses.id, { onDelete: 'cascade' }).notNull(),

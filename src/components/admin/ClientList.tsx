@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Search, ChevronRight, Users } from 'lucide-react';
 
 /**
@@ -15,13 +15,34 @@ interface ClientListProps {
     onSelectClient: (client: any) => void;
 }
 
+/** Number of days between two dates, ignoring time-of-day. Negative if `to` is before `from`. */
+function daysUntil(target: Date, from: Date): number {
+    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    return Math.round((startOfDay(target) - startOfDay(from)) / 86_400_000);
+}
+
 /**
- * Active-clients dashboard: header with portfolio search, three insight cards (static for now),
+ * Active-clients dashboard: header with portfolio search, three insight cards,
  * the All/In Progress/Live tab strip, and the filterable client rows. Clicking a row delegates
  * to onSelectClient — the parent owns loading the selected client's invitation/budget/seating
  * data and switching activeTab to 'builder'.
  */
 export function ClientList({ clients, searchQuery, onSearchChange, onSelectClient }: ClientListProps) {
+    // Real metrics derived from the clients prop. `client.date` is the invitation's `date` column
+    // (a string, typically ISO `YYYY-MM-DD` from the date input — may be null/empty/free-text).
+    const { activeCount, upcomingThisWeek } = useMemo(() => {
+        const now = new Date();
+        let upcoming = 0;
+        for (const c of clients) {
+            if (!c?.date) continue;
+            const parsed = new Date(c.date);
+            if (Number.isNaN(parsed.getTime())) continue;
+            const delta = daysUntil(parsed, now);
+            if (delta >= 0 && delta <= 7) upcoming += 1;
+        }
+        return { activeCount: clients.length, upcomingThisWeek: upcoming };
+    }, [clients]);
+
     return (
         <div className="w-full h-full overflow-y-auto w-full max-w-[1600px] mx-auto p-8 md:p-12 lg:p-16">
             {/* Header Section */}
@@ -52,16 +73,22 @@ export function ClientList({ clients, searchQuery, onSearchChange, onSelectClien
                     <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 relative overflow-hidden group">
                         <div className="relative z-10">
                             <p className="font-label uppercase tracking-widest text-[0.7rem] font-bold text-secondary mb-4">Total Active Weddings</p>
-                            <h3 className="font-headline text-5xl text-primary">24</h3>
-                            <p className="mt-4 text-[0.8rem] text-secondary flex items-center gap-1 italic">
-                                <span className="text-green-600 text-sm font-bold mr-1">↑</span> +3 from last month
+                            <h3 className="font-headline text-5xl text-primary tabular-nums">{activeCount}</h3>
+                            <p className="mt-4 text-[0.8rem] text-secondary italic">
+                                {activeCount === 1 ? 'Client under management' : 'Clients under management'}
                             </p>
                         </div>
                     </div>
                     <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 hidden md:block">
                         <p className="font-label uppercase tracking-widest text-[0.7rem] font-bold text-secondary mb-4">Upcoming This Week</p>
-                        <h3 className="font-headline text-5xl text-primary">02</h3>
-                        <p className="mt-4 text-[0.8rem] text-secondary">Awaiting final confirmations</p>
+                        <h3 className="font-headline text-5xl text-primary tabular-nums">{String(upcomingThisWeek).padStart(2, '0')}</h3>
+                        <p className="mt-4 text-[0.8rem] text-secondary">
+                            {upcomingThisWeek === 0
+                                ? 'No weddings in the next 7 days'
+                                : upcomingThisWeek === 1
+                                    ? 'Wedding within the next 7 days'
+                                    : 'Weddings within the next 7 days'}
+                        </p>
                     </div>
                     <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 hidden md:block">
                         <p className="font-label uppercase tracking-widest text-[0.7rem] font-bold text-secondary mb-4">Client Satisfaction</p>

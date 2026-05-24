@@ -39,6 +39,16 @@ import { FormalInvitationSection } from '@/components/admin/builder/FormalInvita
 import { HeroSection } from '@/components/admin/builder/HeroSection';
 import { GiftOptionsSection } from '@/components/admin/builder/GiftOptionsSection';
 import { NavigationEditorSection } from '@/components/admin/builder/NavigationEditorSection';
+import { DashboardOverview } from '@/components/admin/DashboardOverview';
+import { ScheduleBuilder } from '@/components/admin/ScheduleBuilder';
+import {
+    getAdminDashboardData,
+    updateSubscription,
+    upsertSubscriptionForInvitation,
+    type AdminDashboardData,
+    type AdminLedgerRow,
+    type SubscriptionPayload
+} from '@/app/actions/admin';
 import { toast } from 'sonner';
 
 const THEME_PRESETS: Record<string, Theme> = {
@@ -219,7 +229,9 @@ export default function AdminDashboard() {
     };
 
     // Budget State
-    const [activeTab, setActiveTab] = useState<'clients-list' | 'builder' | 'budget' | 'seating' | 'entitlements'>('clients-list');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'clients-list' | 'builder' | 'budget' | 'seating' | 'entitlements' | 'schedule'>('dashboard');
+    const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
+    const [dashboardLoading, setDashboardLoading] = useState(false);
     const [accessToken, setAccessToken] = useState<string | null>(null);
     const [expenses, setExpenses] = useState<SelectExpense[]>([]);
 
@@ -248,6 +260,33 @@ export default function AdminDashboard() {
         }
     };
 
+    const loadDashboardData = async () => {
+        setDashboardLoading(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            const data = await getAdminDashboardData(token);
+            setDashboardData(data);
+        } catch (e) {
+            console.error("Failed loading dashboard data", e);
+            const msg = e instanceof Error ? e.message : 'Failed to load dashboard';
+            toast.error("Could not load dashboard", { description: msg });
+        } finally {
+            setDashboardLoading(false);
+        }
+    };
+
+    const handleSaveSubscription = async (row: AdminLedgerRow, payload: SubscriptionPayload) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (row.subscriptionId) {
+            await updateSubscription(row.subscriptionId, payload, token);
+        } else {
+            await upsertSubscriptionForInvitation(row.invitationId, payload, token);
+        }
+        await loadDashboardData();
+    };
+
     useEffect(() => {
         const checkAdminAuth = async () => {
             const { data: { session } } = await supabase.auth.getSession();
@@ -261,6 +300,7 @@ export default function AdminDashboard() {
             }
             setAccessToken(session.access_token ?? null);
             fetchClients();
+            void loadDashboardData();
             setLoadingAuth(false);
         };
         checkAdminAuth();
@@ -655,10 +695,23 @@ export default function AdminDashboard() {
                 <div className="flex-1 px-0 flex flex-col pt-4">
                     <nav className="flex-1 space-y-1">
                         <button
-                            className="w-full flex items-center gap-2 text-secondary py-2.5 px-3 hover:bg-surface-container-lowest hover:text-primary rounded-r-full transition-all duration-200"
+                            className={`w-full flex items-center gap-2 py-2.5 px-3 rounded-r-full transition-all duration-200 ${activeTab === 'dashboard' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm scale-[0.99]' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
+                            onClick={() => {
+                                setLiveData(defaultData);
+                                setActiveTab('dashboard');
+                                setHeroImageFile(null); setHeroImagePreview(null);
+                                setMetadataImageFile(null); setMetadataImagePreview(null);
+                                setHeroVideoFile(null); setHeroVideoPreview(null);
+                                setHeroLogoFile(null); setHeroLogoPreview(null);
+                                setAudioFile(null); setAudioPreview(null);
+                                setFormalImageFile(null); setFormalImagePreview(null);
+                                setDetailsBgFile(null); setDetailsBgPreview(null);
+                                setCustomFiles({});
+                                void loadDashboardData();
+                            }}
                         >
                             <LayoutDashboard className="w-4 h-4 shrink-0" />
-                            <span className="font-label uppercase tracking-[0.05em] text-[0.65rem] font-medium text-left leading-snug">Dashboard</span>
+                            <span className={`font-label uppercase tracking-[0.05em] text-[0.65rem] text-left leading-snug ${activeTab === 'dashboard' ? 'font-bold' : 'font-medium'}`}>Dashboard</span>
                         </button>
                         <button
                             className={`w-full flex items-center gap-2 py-2.5 px-3 rounded-r-full transition-all duration-200 ${activeTab === 'clients-list' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm scale-[0.99]' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
@@ -725,7 +778,7 @@ export default function AdminDashboard() {
             <main className="flex-1 min-w-0 flex flex-col h-full relative bg-surface">
 
                 {/* Top Nav Tabs */}
-                {liveData.slug && activeTab !== 'clients-list' && activeTab !== 'entitlements' && (
+                {liveData.slug && activeTab !== 'clients-list' && activeTab !== 'entitlements' && activeTab !== 'dashboard' && (
                     <div className="h-14 border-b border-surface-container-highest flex items-center px-8 gap-0 shrink-0 bg-surface-container-low/50">
                         {/* Back Button + Client Name */}
                         <button
@@ -765,11 +818,26 @@ export default function AdminDashboard() {
                             >
                                 Table Seating
                             </button>
+                            <button
+                                onClick={() => setActiveTab('schedule')}
+                                className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'schedule' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-primary'}`}
+                            >
+                                Day-of Schedule
+                            </button>
                         </div>
                     </div>
                 )}
 
                 <div className="flex-1 flex flex-col lg:flex-row w-full overflow-hidden relative">
+
+                    {activeTab === 'dashboard' && !isCreatingClient && (
+                        <DashboardOverview
+                            data={dashboardData}
+                            loading={dashboardLoading}
+                            clients={realClients}
+                            onSaveSubscription={handleSaveSubscription}
+                        />
+                    )}
 
                     {activeTab === 'entitlements' && !isCreatingClient && (
                         <div className="w-full h-full overflow-y-auto">
@@ -1131,6 +1199,14 @@ export default function AdminDashboard() {
                         <div className="w-full h-full overflow-y-auto p-8 bg-surface-container-low">
                             <TableSeating slug={liveData.slug} initialTables={seatingTables} initialGuests={seatingGuests} accessToken={accessToken} />
                         </div>
+                    )}
+
+                    {activeTab === 'schedule' && !isCreatingClient && liveData.slug && (
+                        <ScheduleBuilder
+                            slug={liveData.slug}
+                            brideGroom={`${liveData.bride} & ${liveData.groom}`}
+                            accessToken={accessToken}
+                        />
                     )}
                 </div>
             </main>
