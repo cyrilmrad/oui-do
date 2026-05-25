@@ -1,4 +1,5 @@
 import React from 'react';
+import { RemoveMediaButton, InlineRemoveButton } from './RemoveMediaButton';
 
 interface FormalInvitationSectionProps {
     showFormalInvitation: boolean;
@@ -8,15 +9,18 @@ interface FormalInvitationSectionProps {
     formalImagePreview: string | null;
     formalImageFile: File | null;
     onFormalImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onRemoveFormalImage: () => void;
 
     detailsBgUrl: string;
     detailsBgPreview: string | null;
     onDetailsBgChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onRemoveDetailsBg: () => void;
 
     audioUrl: string;
     audioPreview: string | null;
     audioFile: File | null;
     onAudioChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onRemoveAudio: () => void;
 }
 
 /**
@@ -30,13 +34,16 @@ export function FormalInvitationSection({
     formalImagePreview,
     formalImageFile,
     onFormalImageChange,
+    onRemoveFormalImage,
     detailsBgUrl,
     detailsBgPreview,
     onDetailsBgChange,
+    onRemoveDetailsBg,
     audioUrl,
     audioPreview,
     audioFile,
-    onAudioChange
+    onAudioChange,
+    onRemoveAudio,
 }: FormalInvitationSectionProps) {
     const formalPreview = formalImagePreview || formalImageUrl;
     const formalLooksLikeVideo =
@@ -73,6 +80,7 @@ export function FormalInvitationSection({
                                 ) : (
                                     <img src={formalPreview} alt="Formal Invite" className="h-32 w-auto object-cover" />
                                 )}
+                                <RemoveMediaButton onClick={onRemoveFormalImage} label="Remove formal invitation media" />
                             </div>
                         ) : null}
                         <input type="file" accept="image/*,video/mp4,video/quicktime,video/webm,video/*" onChange={onFormalImageChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
@@ -85,8 +93,9 @@ export function FormalInvitationSection({
                         <div className="space-y-1.5">
                             <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Event Specific Detail Texture Background Image</label>
                             {detailsBgPreview || detailsBgUrl ? (
-                                <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block">
+                                <div className="mb-2 text-sm text-primary font-medium break-all border border-outline-variant/20 rounded-md overflow-hidden inline-block relative">
                                     <img src={detailsBgPreview || detailsBgUrl} alt="Details Bg" className="h-24 w-auto object-cover" />
+                                    <RemoveMediaButton onClick={onRemoveDetailsBg} label="Remove details background" />
                                 </div>
                             ) : null}
                             <input type="file" accept="image/*" onChange={onDetailsBgChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
@@ -97,8 +106,9 @@ export function FormalInvitationSection({
                 <div className="space-y-1.5 pt-4 border-t border-outline-variant/20">
                     <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Background Audio</label>
                     {audioPreview || audioUrl ? (
-                        <div className="mb-2 text-sm text-primary font-medium break-all">
-                            Current: {audioFile?.name || audioUrl}
+                        <div className="mb-2 flex items-center gap-2 text-sm text-primary font-medium">
+                            <span className="break-all flex-1 min-w-0">Current: {audioFile?.name || audioUrl}</span>
+                            <InlineRemoveButton onClick={onRemoveAudio} label="Remove background audio" />
                         </div>
                     ) : null}
                     <input type="file" accept="audio/*" onChange={onAudioChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />

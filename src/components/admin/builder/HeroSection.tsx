@@ -1,24 +1,29 @@
 import React from 'react';
+import { RemoveMediaButton, InlineRemoveButton } from './RemoveMediaButton';
 
 interface HeroSectionProps {
     heroImageUrl: string;
     heroImagePreview: string | null;
     onHeroImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onRemoveHeroImage: () => void;
 
     heroVideoUrl: string;
     heroVideoPreview: string | null;
     heroVideoFile: File | null;
     onHeroVideoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onRemoveHeroVideo: () => void;
 
     metadataImageUrl: string;
     metadataImagePreview: string | null;
     onMetadataImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onRemoveMetadataImage: () => void;
 
     showHeroLogo: boolean;
     onToggleHeroLogo: (checked: boolean) => void;
     heroLogoUrl: string;
     heroLogoPreview: string | null;
     onHeroLogoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onRemoveHeroLogo: () => void;
 
     showHeroDate: boolean;
     onToggleHeroDate: (checked: boolean) => void;
@@ -36,10 +41,10 @@ interface HeroSectionProps {
  * Graphic Overlay + Date Ribbon toggles, and the theme picker (presets + custom colors).
  */
 export function HeroSection({
-    heroImageUrl, heroImagePreview, onHeroImageChange,
-    heroVideoUrl, heroVideoPreview, heroVideoFile, onHeroVideoChange,
-    metadataImageUrl, metadataImagePreview, onMetadataImageChange,
-    showHeroLogo, onToggleHeroLogo, heroLogoUrl, heroLogoPreview, onHeroLogoChange,
+    heroImageUrl, heroImagePreview, onHeroImageChange, onRemoveHeroImage,
+    heroVideoUrl, heroVideoPreview, heroVideoFile, onHeroVideoChange, onRemoveHeroVideo,
+    metadataImageUrl, metadataImagePreview, onMetadataImageChange, onRemoveMetadataImage,
+    showHeroLogo, onToggleHeroLogo, heroLogoUrl, heroLogoPreview, onHeroLogoChange, onRemoveHeroLogo,
     showHeroDate, onToggleHeroDate,
     themeSelection, onThemeChange,
     rawPrimary, rawAccent, rawBackground, onCustomColorChange
@@ -54,8 +59,9 @@ export function HeroSection({
                 <div className="space-y-1.5">
                     <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Event Hero Image</label>
                     {heroImagePreview || heroImageUrl ? (
-                        <div className="mb-2">
+                        <div className="mb-2 relative inline-block">
                             <img src={heroImagePreview || heroImageUrl} alt="Hero Preview" className="h-24 w-auto rounded-md object-cover border border-outline-variant/20" />
+                            <RemoveMediaButton onClick={onRemoveHeroImage} label="Remove hero image" />
                         </div>
                     ) : null}
                     <input type="file" accept="image/*" onChange={onHeroImageChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
@@ -63,8 +69,9 @@ export function HeroSection({
                 <div className="space-y-1.5">
                     <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Hero Video Render</label>
                     {heroVideoPreview || heroVideoUrl ? (
-                        <div className="mb-2 text-sm text-primary font-medium break-all">
-                            Current: {heroVideoFile?.name || heroVideoUrl}
+                        <div className="mb-2 flex items-center gap-2 text-sm text-primary font-medium">
+                            <span className="break-all flex-1 min-w-0">Current: {heroVideoFile?.name || heroVideoUrl}</span>
+                            <InlineRemoveButton onClick={onRemoveHeroVideo} label="Remove hero video" />
                         </div>
                     ) : null}
                     <input type="file" accept="video/mp4,video/*" onChange={onHeroVideoChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
@@ -72,8 +79,9 @@ export function HeroSection({
                 <div className="space-y-1.5">
                     <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Metadata Share Image (Open Graph / Twitter)</label>
                     {metadataImagePreview || metadataImageUrl ? (
-                        <div className="mb-2">
+                        <div className="mb-2 relative inline-block">
                             <img src={metadataImagePreview || metadataImageUrl} alt="Metadata Share Preview" className="h-24 w-auto rounded-md object-cover border border-outline-variant/20" />
+                            <RemoveMediaButton onClick={onRemoveMetadataImage} label="Remove metadata image" />
                         </div>
                     ) : null}
                     <input type="file" accept="image/*" onChange={onMetadataImageChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
@@ -112,8 +120,9 @@ export function HeroSection({
                     <div className="space-y-1.5">
                         <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Hero Logo (PNG Formatted)</label>
                         {heroLogoPreview || heroLogoUrl ? (
-                            <div className="mb-2 bg-surface-container-highest p-2 rounded-md inline-block">
+                            <div className="mb-2 bg-surface-container-highest p-2 rounded-md inline-block relative">
                                 <img src={heroLogoPreview || heroLogoUrl} alt="Logo Preview" className="h-16 w-auto object-contain" />
+                                <RemoveMediaButton onClick={onRemoveHeroLogo} label="Remove hero logo" />
                             </div>
                         ) : null}
                         <input type="file" accept="image/png" onChange={onHeroLogoChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
