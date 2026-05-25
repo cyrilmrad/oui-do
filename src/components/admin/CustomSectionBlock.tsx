@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { CustomSection } from '@/components/InvitationPreview';
+import { RemoveMediaButton } from '@/components/admin/builder/RemoveMediaButton';
 
 /**
  * Per-section file upload state, keyed in the parent by section.id.
@@ -26,6 +27,8 @@ interface CustomSectionBlockProps {
     onSlideshowFilesAdd: (sectionId: string, e: React.ChangeEvent<HTMLInputElement>) => void;
     onSlideshowRemoveSlide: (sectionIndex: number, slideIndex: number) => void;
     onCustomFileChange: (e: React.ChangeEvent<HTMLInputElement>, sectionId: string, type: 'bg' | 'overlay') => void;
+    /** Remove the bg/overlay media for this section (slideshow slides have their own remove handler). */
+    onRemoveCustomMedia: (sectionIdx: number, type: 'bg' | 'overlay') => void;
 }
 
 /**
@@ -42,7 +45,8 @@ export function CustomSectionBlock({
     onSlideshowToggle,
     onSlideshowFilesAdd,
     onSlideshowRemoveSlide,
-    onCustomFileChange
+    onCustomFileChange,
+    onRemoveCustomMedia
 }: CustomSectionBlockProps) {
     return (
         <div className="p-8 border border-outline-variant/20 rounded-2xl bg-surface-container-lowest shadow-sm space-y-6 relative group overflow-hidden">
@@ -182,6 +186,7 @@ export function CustomSectionBlock({
                             ) : (
                                 <img src={files?.bgPreview || section.backgroundUrl} alt={`Custom bg ${idx}`} className="h-24 w-auto object-cover opacity-80" />
                             )}
+                            <RemoveMediaButton onClick={() => onRemoveCustomMedia(idx, 'bg')} label="Remove background media" />
                         </div>
                     ) : null}
                     <input
@@ -221,8 +226,9 @@ export function CustomSectionBlock({
                 <div className="space-y-1.5">
                     <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Foreground Transparency Graphic (PNG)</label>
                     {files?.overlayPreview || section.overlayImageUrl ? (
-                        <div className="mb-2 bg-surface-container-highest p-2 rounded-md inline-block">
+                        <div className="mb-2 bg-surface-container-highest p-2 rounded-md inline-block relative">
                             <img src={files?.overlayPreview || section.overlayImageUrl} alt={`Overlay ${idx}`} className="h-16 w-auto object-contain" />
+                            <RemoveMediaButton onClick={() => onRemoveCustomMedia(idx, 'overlay')} label="Remove overlay graphic" />
                         </div>
                     ) : null}
                     <input

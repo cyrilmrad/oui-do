@@ -1,14 +1,16 @@
 import React from 'react';
+import { RemoveMediaButton } from './RemoveMediaButton';
 
 interface PreCeremonySectionProps {
     mediaUrl: string;
     mediaPreview: string | null;
     file: File | null;
     onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onRemove: () => void;
 }
 
 /** Section 04 of the admin invitation builder — full-bleed media slot shown before the ceremony details. */
-export function PreCeremonySection({ mediaUrl, mediaPreview, file, onFileChange }: PreCeremonySectionProps) {
+export function PreCeremonySection({ mediaUrl, mediaPreview, file, onFileChange, onRemove }: PreCeremonySectionProps) {
     const previewSrc = mediaPreview || mediaUrl;
     const looksLikeVideo =
         !!(mediaPreview || mediaUrl || '').match(/\.(mp4|webm|ogg|mov)$/i) ||
@@ -30,6 +32,7 @@ export function PreCeremonySection({ mediaUrl, mediaPreview, file, onFileChange 
                             ) : (
                                 <img src={previewSrc} alt="Pre-Ceremony Feature" className="h-32 w-auto object-cover" />
                             )}
+                            <RemoveMediaButton onClick={onRemove} label="Remove pre-ceremony media" />
                         </div>
                     ) : null}
                     <input type="file" accept="image/*,video/mp4,video/quicktime,video/webm,video/*" onChange={onFileChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />

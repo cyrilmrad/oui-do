@@ -146,6 +146,14 @@ export default function AdminDashboard() {
     const customFilesRef = useRef(customFiles);
     customFilesRef.current = customFiles;
 
+    /**
+     * Storage URLs marked for deletion by the X-buttons on media slots.
+     * The actual `supabase.storage.remove(...)` is deferred until the user clicks "Publish Changes"
+     * so that storage and DB stay in sync. If the user navigates away without saving, the file
+     * remains intact (the previous URL is still in the DB).
+     */
+    const [pendingMediaDeletions, setPendingMediaDeletions] = useState<Set<string>>(new Set());
+
     // Cleanup hero / global preview object URLs when those inputs change.
     // Do NOT tie customFiles to this effect: its cleanup was revoking blob URLs still in use after each slideshow append.
     useEffect(() => {
@@ -170,6 +178,12 @@ export default function AdminDashboard() {
             });
         };
     }, []);
+
+    // Reset pending media deletions whenever the loaded client changes. Prevents one client's
+    // pending deletions from leaking into another client's save.
+    useEffect(() => {
+        setPendingMediaDeletions(new Set());
+    }, [liveData.slug]);
 
 
 
@@ -225,6 +239,85 @@ export default function AdminDashboard() {
             if (prevPreview) URL.revokeObjectURL(prevPreview);
             setFile(file);
             setPreview(URL.createObjectURL(file));
+        }
+    };
+
+    /**
+     * Dismiss a media slot — deferred deletion model:
+     *   1. Revokes the local blob preview URL (if any)
+     *   2. Clears the File and preview state
+     *   3. Clears the URL field on `liveData`
+     *   4. Marks the previously-saved URL for deletion on next successful Save
+     *
+     * Storage is NOT touched here. The mark + delete-on-save flow keeps storage and DB in sync:
+     * if the user navigates away without saving, the original file stays intact.
+     */
+    const removeMedia = (
+        urlField: 'heroImage' | 'heroVideo' | 'metadataImageUrl' | 'heroLogoUrl' | 'audioUrl' | 'formalInvitationImage' | 'detailsBackgroundUrl' | 'preCeremonyMedia',
+        currentUrl: string | null | undefined,
+        setFile: React.Dispatch<React.SetStateAction<File | null>>,
+        setPreview: React.Dispatch<React.SetStateAction<string | null>>,
+        prevPreview: string | null
+    ) => {
+        if (prevPreview) URL.revokeObjectURL(prevPreview);
+        setFile(null);
+        setPreview(null);
+        setLiveData(prev => ({ ...prev, [urlField]: '' }));
+
+        if (currentUrl && currentUrl.includes('/assets/')) {
+            setPendingMediaDeletions(prev => {
+                const next = new Set(prev);
+                next.add(currentUrl);
+                return next;
+            });
+        }
+    };
+
+    /**
+     * Remove a custom section's background or overlay media. Same deferred-deletion model
+     * as `removeMedia`; updates the nested customSections[idx].{backgroundUrl,overlayImageUrl}.
+     * Slideshow slides are NOT handled here — they have their own per-slide remove flow.
+     */
+    const removeCustomSectionMedia = (sectionIdx: number, type: 'bg' | 'overlay') => {
+        const section = liveData.customSections?.[sectionIdx];
+        if (!section) return;
+        const sectionId = section.id;
+        const urlField = type === 'bg' ? 'backgroundUrl' : 'overlayImageUrl';
+        const currentUrl = type === 'bg' ? section.backgroundUrl : section.overlayImageUrl;
+
+        setCustomFiles(prev => {
+            const cur = prev[sectionId];
+            if (!cur) return prev;
+            const next: CustomSectionFiles = { ...cur };
+            if (type === 'bg') {
+                if (next.bgPreview) URL.revokeObjectURL(next.bgPreview);
+                delete next.bgFile;
+                delete next.bgPreview;
+            } else {
+                if (next.overlayPreview) URL.revokeObjectURL(next.overlayPreview);
+                delete next.overlayFile;
+                delete next.overlayPreview;
+            }
+            if (!next.bgFile && !next.bgPreview && !next.overlayFile && !next.overlayPreview && !next.slideshowFiles?.length && !next.slideshowPreviews?.length) {
+                const { [sectionId]: _, ...rest } = prev;
+                return rest;
+            }
+            return { ...prev, [sectionId]: next };
+        });
+
+        setLiveData(prev => {
+            const sections = (prev.customSections || []).map((s, i) =>
+                i === sectionIdx ? { ...s, [urlField]: '' } : s
+            );
+            return { ...prev, customSections: sections };
+        });
+
+        if (currentUrl && currentUrl.includes('/assets/')) {
+            setPendingMediaDeletions(prev => {
+                const next = new Set(prev);
+                next.add(currentUrl);
+                return next;
+            });
         }
     };
 
@@ -629,6 +722,23 @@ export default function AdminDashboard() {
             }
             
             setLiveData(payloadToSave);
+
+            // Flush deferred media deletions now that the DB save succeeded — keeps storage and DB in sync.
+            // Failures are logged but don't roll back the save (file would be a harmless orphan in storage).
+            if (pendingMediaDeletions.size > 0) {
+                await Promise.all(Array.from(pendingMediaDeletions).map(async (url) => {
+                    const cleanPath = url.split('/assets/')[1]?.split('?')[0];
+                    if (!cleanPath) return;
+                    try {
+                        const { error } = await supabase.storage.from('assets').remove([cleanPath]);
+                        if (error) console.error('[Storage Cleanup] Deferred remove failed:', error);
+                    } catch (e) {
+                        console.error('[Storage Cleanup] Deferred remove threw:', e);
+                    }
+                }));
+                setPendingMediaDeletions(new Set());
+            }
+
             toast.success("Invitation saved", { description: `Updated /${liveData.slug}` });
         } catch (error: any) {
             toast.error("Failed to save invitation", { description: error.message });
@@ -961,18 +1071,22 @@ export default function AdminDashboard() {
                                             heroImageUrl={liveData.heroImage || ''}
                                             heroImagePreview={heroImagePreview}
                                             onHeroImageChange={(e) => handleFileChange(e, setHeroImageFile, setHeroImagePreview, heroImagePreview)}
+                                            onRemoveHeroImage={() => removeMedia('heroImage', liveData.heroImage, setHeroImageFile, setHeroImagePreview, heroImagePreview)}
                                             heroVideoUrl={liveData.heroVideo || ''}
                                             heroVideoPreview={heroVideoPreview}
                                             heroVideoFile={heroVideoFile}
                                             onHeroVideoChange={(e) => handleFileChange(e, setHeroVideoFile, setHeroVideoPreview, heroVideoPreview)}
+                                            onRemoveHeroVideo={() => removeMedia('heroVideo', liveData.heroVideo, setHeroVideoFile, setHeroVideoPreview, heroVideoPreview)}
                                             metadataImageUrl={liveData.metadataImageUrl || ''}
                                             metadataImagePreview={metadataImagePreview}
                                             onMetadataImageChange={(e) => handleFileChange(e, setMetadataImageFile, setMetadataImagePreview, metadataImagePreview)}
+                                            onRemoveMetadataImage={() => removeMedia('metadataImageUrl', liveData.metadataImageUrl, setMetadataImageFile, setMetadataImagePreview, metadataImagePreview)}
                                             showHeroLogo={liveData.showHeroLogo || false}
                                             onToggleHeroLogo={(checked) => setLiveData(prev => ({ ...prev, showHeroLogo: checked }))}
                                             heroLogoUrl={liveData.heroLogoUrl || ''}
                                             heroLogoPreview={heroLogoPreview}
                                             onHeroLogoChange={(e) => handleFileChange(e, setHeroLogoFile, setHeroLogoPreview, heroLogoPreview)}
+                                            onRemoveHeroLogo={() => removeMedia('heroLogoUrl', liveData.heroLogoUrl, setHeroLogoFile, setHeroLogoPreview, heroLogoPreview)}
                                             showHeroDate={liveData.showHeroDate !== false}
                                             onToggleHeroDate={(checked) => setLiveData(prev => ({ ...prev, showHeroDate: checked }))}
                                             themeSelection={themeSelection}
@@ -990,13 +1104,16 @@ export default function AdminDashboard() {
                                             formalImagePreview={formalImagePreview}
                                             formalImageFile={formalImageFile}
                                             onFormalImageChange={(e) => handleFileChange(e, setFormalImageFile, setFormalImagePreview, formalImagePreview)}
+                                            onRemoveFormalImage={() => removeMedia('formalInvitationImage', liveData.formalInvitationImage, setFormalImageFile, setFormalImagePreview, formalImagePreview)}
                                             detailsBgUrl={liveData.detailsBackgroundUrl || ''}
                                             detailsBgPreview={detailsBgPreview}
                                             onDetailsBgChange={(e) => handleFileChange(e, setDetailsBgFile, setDetailsBgPreview, detailsBgPreview)}
+                                            onRemoveDetailsBg={() => removeMedia('detailsBackgroundUrl', liveData.detailsBackgroundUrl, setDetailsBgFile, setDetailsBgPreview, detailsBgPreview)}
                                             audioUrl={liveData.audioUrl || ''}
                                             audioPreview={audioPreview}
                                             audioFile={audioFile}
                                             onAudioChange={(e) => handleFileChange(e, setAudioFile, setAudioPreview, audioPreview)}
+                                            onRemoveAudio={() => removeMedia('audioUrl', liveData.audioUrl, setAudioFile, setAudioPreview, audioPreview)}
                                         />
 
                                         <PreCeremonySection
@@ -1004,6 +1121,7 @@ export default function AdminDashboard() {
                                             mediaPreview={preCeremonyMediaPreview}
                                             file={preCeremonyMediaFile}
                                             onFileChange={(e) => handleFileChange(e, setPreCeremonyMediaFile, setPreCeremonyMediaPreview, preCeremonyMediaPreview)}
+                                            onRemove={() => removeMedia('preCeremonyMedia', liveData.preCeremonyMedia, setPreCeremonyMediaFile, setPreCeremonyMediaPreview, preCeremonyMediaPreview)}
                                         />
 
                                         <HousesSection
@@ -1063,6 +1181,7 @@ export default function AdminDashboard() {
                                                             onSlideshowFilesAdd={handleSlideshowFilesAdd}
                                                             onSlideshowRemoveSlide={handleSlideshowRemoveSlide}
                                                             onCustomFileChange={handleCustomFileChange}
+                                                            onRemoveCustomMedia={removeCustomSectionMedia}
                                                         />
                                                     ))}
                                                 </div>
