@@ -104,9 +104,11 @@ export function ClientOverview({
     });
     const [isSavingBasics, setIsSavingBasics] = useState(false);
 
-    // ── Derived stats ─────────────────────────────────────────────────────────
-    const totalGuests = guests.length;
-    const attendingCount = guests.filter(g => g.status === 'attending').length;
+    // ── Derived stats — use pax so multi-person entries count correctly ──────
+    const totalGuests = guests.reduce((sum, g) => sum + (g.pax ?? 1), 0);
+    const attendingCount = guests
+        .filter(g => g.status === 'attending')
+        .reduce((sum, g) => sum + (g.pax ?? 1), 0);
     const totalActualBudget = expenses.reduce((sum, e) => sum + (e.actualCost ?? 0), 0);
     const totalEstimatedBudget = expenses.reduce((sum, e) => sum + (e.estimatedCost ?? 0), 0);
 
