@@ -41,6 +41,7 @@ import { GiftOptionsSection } from '@/components/admin/builder/GiftOptionsSectio
 import { NavigationEditorSection } from '@/components/admin/builder/NavigationEditorSection';
 import { DashboardOverview } from '@/components/admin/DashboardOverview';
 import { ScheduleBuilder } from '@/components/admin/ScheduleBuilder';
+import { ClientOverview } from '@/components/admin/ClientOverview';
 import {
     getAdminDashboardData,
     updateSubscription,
@@ -322,7 +323,9 @@ export default function AdminDashboard() {
     };
 
     // Budget State
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'clients-list' | 'builder' | 'budget' | 'seating' | 'entitlements' | 'schedule'>('dashboard');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'clients-list' | 'builder' | 'budget' | 'seating' | 'entitlements' | 'schedule' | 'client-overview'>('dashboard');
+    /** True when the selected client already has an invitation row in the DB. */
+    const [hasInvitation, setHasInvitation] = useState(true);
     const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
     const [dashboardLoading, setDashboardLoading] = useState(false);
     const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -911,6 +914,12 @@ export default function AdminDashboard() {
                         </button>
                         <div className="flex items-center gap-8 h-full">
                             <button
+                                onClick={() => setActiveTab('client-overview')}
+                                className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'client-overview' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-primary'}`}
+                            >
+                                Overview
+                            </button>
+                            <button
                                 onClick={() => setActiveTab('builder')}
                                 className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'builder' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-primary'}`}
                             >
@@ -974,22 +983,31 @@ export default function AdminDashboard() {
                                                 theme: dbData.theme || THEME_PRESETS.emerald,
                                                 navigationPages: mergeNavigationPages((dbData as InvitationData).navigationPages)
                                             });
+                                            setHasInvitation(true);
                                         } else {
                                             setLiveData({ ...defaultData, slug: client.slug, bride: client.bride, groom: client.groom });
+                                            setHasInvitation(false);
                                         }
                                         setHeroImageFile(null); setHeroImagePreview(null);
                                         setMetadataImageFile(null); setMetadataImagePreview(null);
                                         setHeroVideoFile(null); setHeroVideoPreview(null);
                                         setHeroLogoFile(null); setHeroLogoPreview(null);
                                         setAudioFile(null); setAudioPreview(null);
+                                        // Reset feature data then fetch — wrapped individually so a
+                                        // disabled feature doesn't abort the rest of the load.
+                                        setExpenses([]); setSeatingTables([]); setSeatingGuests([]);
                                         const { data: { session: s } } = await supabase.auth.getSession();
                                         const token = s?.access_token;
-                                        const exp = await getExpensesBySlug(client.slug, token);
-                                        setExpenses(exp);
-                                        const seatData = await getSeatingData(client.slug, token);
-                                        setSeatingTables(seatData.tables);
-                                        setSeatingGuests(seatData.guests);
-                                        setActiveTab('builder'); // Transition to Builder
+                                        try {
+                                            const exp = await getExpensesBySlug(client.slug, token);
+                                            setExpenses(exp);
+                                        } catch { /* budget feature may be disabled */ }
+                                        try {
+                                            const seatData = await getSeatingData(client.slug, token);
+                                            setSeatingTables(seatData.tables);
+                                            setSeatingGuests(seatData.guests);
+                                        } catch { /* seating feature may be disabled */ }
+                                        setActiveTab('client-overview');
                                     }
                                 } catch (e) { console.error(e); }
                                 finally {
@@ -1325,6 +1343,21 @@ export default function AdminDashboard() {
                             slug={liveData.slug}
                             brideGroom={`${liveData.bride} & ${liveData.groom}`}
                             accessToken={accessToken}
+                        />
+                    )}
+
+                    {activeTab === 'client-overview' && !isCreatingClient && liveData.slug && (
+                        <ClientOverview
+                            liveData={liveData}
+                            guests={seatingGuests}
+                            expenses={expenses}
+                            accessToken={accessToken}
+                            hasInvitation={hasInvitation}
+                            onNavigate={(tab) => setActiveTab(tab)}
+                            onInvitationSaved={(updates) => {
+                                setLiveData(prev => ({ ...prev, ...updates }));
+                                setHasInvitation(true);
+                            }}
                         />
                     )}
                 </div>

@@ -40,6 +40,9 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
     const [isGuestCsvImporting, setIsGuestCsvImporting] = useState(false);
     const [deletingGuestId, setDeletingGuestId] = useState<string | null>(null);
 
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [exportFilter, setExportFilter] = useState<'all' | 'attending'>('all');
+
     const filteredRsvps = useMemo(() => {
         return rsvps.filter(rsvp => {
             const matchesStatus = filterStatus === 'all' || rsvp.status === filterStatus;
@@ -200,6 +203,33 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
         }
     };
 
+    const handleExportCsv = () => {
+        const rows = exportFilter === 'attending'
+            ? rsvps.filter(g => g.status === 'attending')
+            : rsvps;
+
+        const escape = (val: unknown) => `"${String(val ?? '').replace(/"/g, '""')}"`;
+        const header = ['First Name', 'Last Name', 'Party Size', 'Status', 'Message'].map(escape).join(',');
+        const body = rows
+            .map(g => [g.firstName, g.lastName, g.pax ?? 1, g.status, g.message ?? ''].map(escape).join(','))
+            .join('\n');
+
+        // BOM prefix ensures Excel opens UTF-8 CSV correctly
+        const blob = new Blob(['﻿' + header + '\n' + body], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `guests-${userSlug}-${exportFilter}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setIsExportModalOpen(false);
+        toast.success('Exported', {
+            description: `${rows.length} guest${rows.length !== 1 ? 's' : ''} downloaded as CSV`
+        });
+    };
+
     const copyGuestLink = (guestId: string) => {
         const origin = window.location.origin;
         const url = `${origin}/invite/${userSlug}?guest=${guestId}`;
@@ -211,8 +241,78 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
         return <FeatureLockedMessage label="Guests" />;
     }
 
+    const attendingCount = rsvps.filter(g => g.status === 'attending').length;
+    const exportCount = exportFilter === 'attending' ? attendingCount : rsvps.length;
+
     return (
         <>
+            {/* ── Export modal ──────────────────────────────────────────────── */}
+            {isExportModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-8 w-full max-w-sm mx-4 space-y-6">
+                        <div>
+                            <h3 className="text-xl font-serif text-stone-900">Export Guest List</h3>
+                            <p className="text-sm text-stone-500 mt-1">Download as CSV — opens in Excel or Google Sheets.</p>
+                        </div>
+
+                        <div className="space-y-2.5">
+                            <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-colors ${exportFilter === 'all' ? 'border-stone-800 bg-stone-50' : 'border-stone-200 hover:border-stone-300'}`}>
+                                <input
+                                    type="radio"
+                                    name="export-filter"
+                                    value="all"
+                                    checked={exportFilter === 'all'}
+                                    onChange={() => setExportFilter('all')}
+                                    className="accent-stone-900"
+                                />
+                                <div>
+                                    <p className="text-sm font-semibold text-stone-900">All guests</p>
+                                    <p className="text-xs text-stone-500">{rsvps.length} {rsvps.length === 1 ? 'entry' : 'entries'}</p>
+                                </div>
+                            </label>
+                            <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-colors ${exportFilter === 'attending' ? 'border-emerald-600 bg-emerald-50/50' : 'border-stone-200 hover:border-stone-300'}`}>
+                                <input
+                                    type="radio"
+                                    name="export-filter"
+                                    value="attending"
+                                    checked={exportFilter === 'attending'}
+                                    onChange={() => setExportFilter('attending')}
+                                    className="accent-emerald-600"
+                                />
+                                <div>
+                                    <p className="text-sm font-semibold text-stone-900">Attending only</p>
+                                    <p className="text-xs text-stone-500">{attendingCount} confirmed</p>
+                                </div>
+                            </label>
+                        </div>
+
+                        <p className="text-sm bg-stone-50 border border-stone-200 rounded-lg px-4 py-3">
+                            <span className="font-semibold text-stone-900">{exportCount}</span>
+                            {' '}{exportCount === 1 ? 'guest' : 'guests'} will be exported
+                        </p>
+
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setIsExportModalOpen(false)}
+                                className="flex-1 border border-stone-200 text-stone-700 hover:bg-stone-50 font-semibold py-2.5 rounded-lg text-sm transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleExportCsv}
+                                disabled={exportCount === 0}
+                                className="flex-1 bg-stone-900 text-white hover:bg-stone-800 disabled:opacity-40 font-semibold py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Download className="w-4 h-4" aria-hidden />
+                                Download CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <CsvImportModal
                 preview={csvImportPreview}
                 isImporting={isGuestCsvImporting}
@@ -242,6 +342,14 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
                         />
                         Import
                     </label>
+                    <button
+                        type="button"
+                        onClick={() => { setExportFilter('all'); setIsExportModalOpen(true); }}
+                        className="bg-stone-100 text-stone-600 hover:bg-stone-200 uppercase tracking-widest text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center gap-2"
+                    >
+                        <Download className="w-3.5 h-3.5" aria-hidden />
+                        Export
+                    </button>
                     <button onClick={() => setIsAddingGuest(!isAddingGuest)} className="bg-stone-900 text-white hover:bg-stone-800 uppercase tracking-widest text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center gap-2">
                         <Plus className="w-4 h-4" /> Add Guest
                     </button>
