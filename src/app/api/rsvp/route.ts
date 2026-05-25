@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
         const invitationId = invitationResult[0].id;
         const status = attending === 'yes' ? 'attending' : 'declined';
-        const paxCount = attending === 'yes' ? parseInt(guests, 10) || 1 : 0;
+        const paxCount = parseInt(guests, 10) || 1;
 
         if (guestId) {
             // Verify guestId belongs to this invitation before updating
@@ -42,17 +42,26 @@ export async function POST(request: Request) {
                 return NextResponse.json({ error: 'Invalid guest link' }, { status: 403 });
             }
 
-            await db.update(guestsTable)
-                .set({ status, pax: paxCount, message: message || '', updatedAt: new Date() })
-                .where(eq(guestsTable.id, guestId));
+            // When declining via personalized link, do NOT overwrite pax — the admin-set
+            // headcount should be retained so total invitee stats remain accurate.
+            if (status === 'attending') {
+                await db.update(guestsTable)
+                    .set({ status, pax: paxCount, message: message || '', updatedAt: new Date() })
+                    .where(eq(guestsTable.id, guestId));
+            } else {
+                await db.update(guestsTable)
+                    .set({ status, message: message || '', updatedAt: new Date() })
+                    .where(eq(guestsTable.id, guestId));
+            }
         } else {
-            // Generic Link Insert
+            // Generic link insert — use submitted pax if attending, else 1 (the person
+            // who declined still counts as 1 invitee for accurate totals).
             await db.insert(guestsTable).values({
                 invitationId,
                 firstName,
                 lastName,
                 status,
-                pax: paxCount,
+                pax: status === 'attending' ? paxCount : 1,
                 message: message || ''
             });
         }
