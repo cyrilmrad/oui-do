@@ -944,6 +944,16 @@ export default function AdminDashboard() {
                                 Day-of Schedule
                             </button>
                         </div>
+                        {/* Preview link — separate from tabs, opens in new tab */}
+                        <a
+                            href={`/admin/preview/${liveData.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-auto flex items-center gap-1.5 text-[0.7rem] font-label uppercase tracking-widest text-secondary hover:text-primary border border-outline-variant/30 hover:border-primary/40 rounded-full px-4 py-1.5 transition-colors"
+                        >
+                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                            Preview as Client
+                        </a>
                     </div>
                 )}
 

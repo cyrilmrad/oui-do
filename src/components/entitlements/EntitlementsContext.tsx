@@ -68,6 +68,21 @@ export function EntitlementsProvider({ children }: { children: React.ReactNode }
     return <EntitlementsContext.Provider value={value}>{children}</EntitlementsContext.Provider>;
 }
 
+/**
+ * Provides all features as enabled — used by admin-side views (e.g. the client preview page)
+ * where the admin should see every tab regardless of what the client has enabled.
+ */
+export function AllFeaturesProvider({ children }: { children: React.ReactNode }) {
+    const value = React.useMemo<EntitlementsContextValue>(() => ({
+        loading: false,
+        slug: null,
+        features: { guests: true, messages: true, budget: true, seating: true, settings: true },
+        hasFeature: () => true,
+        refresh: async () => {},
+    }), []);
+    return <EntitlementsContext.Provider value={value}>{children}</EntitlementsContext.Provider>;
+}
+
 export function useEntitlements(): EntitlementsContextValue {
     const ctx = useContext(EntitlementsContext);
     if (!ctx) {
