@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ImagePlus, X } from 'lucide-react';
 import { InvitationBlogEditor } from '@/components/blog/InvitationBlogEditor';
 import type {
     NavigationBlogBody,
@@ -20,6 +20,8 @@ interface NavigationEditorSectionProps {
     addLodgingHotel: () => void;
     removeLodgingHotel: (index: number) => void;
     updateLodgingHotel: (index: number, field: keyof NavigationLodgingHotel, value: string) => void;
+    onHotelImageUpload: (idx: number, file: File) => Promise<void>;
+    onHotelImageRemove: (idx: number, currentUrl: string) => Promise<void>;
     addExploringSpot: () => void;
     removeExploringSpot: (index: number) => void;
     updateExploringSpot: (index: number, field: keyof NavigationExploringSpot, value: string) => void;
@@ -41,6 +43,8 @@ export function NavigationEditorSection({
     addLodgingHotel,
     removeLodgingHotel,
     updateLodgingHotel,
+    onHotelImageUpload,
+    onHotelImageRemove,
     addExploringSpot,
     removeExploringSpot,
     updateExploringSpot,
@@ -165,6 +169,36 @@ export function NavigationEditorSection({
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>
+                                {/* Hotel cover photo */}
+                                {hotel.imageUrl ? (
+                                    <div className="relative rounded-md overflow-hidden">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={hotel.imageUrl} alt="Hotel cover" className="w-full h-28 object-cover" />
+                                        <button
+                                            type="button"
+                                            onClick={() => void onHotelImageRemove(idx, hotel.imageUrl!)}
+                                            className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/55 hover:bg-rose-600/90 text-white flex items-center justify-center transition-colors"
+                                            title="Remove photo"
+                                        >
+                                            <X className="w-3.5 h-3.5" strokeWidth={2.5} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <label className="cursor-pointer flex items-center justify-center gap-2 w-full h-20 border-2 border-dashed border-outline-variant/30 rounded-md text-xs font-label font-bold uppercase tracking-widest text-secondary hover:border-primary/40 hover:text-primary transition-colors">
+                                        <ImagePlus className="w-4 h-4" />
+                                        Add photo
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={e => {
+                                                const f = e.target.files?.[0];
+                                                if (f) void onHotelImageUpload(idx, f);
+                                                e.target.value = '';
+                                            }}
+                                        />
+                                    </label>
+                                )}
                                 <input type="text" placeholder="Title" value={hotel.title} onChange={(e) => updateLodgingHotel(idx, 'title', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
                                 <input type="text" placeholder="Subtitle / distance" value={hotel.subtitle} onChange={(e) => updateLodgingHotel(idx, 'subtitle', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
                                 <textarea placeholder="Description" value={hotel.description} onChange={(e) => updateLodgingHotel(idx, 'description', e.target.value)} rows={3} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface resize-y" />

@@ -1241,6 +1241,23 @@ export default function AdminDashboard() {
                                             addLodgingHotel={addLodgingHotel}
                                             removeLodgingHotel={removeLodgingHotel}
                                             updateLodgingHotel={updateLodgingHotel}
+                                            onHotelImageUpload={async (idx, file) => {
+                                                const slug = liveData.slug;
+                                                if (!slug) return;
+                                                const ext = file.name.split('.').pop() ?? 'jpg';
+                                                const path = `${slug}/lodging/hotel-${idx}-${Date.now()}.${ext.replace(/[^a-zA-Z0-9]/g, '')}`;
+                                                const { error } = await supabase.storage.from('assets').upload(path, file, { cacheControl: '3600', upsert: false });
+                                                if (error) { toast.error('Failed to upload hotel image', { description: error.message }); return; }
+                                                const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(path);
+                                                updateLodgingHotel(idx, 'imageUrl', publicUrl);
+                                            }}
+                                            onHotelImageRemove={async (idx, currentUrl) => {
+                                                if (currentUrl?.includes('/assets/')) {
+                                                    const cleanPath = currentUrl.split('/assets/')[1]?.split('?')[0];
+                                                    if (cleanPath) await supabase.storage.from('assets').remove([cleanPath]);
+                                                }
+                                                updateLodgingHotel(idx, 'imageUrl', '');
+                                            }}
                                             addExploringSpot={addExploringSpot}
                                             removeExploringSpot={removeExploringSpot}
                                             updateExploringSpot={updateExploringSpot}
