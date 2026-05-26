@@ -20,7 +20,9 @@ import {
     Calculator,
     Armchair,
     Trash2,
-    ChevronDown
+    ChevronDown,
+    X,
+    ImagePlus
 } from 'lucide-react';
 import InvitationPreview, {
     GIFT_DEFAULT_ACCOUNT_NUMBER_LABEL,
@@ -339,6 +341,25 @@ export default function DashboardPage() {
     if (loadingAuth) {
         return <div className="min-h-screen w-full flex items-center justify-center bg-stone-50"><p className="text-stone-500 animate-pulse">Loading Dashboard...</p></div>;
     }
+
+    // ── Hotel image upload helpers ────────────────────────────────────────────
+    const handleHotelImageUpload = async (idx: number, file: File) => {
+        if (!userSlug) return;
+        const ext = file.name.split('.').pop() ?? 'jpg';
+        const path = `${userSlug}/lodging/hotel-${idx}-${Date.now()}.${ext.replace(/[^a-zA-Z0-9]/g, '')}`;
+        const { error } = await supabase.storage.from('assets').upload(path, file, { cacheControl: '3600', upsert: false });
+        if (error) { toast.error('Failed to upload hotel image', { description: error.message }); return; }
+        const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(path);
+        updateLodgingHotel(idx, 'imageUrl', publicUrl);
+    };
+
+    const handleHotelImageRemove = async (idx: number, currentUrl: string) => {
+        if (currentUrl?.includes('/assets/')) {
+            const cleanPath = currentUrl.split('/assets/')[1]?.split('?')[0];
+            if (cleanPath) await supabase.storage.from('assets').remove([cleanPath]);
+        }
+        updateLodgingHotel(idx, 'imageUrl', '');
+    };
 
     const handleCopyLink = () => {
         if (typeof window !== 'undefined' && userSlug) {
@@ -967,6 +988,36 @@ export default function DashboardPage() {
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         </div>
+                                        {/* Hotel cover photo */}
+                                        {hotel.imageUrl ? (
+                                            <div className="relative rounded-md overflow-hidden">
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src={hotel.imageUrl} alt="Hotel cover" className="w-full h-28 object-cover" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => void handleHotelImageRemove(idx, hotel.imageUrl!)}
+                                                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/55 hover:bg-rose-600/90 text-white flex items-center justify-center transition-colors"
+                                                    title="Remove photo"
+                                                >
+                                                    <X className="w-3.5 h-3.5" strokeWidth={2.5} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <label className="cursor-pointer flex items-center justify-center gap-2 w-full h-20 border-2 border-dashed border-stone-200 rounded-md text-xs font-semibold uppercase tracking-widest text-stone-400 hover:border-emerald-400 hover:text-emerald-500 transition-colors">
+                                                <ImagePlus className="w-4 h-4" />
+                                                Add photo
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={e => {
+                                                        const f = e.target.files?.[0];
+                                                        if (f) void handleHotelImageUpload(idx, f);
+                                                        e.target.value = '';
+                                                    }}
+                                                />
+                                            </label>
+                                        )}
                                         <input type="text" placeholder="Title" value={hotel.title} onChange={(e) => updateLodgingHotel(idx, 'title', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
                                         <input type="text" placeholder="Subtitle" value={hotel.subtitle} onChange={(e) => updateLodgingHotel(idx, 'subtitle', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
                                         <textarea placeholder="Description" value={hotel.description} onChange={(e) => updateLodgingHotel(idx, 'description', e.target.value)} rows={3} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none resize-y" />

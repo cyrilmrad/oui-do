@@ -9,6 +9,8 @@ export interface NavigationLodgingHotel {
     description: string;
     linkText: string;
     linkUrl: string;
+    /** Optional cover photo uploaded to Supabase assets storage. */
+    imageUrl?: string;
 }
 
 export interface NavigationExploringSpot {
@@ -60,7 +62,8 @@ export const EMPTY_LODGING_HOTEL: NavigationLodgingHotel = {
     subtitle: '',
     description: '',
     linkText: '',
-    linkUrl: '#'
+    linkUrl: '#',
+    imageUrl: ''
 };
 
 export const EMPTY_EXPLORING_SPOT: NavigationExploringSpot = {

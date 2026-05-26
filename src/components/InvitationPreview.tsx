@@ -1629,10 +1629,20 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                             </p>
                             <div className="grid grid-cols-1 @md:grid-cols-2 gap-8 max-w-4xl mx-auto w-full">
                                 {nav.lodgingHotels.map((hotel, idx) => (
-                                    <div key={idx} className="bg-white p-10 border border-stone-100 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-left hover:-translate-y-1 transition-transform">
-                                        <div className={`w-12 h-12 rounded-full ${cleanTheme.bgAccent} text-white flex items-center justify-center mb-6`}>
-                                            {idx % 2 === 0 ? <Heart className="w-5 h-5" /> : <MapPin className="w-5 h-5" />}
-                                        </div>
+                                    <div key={idx} className="bg-white border border-stone-100 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-left hover:-translate-y-1 transition-transform overflow-hidden">
+                                        {hotel.imageUrl ? (
+                                            <img
+                                                src={hotel.imageUrl}
+                                                alt={hotel.title}
+                                                className="w-full h-44 object-cover"
+                                            />
+                                        ) : null}
+                                        <div className="p-10">
+                                        {!hotel.imageUrl && (
+                                            <div className={`w-12 h-12 rounded-full ${cleanTheme.bgAccent} text-white flex items-center justify-center mb-6`}>
+                                                {idx % 2 === 0 ? <Heart className="w-5 h-5" /> : <MapPin className="w-5 h-5" />}
+                                            </div>
+                                        )}
                                         <h3 className="text-2xl font-serif text-stone-800 mb-2">{hotel.title}</h3>
                                         <p className="text-stone-500 text-sm uppercase tracking-widest font-semibold mb-6">{hotel.subtitle}</p>
                                         <p className="text-stone-600 font-light mb-8 leading-relaxed whitespace-pre-line">{hotel.description}</p>
@@ -1644,6 +1654,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                         >
                                             {hotel.linkText} <ExternalLink className="w-4 h-4 inline ml-1 mb-1" />
                                         </a>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
