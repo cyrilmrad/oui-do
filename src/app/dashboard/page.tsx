@@ -25,15 +25,12 @@ import {
     ImagePlus
 } from 'lucide-react';
 import InvitationPreview, {
-    GIFT_DEFAULT_ACCOUNT_NUMBER_LABEL,
-    GIFT_DEFAULT_SWIFT_LABEL,
-    giftResolvedAccountNumberLabel,
-    giftResolvedSwiftLabel,
     InvitationData,
     Theme,
     mergeNavigationPages,
     NavigationPagesContent
 } from '@/components/InvitationPreview';
+import { GiftOptionsList } from '@/components/GiftOptionsForm';
 import { InvitationBlogEditor } from '@/components/blog/InvitationBlogEditor';
 import { wrapMarkdownBoldSegment } from '@/lib/rsvpClosedMessageBold';
 import BudgetTracker from '@/components/BudgetTracker';
@@ -287,7 +284,14 @@ export default function DashboardPage() {
         setWeddingDetails((prev: InvitationData) => ({ ...prev, [name]: value }));
     };
 
-    const { handleAddGiftOption, handleRemoveGiftOption, handleGiftOptionChange } = useGiftOptions(setWeddingDetails);
+    const {
+        handleAddGiftOption,
+        handleRemoveGiftOption,
+        handleGiftOptionChange,
+        handleAddCustomField,
+        handleRemoveCustomField,
+        handleCustomFieldChange
+    } = useGiftOptions(setWeddingDetails);
 
     const navDraft = mergeNavigationPages(weddingDetails.navigationPages);
 
@@ -724,85 +728,15 @@ export default function DashboardPage() {
                                 <label className="text-xs font-medium text-stone-500 uppercase tracking-wider">Registry & Monetary Gifts Message</label>
                                 <textarea name="giftMessage" value={weddingDetails.giftMessage} onChange={handleSettingsChange} rows={2} className="w-full border border-stone-200 rounded-md p-3 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none" />
 
-                                {(weddingDetails.giftOptions || []).length === 0 && (
-                                    <p className="text-sm text-stone-500 italic py-4 text-center">No transfer options added yet.</p>
-                                )}
-
-                                <div className="space-y-4">
-                                    {(weddingDetails.giftOptions || []).map((option, idx) => (
-                                        <div key={option.id} className="p-5 border border-stone-200 rounded-xl relative group bg-stone-50/50">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveGiftOption(idx)}
-                                                className="absolute top-4 right-4 text-stone-400 hover:text-red-500 transition-colors"
-                                            >
-                                                ✕
-                                            </button>
-                                            <h4 className="text-xs font-bold text-stone-500 uppercase tracking-widest mb-4">
-                                                {option.type === 'bank'
-                                                    ? 'Bank transfer'
-                                                    : option.serviceName?.trim() || 'Mobile transfer'}
-                                            </h4>
-                                            {option.type === 'bank' ? (
-                                                <div className="space-y-3">
-                                                    <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-4 py-3">
-                                                        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 mb-2 block">Bank name</label>
-                                                        <input type="text" value={option.bankName || ''} onChange={(e) => handleGiftOptionChange(idx, 'bankName', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-stone-900 tracking-wide placeholder:text-stone-400 focus:ring-0 outline-none" placeholder="e.g. Doha Bank" />
-                                                    </div>
-                                                    <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-4 py-3">
-                                                        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 mb-2 block">Account holder</label>
-                                                        <input type="text" value={option.accountName || ''} onChange={(e) => handleGiftOptionChange(idx, 'accountName', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-stone-900 tracking-wide placeholder:text-stone-400 focus:ring-0 outline-none" placeholder="Full name on account" />
-                                                    </div>
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                        <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-4 py-3">
-                                                            <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 mb-2 block">First row label (optional)</label>
-                                                            <input
-                                                                type="text"
-                                                                value={option.accountNumberLabel || ''}
-                                                                onChange={(e) => handleGiftOptionChange(idx, 'accountNumberLabel', e.target.value)}
-                                                                className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-stone-900 tracking-wide placeholder:text-stone-400 focus:ring-0 outline-none"
-                                                                placeholder={GIFT_DEFAULT_ACCOUNT_NUMBER_LABEL}
-                                                            />
-                                                        </div>
-                                                        <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-4 py-3">
-                                                            <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 mb-2 block">Second row label (optional)</label>
-                                                            <input
-                                                                type="text"
-                                                                value={option.swiftCodeLabel || ''}
-                                                                onChange={(e) => handleGiftOptionChange(idx, 'swiftCodeLabel', e.target.value)}
-                                                                className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-stone-900 tracking-wide placeholder:text-stone-400 focus:ring-0 outline-none"
-                                                                placeholder={GIFT_DEFAULT_SWIFT_LABEL}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-4 py-3">
-                                                        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 mb-2 block">{giftResolvedAccountNumberLabel(option)}</label>
-                                                        <input type="text" value={option.accountNumber || ''} onChange={(e) => handleGiftOptionChange(idx, 'accountNumber', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-stone-900 tracking-wide placeholder:text-stone-400 focus:ring-0 outline-none" placeholder="IBAN, account number, etc." />
-                                                    </div>
-                                                    <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-4 py-3">
-                                                        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 mb-2 block">{giftResolvedSwiftLabel(option)}</label>
-                                                        <input type="text" value={option.swiftCode || ''} onChange={(e) => handleGiftOptionChange(idx, 'swiftCode', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-stone-900 tracking-wide placeholder:text-stone-400 focus:ring-0 outline-none" placeholder="SWIFT, routing number, etc." />
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-3">
-                                                    <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-4 py-3">
-                                                        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 mb-2 block">Service (header)</label>
-                                                        <input type="text" value={option.serviceName || ''} onChange={(e) => handleGiftOptionChange(idx, 'serviceName', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-stone-900 tracking-wide placeholder:text-stone-400 focus:ring-0 outline-none" placeholder="e.g. Whish" />
-                                                    </div>
-                                                    <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-4 py-3">
-                                                        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 mb-2 block">Account name (optional)</label>
-                                                        <input type="text" value={option.mobileAccountName || ''} onChange={(e) => handleGiftOptionChange(idx, 'mobileAccountName', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-stone-900 tracking-wide placeholder:text-stone-400 focus:ring-0 outline-none" placeholder="Optional" />
-                                                    </div>
-                                                    <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-4 py-3">
-                                                        <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 mb-2 block">Mobile / handle</label>
-                                                        <input type="text" value={option.mobileNumber || ''} onChange={(e) => handleGiftOptionChange(idx, 'mobileNumber', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-mono font-semibold text-stone-900 tracking-wide placeholder:text-stone-400 focus:ring-0 outline-none" placeholder="@johndoe or phone" />
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
+                                <GiftOptionsList
+                                    variant="dashboard"
+                                    giftOptions={weddingDetails.giftOptions || []}
+                                    onRemoveGiftOption={handleRemoveGiftOption}
+                                    onGiftOptionChange={handleGiftOptionChange}
+                                    onAddCustomField={handleAddCustomField}
+                                    onRemoveCustomField={handleRemoveCustomField}
+                                    onCustomFieldChange={handleCustomFieldChange}
+                                />
                             </div>
 
                             <div className="space-y-2 pt-6 border-t border-stone-100">

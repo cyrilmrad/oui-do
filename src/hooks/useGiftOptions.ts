@@ -44,5 +44,69 @@ export function useGiftOptions(setState: Dispatch<SetStateAction<InvitationData>
         });
     };
 
-    return { handleAddGiftOption, handleRemoveGiftOption, handleGiftOptionChange };
+    const handleAddCustomField = (index: number) => {
+        setState((prev) => {
+            const arr = [...(prev.giftOptions || [])];
+            const target = arr[index];
+            if (!target) return prev;
+            const existing = target.customFields || [];
+            arr[index] = {
+                ...target,
+                customFields: [
+                    ...existing,
+                    {
+                        id:
+                            typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                                ? crypto.randomUUID()
+                                : Math.random().toString(36).substring(2, 10),
+                        label: '',
+                        value: ''
+                    }
+                ]
+            };
+            return { ...prev, giftOptions: arr };
+        });
+    };
+
+    const handleRemoveCustomField = (index: number, fieldId: string) => {
+        setState((prev) => {
+            const arr = [...(prev.giftOptions || [])];
+            const target = arr[index];
+            if (!target) return prev;
+            arr[index] = {
+                ...target,
+                customFields: (target.customFields || []).filter((f) => f.id !== fieldId)
+            };
+            return { ...prev, giftOptions: arr };
+        });
+    };
+
+    const handleCustomFieldChange = (
+        index: number,
+        fieldId: string,
+        key: 'label' | 'value',
+        value: string
+    ) => {
+        setState((prev) => {
+            const arr = [...(prev.giftOptions || [])];
+            const target = arr[index];
+            if (!target) return prev;
+            arr[index] = {
+                ...target,
+                customFields: (target.customFields || []).map((f) =>
+                    f.id === fieldId ? { ...f, [key]: value } : f
+                )
+            };
+            return { ...prev, giftOptions: arr };
+        });
+    };
+
+    return {
+        handleAddGiftOption,
+        handleRemoveGiftOption,
+        handleGiftOptionChange,
+        handleAddCustomField,
+        handleRemoveCustomField,
+        handleCustomFieldChange
+    };
 }

@@ -61,6 +61,12 @@ export interface CustomSection {
     position?: 'default' | 'pre-rsvp';
 }
 
+export interface BankCustomField {
+    id: string;
+    label: string;
+    value: string;
+}
+
 export interface GiftOption {
     id: string;
     type: 'bank' | 'mobile';
@@ -73,14 +79,19 @@ export interface GiftOption {
     accountNumberLabel?: string;
     /** If empty, label defaults to "SWIFT / BIC code" (override for e.g. routing number). */
     swiftCodeLabel?: string;
+    /** Additional ad-hoc label/value rows shown on bank cards. Optional for backward compatibility. */
+    customFields?: BankCustomField[];
     mobileNumber?: string;
     /** Optional display name for the payer (mobile transfer only) */
     mobileAccountName?: string;
+    /** If empty, label defaults to "Mobile / handle" (mobile transfer only). */
+    mobileNumberLabel?: string;
     serviceName?: string; // e.g. Venmo, Zelle, PayNow
 }
 
 export const GIFT_DEFAULT_ACCOUNT_NUMBER_LABEL = 'IBAN / Account number';
 export const GIFT_DEFAULT_SWIFT_LABEL = 'SWIFT / BIC code';
+export const GIFT_DEFAULT_MOBILE_NUMBER_LABEL = 'Mobile / handle';
 
 export function giftResolvedAccountNumberLabel(o: Pick<GiftOption, 'accountNumberLabel'>): string {
     const t = o.accountNumberLabel?.trim();
@@ -90,6 +101,11 @@ export function giftResolvedAccountNumberLabel(o: Pick<GiftOption, 'accountNumbe
 export function giftResolvedSwiftLabel(o: Pick<GiftOption, 'swiftCodeLabel'>): string {
     const t = o.swiftCodeLabel?.trim();
     return t || GIFT_DEFAULT_SWIFT_LABEL;
+}
+
+export function giftResolvedMobileNumberLabel(o: Pick<GiftOption, 'mobileNumberLabel'>): string {
+    const t = o.mobileNumberLabel?.trim();
+    return t || GIFT_DEFAULT_MOBILE_NUMBER_LABEL;
 }
 
 function GiftTransferDetailCard({
@@ -1269,6 +1285,16 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                                 value={option.swiftCode || ''}
                                                                 mono
                                                             />
+                                                            {(option.customFields || [])
+                                                                .filter((f) => f.value.trim() && f.label.trim())
+                                                                .map((f) => (
+                                                                    <GiftTransferDetailCard
+                                                                        key={f.id}
+                                                                        label={f.label}
+                                                                        value={f.value}
+                                                                        mono
+                                                                    />
+                                                                ))}
                                                         </div>
                                                     ) : (
                                                         <div className="space-y-3">
@@ -1276,7 +1302,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                                 label="Account name"
                                                                 value={option.mobileAccountName || ''}
                                                             />
-                                                            <GiftTransferDetailCard label="Mobile / handle" value={option.mobileNumber || ''} mono />
+                                                            <GiftTransferDetailCard label={giftResolvedMobileNumberLabel(option)} value={option.mobileNumber || ''} mono />
                                                         </div>
                                                     )}
                                                 </div>

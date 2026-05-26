@@ -4,10 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import InvitationPreview, {
-    GIFT_DEFAULT_ACCOUNT_NUMBER_LABEL,
-    GIFT_DEFAULT_SWIFT_LABEL,
-    giftResolvedAccountNumberLabel,
-    giftResolvedSwiftLabel,
     InvitationData,
     Theme,
     mergeNavigationPages,
@@ -546,7 +542,14 @@ export default function AdminDashboard() {
         });
     };
 
-    const { handleAddGiftOption, handleRemoveGiftOption, handleGiftOptionChange } = useGiftOptions(setLiveData);
+    const {
+        handleAddGiftOption,
+        handleRemoveGiftOption,
+        handleGiftOptionChange,
+        handleAddCustomField,
+        handleRemoveCustomField,
+        handleCustomFieldChange
+    } = useGiftOptions(setLiveData);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -1213,6 +1216,9 @@ export default function AdminDashboard() {
                                             onAddGiftOption={handleAddGiftOption}
                                             onRemoveGiftOption={handleRemoveGiftOption}
                                             onGiftOptionChange={handleGiftOptionChange}
+                                            onAddCustomField={handleAddCustomField}
+                                            onRemoveCustomField={handleRemoveCustomField}
+                                            onCustomFieldChange={handleCustomFieldChange}
                                             showRsvp={liveData.showRsvp !== false}
                                             onToggleRsvp={(checked) => setLiveData(prev => ({ ...prev, showRsvp: checked }))}
                                             rsvpClosedMessage={liveData.rsvpClosedMessage || ''}
