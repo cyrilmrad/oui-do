@@ -55,6 +55,10 @@ export interface CustomSection {
     textContent?: string;
     fontFamily?: string;
     overlayImageUrl?: string;
+    /** Where to render this block in the invitation.
+     *  'default' (or absent) = current position before Gifts.
+     *  'pre-rsvp' = immediately before the RSVP section. */
+    position?: 'default' | 'pre-rsvp';
 }
 
 export interface GiftOption {
@@ -1134,8 +1138,8 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                             </div>
                         </motion.section>
 
-                        {/* Custom Modular Sections */}
-                        {data.customSections?.map((section, index) => {
+                        {/* Custom Modular Sections — default position (before Gifts) */}
+                        {data.customSections?.filter(s => s.position !== 'pre-rsvp').map((section, index) => {
                             const sectionIsSlideshow = section.backgroundType === 'slideshow';
                             const sectionIsVideo =
                                 !sectionIsSlideshow &&
@@ -1163,12 +1167,13 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     {/* Background Media */}
                                     <div className={`${sectionIsVideo ? 'relative w-full' : 'absolute inset-0'} z-0 overflow-hidden bg-stone-900`}>
                                         {sectionIsVideo ? (
-                                            <video 
+                                            <video
                                                 id={`vid-custom-${section.id}`}
-                                                src={section.backgroundUrl} 
-                                                className="w-full h-auto block" 
-                                                playsInline 
-                                                muted 
+                                                src={section.backgroundUrl}
+                                                className="w-full h-auto block"
+                                                playsInline
+                                                muted
+                                                loop
                                             />
                                         ) : sectionIsSlideshow ? (
                                             <CustomSectionSlideshow
@@ -1281,6 +1286,78 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                 </div>
                             </motion.section>
                         )}
+
+                        {/* Custom Modular Sections — pre-RSVP position */}
+                        {data.customSections?.filter(s => s.position === 'pre-rsvp').map((section, index) => {
+                            const sectionIsSlideshow = section.backgroundType === 'slideshow';
+                            const sectionIsVideo =
+                                !sectionIsSlideshow &&
+                                (section.backgroundType === 'video' ||
+                                    !!(section.backgroundUrl || '').split('?')[0].match(/\.(mp4|webm|ogg|mov)$/i));
+                            const showOverlay = section.showOverlay !== false;
+                            const isFullBleed = section.isFullBleed === true;
+                            const slideUrls = customSectionSlideUrls(section);
+
+                            return (
+                                <motion.section
+                                    key={section.id || index}
+                                    className={`relative flex items-center justify-center overflow-hidden ${sectionIsVideo ? 'w-full' : (isFullBleed ? screenClass : `py-24 ${h60Class}`)}`}
+                                    initial="hidden"
+                                    whileInView="visible"
+                                    viewport={{ once: true, margin: "-100px" }}
+                                    variants={sectionVariants}
+                                    onViewportEnter={() => {
+                                        if (sectionIsVideo) {
+                                            const vid = document.getElementById(`vid-pre-rsvp-${section.id}`) as HTMLVideoElement;
+                                            vid?.play().catch(() => {});
+                                        }
+                                    }}
+                                >
+                                    <div className={`${sectionIsVideo ? 'relative w-full' : 'absolute inset-0'} z-0 overflow-hidden bg-stone-900`}>
+                                        {sectionIsVideo ? (
+                                            <video
+                                                id={`vid-pre-rsvp-${section.id}`}
+                                                src={section.backgroundUrl}
+                                                className="w-full h-auto block"
+                                                playsInline
+                                                muted
+                                                loop
+                                            />
+                                        ) : sectionIsSlideshow ? (
+                                            <CustomSectionSlideshow
+                                                urls={slideUrls}
+                                                intervalSec={section.slideshowIntervalSec ?? 5}
+                                                autoplay={section.slideshowAutoplay !== false}
+                                            />
+                                        ) : (
+                                            <div
+                                                className="w-full h-full bg-cover bg-center"
+                                                style={{ backgroundImage: `url(${section.backgroundUrl})` }}
+                                            />
+                                        )}
+                                        {showOverlay && (
+                                            <div className="absolute inset-0 bg-stone-950/40 z-10" />
+                                        )}
+                                    </div>
+                                    {section.overlayType !== 'none' && (
+                                        <div className={`absolute inset-0 z-20 text-center px-6 w-full flex flex-col items-center justify-center ${sectionIsVideo ? '' : (isFullBleed ? '' : 'max-w-4xl mx-auto')}`}>
+                                            {section.overlayType === 'text' && section.textContent && (
+                                                <h2 className={`text-4xl @md:text-5xl @lg:text-6xl text-white drop-shadow-md leading-relaxed ${section.fontFamily || 'font-sans'}`}>
+                                                    {section.textContent}
+                                                </h2>
+                                            )}
+                                            {section.overlayType === 'image' && section.overlayImageUrl && (
+                                                <img
+                                                    src={section.overlayImageUrl}
+                                                    alt="Custom Section Overlay"
+                                                    className="w-full max-w-xs @md:max-w-md @lg:max-w-lg object-contain drop-shadow-xl"
+                                                />
+                                            )}
+                                        </div>
+                                    )}
+                                </motion.section>
+                            );
+                        })}
 
                         {/* RSVP: full form when enabled; otherwise optional static message (footnote style) */}
                         {((data.showRsvp !== false) || (data.showRsvp === false && data.rsvpClosedMessage?.trim())) && (

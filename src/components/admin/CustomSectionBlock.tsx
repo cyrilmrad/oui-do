@@ -92,6 +92,16 @@ export function CustomSectionBlock({
                         <div className="w-8 h-4 bg-surface-container-highest rounded-full peer peer-checked:bg-primary relative transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
                         <span className="text-[0.65rem] font-label uppercase text-secondary font-bold">Slideshow</span>
                     </label>
+                    <label className="flex items-center gap-2 cursor-pointer" title="Place this block immediately before the RSVP form instead of the default position">
+                        <input
+                            type="checkbox"
+                            checked={section.position === 'pre-rsvp'}
+                            onChange={(e) => onSectionChange(idx, 'position', e.target.checked ? 'pre-rsvp' : 'default')}
+                            className="sr-only peer"
+                        />
+                        <div className="w-8 h-4 bg-surface-container-highest rounded-full peer peer-checked:bg-amber-500 relative transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+                        <span className="text-[0.65rem] font-label uppercase text-secondary font-bold">Before RSVP</span>
+                    </label>
                     <select
                         value={section.overlayType}
                         onChange={(e) => onSectionChange(idx, 'overlayType', e.target.value)}
