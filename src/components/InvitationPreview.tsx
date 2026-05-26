@@ -636,6 +636,60 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
     const footnoteBtnClass =
         'w-full max-w-sm border border-stone-900 bg-transparent px-8 py-4 font-serif text-sm uppercase tracking-[0.2em] text-stone-900 transition-colors duration-300 hover:bg-stone-900 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2';
 
+    /**
+     * Shared footnote block — rendered on the main page AND all navigation sub-pages
+     * (lodging, exploring, dynamic). Uses already-computed `footnoteIntro` / `footnoteLinks`.
+     */
+    const footnoteBlock = (footnoteIntro || footnoteLinks.length > 0) ? (
+        <motion.section
+            className="py-16 @md:py-24 px-4 @sm:px-6 @md:px-12 max-w-3xl mx-auto"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={sectionVariants}
+        >
+            <div className="pb-6 @md:pb-10 px-6 max-w-lg mx-auto flex flex-col items-center text-center gap-10">
+                {footnoteIntro ? (
+                    <p className="text-[10px] @sm:text-[11px] font-sans uppercase tracking-[0.22em] text-stone-400 leading-relaxed whitespace-pre-line max-w-md">
+                        {footnoteIntro}
+                    </p>
+                ) : null}
+                {footnoteLinks.length > 0 ? (
+                    <div className="w-full flex flex-col items-stretch gap-5">
+                        {footnoteLinks.map((item, i) => {
+                            const navTab = parseFootnoteNavHref(item.href);
+                            const canNav = !!(navTab && canFootnoteNavigate(item.href, data.showNavigation, nav));
+                            if (navTab) {
+                                return (
+                                    <button
+                                        key={`${item.label}-${i}`}
+                                        type="button"
+                                        disabled={!canNav}
+                                        onClick={() => goToFootnoteNavTarget(item.href)}
+                                        className={`${footnoteBtnClass} ${!canNav ? 'opacity-35 cursor-not-allowed hover:bg-transparent hover:text-stone-900' : ''}`}
+                                    >
+                                        {item.label}
+                                    </button>
+                                );
+                            }
+                            return (
+                                <a
+                                    key={`${item.label}-${i}`}
+                                    href={item.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`${footnoteBtnClass} inline-flex justify-center items-center`}
+                                >
+                                    {item.label}
+                                </a>
+                            );
+                        })}
+                    </div>
+                ) : null}
+            </div>
+        </motion.section>
+    ) : null;
+
     return (
         <div 
             className={`@container ${screenClass} ${cleanTheme.background || 'bg-stone-50'} ${cleanTheme.primaryText || 'text-stone-800'} font-sans selection:bg-emerald-100/30 selection:text-emerald-900 w-full min-w-0 max-w-full overflow-x-hidden flex flex-col transition-colors duration-700`}
@@ -1563,55 +1617,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                         </motion.section>
                         )}
 
-                        {(footnoteIntro || footnoteLinks.length > 0) && (
-                            <motion.section
-                                className="py-16 @md:py-24 px-4 @sm:px-6 @md:px-12 max-w-3xl mx-auto"
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={{ once: true, margin: "-100px" }}
-                                variants={sectionVariants}
-                            >
-                                <div className="pb-6 @md:pb-10 px-6 max-w-lg mx-auto flex flex-col items-center text-center gap-10">
-                                    {footnoteIntro ? (
-                                        <p className="text-[10px] @sm:text-[11px] font-sans uppercase tracking-[0.22em] text-stone-400 leading-relaxed whitespace-pre-line max-w-md">
-                                            {footnoteIntro}
-                                        </p>
-                                    ) : null}
-                                    {footnoteLinks.length > 0 ? (
-                                        <div className="w-full flex flex-col items-stretch gap-5">
-                                            {footnoteLinks.map((item, i) => {
-                                                const navTab = parseFootnoteNavHref(item.href);
-                                                const canNav = !!(navTab && canFootnoteNavigate(item.href, data.showNavigation, nav));
-                                                if (navTab) {
-                                                    return (
-                                                        <button
-                                                            key={`${item.label}-${i}`}
-                                                            type="button"
-                                                            disabled={!canNav}
-                                                            onClick={() => goToFootnoteNavTarget(item.href)}
-                                                            className={`${footnoteBtnClass} ${!canNav ? 'opacity-35 cursor-not-allowed hover:bg-transparent hover:text-stone-900' : ''}`}
-                                                        >
-                                                            {item.label}
-                                                        </button>
-                                                    );
-                                                }
-                                                return (
-                                                    <a
-                                                        key={`${item.label}-${i}`}
-                                                        href={item.href}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className={`${footnoteBtnClass} inline-flex justify-center items-center`}
-                                                    >
-                                                        {item.label}
-                                                    </a>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : null}
-                                </div>
-                            </motion.section>
-                        )}
+                        {footnoteBlock}
                     </motion.div>
                 ) : effectiveTab === 'lodging' && nav.lodgingEnabled ? (
                     <motion.div
@@ -1659,6 +1665,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                 ))}
                             </div>
                         </section>
+                        {footnoteBlock}
                     </motion.div>
                 ) : effectiveTab === 'exploring' && nav.exploringEnabled ? (
                     <motion.div
@@ -1689,6 +1696,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                 ))}
                             </div>
                         </section>
+                        {footnoteBlock}
                     </motion.div>
                 ) : activeDynamicPage ? (
                     <motion.div
@@ -1727,6 +1735,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                 />
                             </div>
                         </section>
+                        {footnoteBlock}
                     </motion.div>
                 ) : null}
 
