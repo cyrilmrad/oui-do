@@ -14,7 +14,11 @@ export async function POST(request: Request) {
         }
 
         const invitationResult = await db
-            .select({ id: invitations.id, showRsvp: invitations.showRsvp })
+            .select({
+                id: invitations.id,
+                showRsvp: invitations.showRsvp,
+                isArchived: invitations.isArchived
+            })
             .from(invitations)
             .where(eq(invitations.slug, slug));
 
@@ -24,6 +28,10 @@ export async function POST(request: Request) {
 
         if (invitationResult[0].showRsvp === false) {
             return NextResponse.json({ error: 'RSVP is not enabled for this invitation' }, { status: 403 });
+        }
+
+        if (invitationResult[0].isArchived === true) {
+            return NextResponse.json({ error: 'This event has concluded.' }, { status: 403 });
         }
 
         const invitationId = invitationResult[0].id;
