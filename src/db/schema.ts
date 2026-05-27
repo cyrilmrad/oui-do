@@ -42,6 +42,10 @@ export const invitations = pgTable('invitations', {
     showRsvp: boolean('show_rsvp').default(true),
     /** Shown on the invite when `show_rsvp` is false; use `**text**` for bold. */
     rsvpClosedMessage: text('rsvp_closed_message'),
+    clientLocked: boolean('client_locked').notNull().default(false),
+    clientLockedAt: timestamp('client_locked_at'),
+    isArchived: boolean('is_archived').notNull().default(false),
+    archivedAt: timestamp('archived_at'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
 }).enableRLS();
