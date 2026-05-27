@@ -19,10 +19,15 @@ export async function PATCH(
     }
 
     const { slug } = await params;
+    const decoded = decodeURIComponent(slug);
     let body: LifecyclePatchBody;
     try {
         body = await request.json();
     } catch {
+        return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+
+    if (body === null || typeof body !== 'object' || Array.isArray(body)) {
         return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
 
@@ -45,21 +50,26 @@ export async function PATCH(
         updates.archivedAt = body.isArchived ? now : null;
     }
 
-    const updated = await db
-        .update(invitations)
-        .set(updates)
-        .where(eq(invitations.slug, slug))
-        .returning({
-            slug: invitations.slug,
-            clientLocked: invitations.clientLocked,
-            clientLockedAt: invitations.clientLockedAt,
-            isArchived: invitations.isArchived,
-            archivedAt: invitations.archivedAt
-        });
+    try {
+        const updated = await db
+            .update(invitations)
+            .set(updates)
+            .where(eq(invitations.slug, decoded))
+            .returning({
+                slug: invitations.slug,
+                clientLocked: invitations.clientLocked,
+                clientLockedAt: invitations.clientLockedAt,
+                isArchived: invitations.isArchived,
+                archivedAt: invitations.archivedAt
+            });
 
-    if (updated.length === 0) {
-        return NextResponse.json({ error: 'Invitation not found' }, { status: 404 });
+        if (updated.length === 0) {
+            return NextResponse.json({ error: 'Invitation not found' }, { status: 404 });
+        }
+
+        return NextResponse.json(updated[0]);
+    } catch (err) {
+        console.error('PATCH /api/admin/clients/[slug]/lifecycle failed', err);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-
-    return NextResponse.json(updated[0], { status: 200 });
 }
