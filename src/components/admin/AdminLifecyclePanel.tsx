@@ -15,6 +15,7 @@ interface ClientRow {
     clientLockedAt: string | null;
     isArchived: boolean;
     archivedAt: string | null;
+    archiveMessage: string | null;
 }
 
 /**
@@ -75,6 +76,7 @@ export default function AdminLifecyclePanel() {
         clientLockedAt: string | null;
         isArchived: boolean;
         archivedAt: string | null;
+        archiveMessage: string | null;
     }) {
         setClients((prev) => prev.map((c) => (c.slug === slug ? { ...c, ...patch } : c)));
     }
@@ -131,6 +133,7 @@ export default function AdminLifecyclePanel() {
                             isArchived={client.isArchived}
                             clientLockedAt={client.clientLockedAt}
                             archivedAt={client.archivedAt}
+                            archiveMessage={client.archiveMessage}
                             onChange={(patch) => handleChange(client.slug, patch)}
                         />
                     </div>

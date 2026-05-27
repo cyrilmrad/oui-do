@@ -12,11 +12,13 @@ interface LifecyclePanelProps {
     isArchived: boolean;
     clientLockedAt: string | null;
     archivedAt: string | null;
+    archiveMessage: string | null;
     onChange: (patch: {
         clientLocked: boolean;
         clientLockedAt: string | null;
         isArchived: boolean;
         archivedAt: string | null;
+        archiveMessage: string | null;
     }) => void;
 }
 
@@ -40,10 +42,13 @@ export default function LifecyclePanel({
     isArchived,
     clientLockedAt,
     archivedAt,
+    archiveMessage,
     onChange
 }: LifecyclePanelProps) {
     const [busy, setBusy] = useState(false);
     const [pending, setPending] = useState<PendingConfirm>(null);
+    const [localArchiveMessage, setLocalArchiveMessage] = useState(archiveMessage ?? '');
+    const [savingMessage, setSavingMessage] = useState(false);
 
     async function patchLifecycle(patch: { clientLocked?: boolean; isArchived?: boolean }) {
         setBusy(true);
@@ -67,7 +72,8 @@ export default function LifecyclePanel({
                 clientLocked: updated.clientLocked,
                 clientLockedAt: updated.clientLockedAt,
                 isArchived: updated.isArchived,
-                archivedAt: updated.archivedAt
+                archivedAt: updated.archivedAt,
+                archiveMessage: updated.archiveMessage ?? null,
             });
             toast.success('Lifecycle updated');
         } catch (err: unknown) {
@@ -91,6 +97,39 @@ export default function LifecyclePanel({
             setPending('archive');
         } else {
             patchLifecycle({ isArchived: false });
+        }
+    }
+
+    async function handleSaveArchiveMessage() {
+        setSavingMessage(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (session?.access_token) {
+                (headers as Record<string, string>)['Authorization'] = `Bearer ${session.access_token}`;
+            }
+            const res = await fetch(`/api/admin/clients/${encodeURIComponent(slug)}/lifecycle`, {
+                method: 'PATCH',
+                headers,
+                body: JSON.stringify({ archiveMessage: localArchiveMessage })
+            });
+            if (!res.ok) {
+                const { error } = await res.json().catch(() => ({ error: 'Request failed' }));
+                throw new Error(error || 'Request failed');
+            }
+            const updated = await res.json();
+            onChange({
+                clientLocked: updated.clientLocked,
+                clientLockedAt: updated.clientLockedAt,
+                isArchived: updated.isArchived,
+                archivedAt: updated.archivedAt,
+                archiveMessage: updated.archiveMessage ?? null,
+            });
+            toast.success('Archive message saved');
+        } catch (err: unknown) {
+            toast.error('Could not save archive message', { description: (err instanceof Error ? err.message : null) ?? 'Unknown error' });
+        } finally {
+            setSavingMessage(false);
         }
     }
 
@@ -118,6 +157,28 @@ export default function LifecyclePanel({
                     onToggle={handleArchiveToggle}
                     busy={busy || pending !== null}
                 />
+                {/* Archive message — optional personal thank-you note */}
+                <div className="rounded-xl bg-surface-container-highest/25 border border-outline-variant/20 px-5 py-4">
+                    <p className="text-[0.85rem] font-body font-medium text-on-surface mb-1">Personal thank-you note</p>
+                    <p className="text-xs text-secondary mb-3">Optional message shown on the archived memorial page, between &ldquo;Thank You.&rdquo; and the couple&apos;s signature.</p>
+                    <textarea
+                        value={localArchiveMessage}
+                        onChange={(e) => setLocalArchiveMessage(e.target.value)}
+                        rows={3}
+                        placeholder="e.g. For every kind word and shared laugh — our hearts are full."
+                        className="w-full text-sm font-body bg-surface-container border border-outline-variant/30 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-primary/30 placeholder:text-secondary/40 text-on-surface"
+                    />
+                    <div className="flex justify-end mt-2">
+                        <button
+                            type="button"
+                            onClick={handleSaveArchiveMessage}
+                            disabled={savingMessage}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded text-[0.7rem] font-label uppercase tracking-widest bg-surface-container text-primary hover:bg-surface-container-high border border-outline-variant/30 transition-colors disabled:opacity-50"
+                        >
+                            {savingMessage ? 'Saving…' : 'Save message'}
+                        </button>
+                    </div>
+                </div>
                 <div className="pt-4 border-t border-outline-variant/15 text-[0.75rem] font-label uppercase tracking-[0.1em] text-secondary space-y-1">
                     <div>Last locked: <span className="font-body normal-case tracking-normal text-on-surface">{formatTimestamp(clientLockedAt)}</span></div>
                     <div>Last archived: <span className="font-body normal-case tracking-normal text-on-surface">{formatTimestamp(archivedAt)}</span></div>
