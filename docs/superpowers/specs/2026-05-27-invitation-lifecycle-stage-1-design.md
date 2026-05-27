@@ -181,7 +181,9 @@ Palette matches the existing dashboard (stones + emerald accents). No tabs visib
 
 Each toggle:
 - Visible state with plain-language description of the *current* state and what happens on flip.
-- Native browser `confirm()` before flipping ON (per CLAUDE.md, `confirm()` is the accepted pattern for blocking confirmations): `"Lock this client's dashboard access? They will see a paused-account screen until you reverse this."` Flipping OFF is one click — restoring is meant to be easy.
+- Custom in-app confirmation modal before flipping ON (matching the existing `PaymentModal` / `CsvImportModal` pattern: a `useState` boolean + a centered card with a title, body, "Cancel" / "Confirm" buttons). Copy: `"Lock this client's dashboard access? They will see a paused-account screen until you reverse this."` Flipping OFF is one click — restoring is meant to be easy.
+
+A new small `<ConfirmDialog>` primitive in `src/components/ConfirmDialog.tsx` is appropriate since both toggles need the same shape (`isOpen`, `title`, `body`, `confirmLabel`, `confirmTone: 'neutral' | 'danger'`, `onCancel`, `onConfirm`). The admin-tokens palette applies.
 - Live timestamps below (`Last locked: 2 days ago` / `Last archived: 5 days ago`) once set, `—` when never set.
 - Success toast via `sonner` on both flip directions (consistent with the rest of the admin).
 
@@ -228,6 +230,7 @@ src/components/InvitationPreview.tsx                (use extracted InvitationGif
 src/components/dashboard/DashboardLockedScreen.tsx  (NEW)
 src/components/admin/LifecyclePanel.tsx             (NEW)
 src/components/admin/ClientList.tsx                 (derived status pill)
+src/components/ConfirmDialog.tsx                    (NEW — generic confirm modal)
 ```
 
 Schema is applied via `npm run db:push` (drizzle-kit), not via committed migration files — same as every other column added to this project. The schema change in `src/db/schema.ts` is the migration artifact.
