@@ -106,7 +106,7 @@ export default function LifecyclePanel({
                     descriptionOff="Client can log in and edit their dashboard."
                     isOn={clientLocked}
                     onToggle={handleLockToggle}
-                    busy={busy}
+                    busy={busy || pending !== null}
                 />
                 <ToggleRow
                     icon={<Archive className="w-4 h-4" />}
@@ -116,7 +116,7 @@ export default function LifecyclePanel({
                     descriptionOff="Public /invite/[slug] shows the full live invitation."
                     isOn={isArchived}
                     onToggle={handleArchiveToggle}
-                    busy={busy}
+                    busy={busy || pending !== null}
                 />
                 <div className="pt-4 border-t border-outline-variant/15 text-[0.75rem] font-label uppercase tracking-[0.1em] text-secondary space-y-1">
                     <div>Last locked: <span className="font-body normal-case tracking-normal text-on-surface">{formatTimestamp(clientLockedAt)}</span></div>

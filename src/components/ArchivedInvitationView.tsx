@@ -52,13 +52,15 @@ export default function ArchivedInvitationView({ data }: ArchivedInvitationViewP
             </section>
 
             {/* Gifts & registry — preserved if any options exist */}
-            <InvitationGifts
-                giftMessage={data.giftMessage}
-                giftOptions={data.giftOptions || []}
-                accentClass={cleanTheme.accent}
-                headerLabel="Gifts & Registry"
-                tagline="Your generosity is still welcome."
-            />
+            {(data.giftMessage?.trim() || (data.giftOptions && data.giftOptions.length > 0)) && (
+                <InvitationGifts
+                    giftMessage={data.giftMessage}
+                    giftOptions={data.giftOptions || []}
+                    accentClass={cleanTheme.accent}
+                    headerLabel="Gifts & Registry"
+                    tagline="Your generosity is still welcome."
+                />
+            )}
 
             {/* Footnote */}
             {data.footnote && (

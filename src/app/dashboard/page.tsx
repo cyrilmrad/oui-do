@@ -1156,6 +1156,7 @@ export default function DashboardPage() {
                     <p className="text-[10px] text-stone-400 uppercase tracking-widest mt-1">Guest Portal</p>
                 </div>
 
+                {!Boolean((weddingDetails as any).clientLocked) && (
                 <nav className="flex-1 p-2.5 space-y-1">
                     <button
                         onClick={() => setActiveTab('overview')}
@@ -1211,6 +1212,7 @@ export default function DashboardPage() {
                     </button>
                     )}
                 </nav>
+                )}
 
                 <div className="p-2.5 border-t border-stone-100">
                     <button onClick={handleSignOut} className="flex items-center w-full px-2.5 py-2.5 text-sm font-medium text-stone-500 hover:text-rose-600 transition-colors rounded-lg hover:bg-rose-50 group">
@@ -1223,6 +1225,7 @@ export default function DashboardPage() {
             {/* Mobile Nav Header */}
             <div className="md:hidden fixed top-0 inset-x-0 bg-white border-b border-stone-200 z-50 px-4 py-3 flex items-center justify-between">
                 <h1 className="text-xl font-serif text-stone-900">{weddingDetails.bride[0]} & {weddingDetails.groom[0]}</h1>
+                {!Boolean((weddingDetails as any).clientLocked) && (
                 <div className="flex space-x-2">
                     <button onClick={() => setActiveTab('overview')} className={`p-2 rounded-md ${activeTab === 'overview' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <LayoutDashboard className="w-5 h-5" />
@@ -1253,6 +1256,7 @@ export default function DashboardPage() {
                     </button>
                     )}
                 </div>
+                )}
             </div>
 
             {/* Main Content Area */}
