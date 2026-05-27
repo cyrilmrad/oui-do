@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lock, Archive } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabaseClient';
@@ -50,7 +50,14 @@ export default function LifecyclePanel({
     const [localArchiveMessage, setLocalArchiveMessage] = useState(archiveMessage ?? '');
     const [savingMessage, setSavingMessage] = useState(false);
 
-    async function patchLifecycle(patch: { clientLocked?: boolean; isArchived?: boolean }) {
+    useEffect(() => {
+        setLocalArchiveMessage(archiveMessage ?? '');
+    }, [archiveMessage]);
+
+    async function patchLifecycle(
+        patch: { clientLocked?: boolean; isArchived?: boolean; archiveMessage?: string },
+        successMessage = 'Lifecycle updated'
+    ) {
         setBusy(true);
         try {
             const { data: { session } } = await supabase.auth.getSession();
@@ -75,7 +82,7 @@ export default function LifecyclePanel({
                 archivedAt: updated.archivedAt,
                 archiveMessage: updated.archiveMessage ?? null,
             });
-            toast.success('Lifecycle updated');
+            toast.success(successMessage);
         } catch (err: unknown) {
             toast.error('Could not update lifecycle', { description: (err instanceof Error ? err.message : null) ?? 'Unknown error' });
         } finally {
@@ -103,31 +110,7 @@ export default function LifecyclePanel({
     async function handleSaveArchiveMessage() {
         setSavingMessage(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (session?.access_token) {
-                (headers as Record<string, string>)['Authorization'] = `Bearer ${session.access_token}`;
-            }
-            const res = await fetch(`/api/admin/clients/${encodeURIComponent(slug)}/lifecycle`, {
-                method: 'PATCH',
-                headers,
-                body: JSON.stringify({ archiveMessage: localArchiveMessage })
-            });
-            if (!res.ok) {
-                const { error } = await res.json().catch(() => ({ error: 'Request failed' }));
-                throw new Error(error || 'Request failed');
-            }
-            const updated = await res.json();
-            onChange({
-                clientLocked: updated.clientLocked,
-                clientLockedAt: updated.clientLockedAt,
-                isArchived: updated.isArchived,
-                archivedAt: updated.archivedAt,
-                archiveMessage: updated.archiveMessage ?? null,
-            });
-            toast.success('Archive message saved');
-        } catch (err: unknown) {
-            toast.error('Could not save archive message', { description: (err instanceof Error ? err.message : null) ?? 'Unknown error' });
+            await patchLifecycle({ archiveMessage: localArchiveMessage }, 'Archive message saved');
         } finally {
             setSavingMessage(false);
         }

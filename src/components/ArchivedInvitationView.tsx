@@ -92,7 +92,7 @@ export default function ArchivedInvitationView({ data }: ArchivedInvitationViewP
                         giftMessage={data.giftMessage}
                         giftOptions={data.giftOptions || []}
                         accentClass={cleanTheme.accent}
-                        headerLabel="Gifts &amp; Registry"
+                        headerLabel="Gifts & Registry"
                         tagline="Your generosity is still warmly welcomed — and deeply appreciated."
                     />
                 </section>
