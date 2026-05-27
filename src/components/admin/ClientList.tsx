@@ -128,12 +128,17 @@ export function ClientList({ clients, searchQuery, onSearchChange, onSelectClien
                                 <span className="font-label uppercase tracking-widest text-[0.65rem] font-bold text-secondary block mb-1">Wedding Date</span>
                                 <p className="font-body text-sm font-semibold text-primary">{client.date || 'TBD'}</p>
                             </div>
-                            <div className="hidden md:block w-1/6">
-                                <span className="font-label uppercase tracking-widest text-[0.65rem] font-bold text-secondary block mb-1">Status</span>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-blue-400"></span>
-                                    <span className="font-body text-xs font-bold text-primary">In Progress</span>
-                                </div>
+                            <div className="hidden md:flex items-center gap-1.5 w-1/6">
+                                {client.clientLocked && (
+                                    <span className="font-label text-[0.6rem] font-bold uppercase tracking-[0.1em] px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                                        Paused
+                                    </span>
+                                )}
+                                {client.isArchived && (
+                                    <span className="font-label text-[0.6rem] font-bold uppercase tracking-[0.1em] px-2.5 py-1 rounded-full bg-stone-100 text-stone-500 border border-stone-200">
+                                        Archived
+                                    </span>
+                                )}
                             </div>
                             <div className="flex gap-3">
                                 <button className="p-3 rounded-full text-secondary hover:bg-surface-container-highest hover:text-primary transition-all">

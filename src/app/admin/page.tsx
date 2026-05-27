@@ -339,6 +339,13 @@ export default function AdminDashboard() {
 
     const [useMocks, setUseMocks] = useState(false);
     const [realClients, setRealClients] = useState<any[]>([]);
+    const [selectedLifecycle, setSelectedLifecycle] = useState<{
+        clientLocked: boolean;
+        clientLockedAt: string | null;
+        isArchived: boolean;
+        archivedAt: string | null;
+        archiveMessage: string | null;
+    } | null>(null);
 
     const fetchClients = async () => {
         try {
@@ -800,6 +807,7 @@ export default function AdminDashboard() {
                             setFormalImageFile(null); setFormalImagePreview(null);
                             setDetailsBgFile(null); setDetailsBgPreview(null);
                             setCustomFiles({});
+                            setSelectedLifecycle(null);
                         }}
                         className="w-full py-3 px-3 rounded-full text-[9px] font-label uppercase tracking-widest transition-all hover:opacity-90 font-bold text-on-primary shadow-xl shadow-primary/10 leading-tight"
                         style={{ background: 'linear-gradient(135deg, #00150F 0%, #062C22 100%)' }}
@@ -823,6 +831,7 @@ export default function AdminDashboard() {
                                 setFormalImageFile(null); setFormalImagePreview(null);
                                 setDetailsBgFile(null); setDetailsBgPreview(null);
                                 setCustomFiles({});
+                                setSelectedLifecycle(null);
                                 void loadDashboardData();
                             }}
                         >
@@ -842,6 +851,7 @@ export default function AdminDashboard() {
                                 setFormalImageFile(null); setFormalImagePreview(null);
                                 setDetailsBgFile(null); setDetailsBgPreview(null);
                                 setCustomFiles({});
+                                setSelectedLifecycle(null);
                             }}
                         >
                             <Users className="w-4 h-4 shrink-0" />
@@ -860,6 +870,7 @@ export default function AdminDashboard() {
                                 setFormalImageFile(null); setFormalImagePreview(null);
                                 setDetailsBgFile(null); setDetailsBgPreview(null);
                                 setCustomFiles({});
+                                setSelectedLifecycle(null);
                             }}
                         >
                             <Shield className="w-4 h-4 shrink-0" />
@@ -909,6 +920,7 @@ export default function AdminDashboard() {
                                 setFormalImageFile(null); setFormalImagePreview(null);
                                 setDetailsBgFile(null); setDetailsBgPreview(null);
                                 setCustomFiles({});
+                                setSelectedLifecycle(null);
                             }}
                             className="flex items-center gap-2 mr-6 pr-6 border-r border-outline-variant/20 h-full text-secondary hover:text-primary transition-colors"
                         >
@@ -1011,6 +1023,13 @@ export default function AdminDashboard() {
                                             setSeatingGuests(seatData.guests);
                                         } catch { /* seating feature may be disabled */ }
                                         setActiveTab('client-overview');
+                                        setSelectedLifecycle({
+                                            clientLocked: client.clientLocked ?? false,
+                                            clientLockedAt: client.clientLockedAt ?? null,
+                                            isArchived: client.isArchived ?? false,
+                                            archivedAt: client.archivedAt ?? null,
+                                            archiveMessage: (client as any).archiveMessage ?? null,
+                                        });
                                     }
                                 } catch (e) { console.error(e); }
                                 finally {
@@ -1381,6 +1400,9 @@ export default function AdminDashboard() {
                                 setLiveData(prev => ({ ...prev, ...updates }));
                                 setHasInvitation(true);
                             }}
+                            slug={liveData.slug}
+                            lifecycle={selectedLifecycle}
+                            onLifecycleChange={(patch) => setSelectedLifecycle(prev => prev ? { ...prev, ...patch } : patch)}
                         />
                     )}
                 </div>

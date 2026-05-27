@@ -3,6 +3,7 @@ import InvitationPreview, {
     InvitationData,
     Theme
 } from '@/components/InvitationPreview';
+import ArchivedInvitationView from '@/components/ArchivedInvitationView';
 import type { NavigationPagesContent } from '@/lib/navigationPages';
 import { db } from '@/db';
 import { invitations, guests as guestsTable } from '@/db/schema';
@@ -25,12 +26,19 @@ export async function generateMetadata({
     }
 
     const data = result[0];
-    const title = `${data.bride} & ${data.groom} | Wedding Invitation`;
-    const description = `You are invited to the wedding of ${data.bride} & ${data.groom}. Join us on ${data.date || 'our special day'}.`;
+    const title = data.isArchived
+        ? `Thank you from ${data.bride} & ${data.groom}`
+        : `${data.bride} & ${data.groom} | Wedding Invitation`;
+    const description = data.isArchived
+        ? `${data.bride} & ${data.groom} thank you for celebrating with them${data.date ? ` on ${data.date}` : ''}.`
+        : `You are invited to the wedding of ${data.bride} & ${data.groom}. Join us on ${data.date || 'our special day'}.`;
     const imageUrl =
         data.metadataImageUrl ||
         data.heroImage ||
         "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070&auto=format&fit=crop";
+
+    const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
+    const pageUrl = baseUrl ? `${baseUrl}/invite/${slug}` : undefined;
 
     return {
         title,
@@ -38,14 +46,29 @@ export async function generateMetadata({
         openGraph: {
             title,
             description,
-            images: [imageUrl],
+            ...(pageUrl ? { url: pageUrl } : {}),
+            siteName: 'Oui-Do',
+            type: 'website',
+            images: [
+                {
+                    url: imageUrl,
+                    secureUrl: imageUrl,
+                    width: 1200,
+                    height: 630,
+                    alt: title,
+                }
+            ],
         },
         twitter: {
             card: 'summary_large_image',
             title,
             description,
             images: [imageUrl],
-        }
+        },
+        // schema.org image — used by some crawlers (including WhatsApp Web) as a fallback
+        other: {
+            'image': imageUrl,
+        },
     };
 }
 
@@ -130,6 +153,10 @@ export default async function InvitePage({
             background: "bg-stone-50"
         }
     };
+
+    if (dbData.isArchived) {
+        return <ArchivedInvitationView data={clientData} />;
+    }
 
     return <InvitationPreview data={clientData} guestData={guestData} />;
 }

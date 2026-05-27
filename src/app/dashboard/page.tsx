@@ -46,6 +46,7 @@ import { useGiftOptions } from '@/hooks/useGiftOptions';
 import { FeatureLockedMessage } from '@/components/dashboard/FeatureLockedMessage';
 import { getStatusBadge } from '@/components/dashboard/GuestStatusBadge';
 import { GuestsTab } from '@/components/dashboard/GuestsTab';
+import DashboardLockedScreen from '@/components/dashboard/DashboardLockedScreen';
 import { toast } from 'sonner';
 type DashboardTab = 'overview' | 'guests' | 'messages' | 'budget' | 'seating' | 'settings';
 
@@ -167,8 +168,9 @@ export default function DashboardPage() {
                                 navigationPages: mergeNavigationPages(dbData.navigationPages),
                                 footnote: dbData.footnote || "",
                                 showRsvp: dbData.showRsvp !== false,
-                                rsvpClosedMessage: dbData.rsvpClosedMessage ?? ""
-                            });
+                                rsvpClosedMessage: dbData.rsvpClosedMessage ?? "",
+                                clientLocked: (dbData as any).clientLocked ?? false
+                            } as any);
                         }
                     }
 
@@ -1154,6 +1156,7 @@ export default function DashboardPage() {
                     <p className="text-[10px] text-stone-400 uppercase tracking-widest mt-1">Guest Portal</p>
                 </div>
 
+                {!Boolean((weddingDetails as any).clientLocked) && (
                 <nav className="flex-1 p-2.5 space-y-1">
                     <button
                         onClick={() => setActiveTab('overview')}
@@ -1209,6 +1212,7 @@ export default function DashboardPage() {
                     </button>
                     )}
                 </nav>
+                )}
 
                 <div className="p-2.5 border-t border-stone-100">
                     <button onClick={handleSignOut} className="flex items-center w-full px-2.5 py-2.5 text-sm font-medium text-stone-500 hover:text-rose-600 transition-colors rounded-lg hover:bg-rose-50 group">
@@ -1221,6 +1225,7 @@ export default function DashboardPage() {
             {/* Mobile Nav Header */}
             <div className="md:hidden fixed top-0 inset-x-0 bg-white border-b border-stone-200 z-50 px-4 py-3 flex items-center justify-between">
                 <h1 className="text-xl font-serif text-stone-900">{weddingDetails.bride[0]} & {weddingDetails.groom[0]}</h1>
+                {!Boolean((weddingDetails as any).clientLocked) && (
                 <div className="flex space-x-2">
                     <button onClick={() => setActiveTab('overview')} className={`p-2 rounded-md ${activeTab === 'overview' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
                         <LayoutDashboard className="w-5 h-5" />
@@ -1251,17 +1256,24 @@ export default function DashboardPage() {
                     </button>
                     )}
                 </div>
+                )}
             </div>
 
             {/* Main Content Area */}
             <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto bg-stone-50/50 pt-16 md:pt-0">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-                    {activeTab === 'overview' && renderOverview()}
-                    {activeTab === 'guests' && <GuestsTab userSlug={userSlug} rsvps={rsvps} setRsvps={setRsvps} />}
-                    {activeTab === 'messages' && renderMessages()}
-                    {activeTab === 'budget' && renderBudget()}
-                    {activeTab === 'seating' && renderSeating()}
-                    {activeTab === 'settings' && renderSettings()}
+                    {Boolean((weddingDetails as any).clientLocked) ? (
+                        <DashboardLockedScreen bride={weddingDetails.bride} groom={weddingDetails.groom} />
+                    ) : (
+                        <>
+                            {activeTab === 'overview' && renderOverview()}
+                            {activeTab === 'guests' && <GuestsTab userSlug={userSlug} rsvps={rsvps} setRsvps={setRsvps} />}
+                            {activeTab === 'messages' && renderMessages()}
+                            {activeTab === 'budget' && renderBudget()}
+                            {activeTab === 'seating' && renderSeating()}
+                            {activeTab === 'settings' && renderSettings()}
+                        </>
+                    )}
                 </div>
             </main>
         </div>

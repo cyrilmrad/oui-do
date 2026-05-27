@@ -2,10 +2,11 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, MapPin, Music, VolumeX, Gift, ExternalLink, Landmark, Smartphone, Heart, MailOpen, CheckCircle2, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, MapPin, Music, VolumeX, ExternalLink, Heart, MailOpen, CheckCircle2, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { NavigationPagesContent } from '@/lib/navigationPages';
 import { mergeNavigationPages } from '@/lib/navigationPages';
 import { InvitationBlogReadonly } from '@/components/blog/InvitationBlogReadonly';
+import InvitationGifts from '@/components/InvitationGifts';
 // Add-to-calendar (custom ICS + Google); re-enable when ready to show on the live invite.
 // import { InvitationAddToCalendar } from '@/components/InvitationAddToCalendar';
 
@@ -108,29 +109,6 @@ export function giftResolvedMobileNumberLabel(o: Pick<GiftOption, 'mobileNumberL
     return t || GIFT_DEFAULT_MOBILE_NUMBER_LABEL;
 }
 
-function GiftTransferDetailCard({
-    label,
-    value,
-    mono
-}: {
-    label: string;
-    value: string;
-    mono?: boolean;
-}) {
-    const raw = value ?? '';
-    if (!raw.trim()) return null;
-    return (
-        <div className="rounded-xl bg-stone-100/90 border border-stone-200/70 px-5 py-4 text-left shadow-[0_1px_0_rgba(255,255,255,0.6)_inset]">
-            <p className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-stone-500 mb-2">{label}</p>
-            <p
-                className={`text-[15px] font-semibold text-stone-900 leading-snug break-words ${mono ? 'font-mono text-sm' : 'font-sans'}`}
-            >
-                {raw}
-            </p>
-        </div>
-    );
-}
-
 /** Renders `**bold**` segments as `<strong>`; parent should use `whitespace-pre-line` for line breaks. */
 function renderRsvpClosedMessageBody(text: string): React.ReactNode {
     const parts = text.split(/(\*\*[\s\S]*?\*\*)/g);
@@ -204,6 +182,8 @@ export interface InvitationData {
     showRsvp?: boolean;
     /** When the form is off, non-empty text is shown under the RSVP title (use `**bold**`). */
     rsvpClosedMessage?: string;
+    /** Optional personal thank-you note shown on the archived memorial page. */
+    archiveMessage?: string;
 }
 
 interface InvitationPreviewProps {
@@ -1232,85 +1212,11 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
 
                         {/* Gifts Section */}
                         {hasGiftsSection && (
-                            <motion.section
-                                className="py-24 px-6 @md:px-12 bg-stone-50 border-y border-stone-200"
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={{ once: true, margin: "-100px" }}
-                                variants={sectionVariants}
-                            >
-                                <div className="max-w-3xl mx-auto text-center">
-                                    <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center mx-auto mb-8 shadow-sm">
-                                        <Gift className={`w-6 h-6 ${cleanTheme.accent}`} strokeWidth={1.5} />
-                                    </div>
-                                    <h3 className="text-sm @md:text-base font-sans mb-8 tracking-[0.2em] uppercase text-stone-400">
-                                        Registry & Gifts
-                                    </h3>
-                                    {data.giftMessage && (
-                                        <p className="text-xl @md:text-2xl font-serif text-stone-800 leading-relaxed font-light whitespace-pre-line mb-10">
-                                            {data.giftMessage}
-                                        </p>
-                                    )}
-
-                                    {/* Interactive Bank/Mobile Transfer Info */}
-                                    {data.giftOptions && data.giftOptions.length > 0 && (
-                                        <div className="max-w-lg mx-auto bg-white p-8 rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-stone-100 text-left space-y-10">
-                                            {data.giftOptions.map((option, idx) => (
-                                                <div key={option.id || idx}>
-                                                    {idx > 0 && <div className="w-full h-px bg-stone-100 mb-10" aria-hidden />}
-                                                    <div className="flex items-center gap-3 mb-5">
-                                                        <div className="w-9 h-9 rounded-full bg-stone-50 flex items-center justify-center shrink-0 border border-stone-100">
-                                                            {option.type === 'bank' ? (
-                                                                <Landmark className={`w-4 h-4 ${cleanTheme.accent}`} />
-                                                            ) : (
-                                                                <Smartphone className={`w-4 h-4 ${cleanTheme.accent}`} />
-                                                            )}
-                                                        </div>
-                                                        <h4 className="text-xs font-semibold uppercase tracking-widest text-stone-400">
-                                                            {option.type === 'bank'
-                                                                ? option.bankName || 'Bank transfer'
-                                                                : option.serviceName?.trim() || 'Mobile transfer'}
-                                                        </h4>
-                                                    </div>
-                                                    {option.type === 'bank' ? (
-                                                        <div className="space-y-3">
-                                                            <GiftTransferDetailCard label="Account holder" value={option.accountName || ''} />
-                                                            <GiftTransferDetailCard
-                                                                label={giftResolvedAccountNumberLabel(option)}
-                                                                value={option.accountNumber || ''}
-                                                                mono
-                                                            />
-                                                            <GiftTransferDetailCard
-                                                                label={giftResolvedSwiftLabel(option)}
-                                                                value={option.swiftCode || ''}
-                                                                mono
-                                                            />
-                                                            {(option.customFields || [])
-                                                                .filter((f) => f.value.trim() && f.label.trim())
-                                                                .map((f) => (
-                                                                    <GiftTransferDetailCard
-                                                                        key={f.id}
-                                                                        label={f.label}
-                                                                        value={f.value}
-                                                                        mono
-                                                                    />
-                                                                ))}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="space-y-3">
-                                                            <GiftTransferDetailCard
-                                                                label="Account name"
-                                                                value={option.mobileAccountName || ''}
-                                                            />
-                                                            <GiftTransferDetailCard label={giftResolvedMobileNumberLabel(option)} value={option.mobileNumber || ''} mono />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </motion.section>
+                            <InvitationGifts
+                                giftMessage={data.giftMessage}
+                                giftOptions={data.giftOptions || []}
+                                accentClass={cleanTheme.accent}
+                            />
                         )}
 
                         {/* Custom Modular Sections — pre-RSVP position */}
