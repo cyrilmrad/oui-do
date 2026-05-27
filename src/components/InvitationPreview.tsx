@@ -182,6 +182,8 @@ export interface InvitationData {
     showRsvp?: boolean;
     /** When the form is off, non-empty text is shown under the RSVP title (use `**bold**`). */
     rsvpClosedMessage?: string;
+    /** Optional personal thank-you note shown on the archived memorial page. */
+    archiveMessage?: string;
 }
 
 interface InvitationPreviewProps {
