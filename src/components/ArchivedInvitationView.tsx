@@ -1,8 +1,12 @@
 "use client";
 
 import React from 'react';
-import type { InvitationData, Theme } from '@/components/InvitationPreview';
-import InvitationGifts from '@/components/InvitationGifts';
+import type { InvitationData, Theme, GiftOption } from '@/components/InvitationPreview';
+import {
+    giftResolvedAccountNumberLabel,
+    giftResolvedSwiftLabel,
+    giftResolvedMobileNumberLabel,
+} from '@/components/InvitationPreview';
 
 interface ArchivedInvitationViewProps {
     data: InvitationData;
@@ -17,15 +21,74 @@ function resolveTheme(theme?: Theme | null): { accent: string; background: strin
     };
 }
 
+/* ─── Gift detail row ─── */
+function DetailRow({ label, value, mono = false }: { label: string; value?: string; mono?: boolean }) {
+    if (!value?.trim()) return null;
+    return (
+        <div className="bg-[#f5f0e6] border border-[#e0d5c0] rounded-lg px-4 py-3 text-left">
+            <p className="font-sans text-[0.55rem] font-semibold uppercase tracking-[0.18em] text-[#a8926f] mb-1">{label}</p>
+            <p className={`text-[0.88rem] text-[#2c2416] leading-snug break-words ${mono ? 'font-mono text-[0.82rem]' : 'font-sans'}`}>
+                {value}
+            </p>
+        </div>
+    );
+}
+
+/* ─── Single gift option card ─── */
+function GiftCard({ option }: { option: GiftOption }) {
+    const isBank = option.type === 'bank';
+    const title = isBank
+        ? (option.bankName?.trim() || 'Bank transfer')
+        : (option.serviceName?.trim() || 'Mobile transfer');
+
+    return (
+        <div className="bg-white border border-[#d4c5a9] rounded-xl p-5 text-left w-full max-w-sm mx-auto">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-4">
+                <div className="w-9 h-9 rounded-full bg-[#faf7f2] border border-[#e0d5c0] flex items-center justify-center shrink-0 text-base">
+                    {isBank ? '🏦' : '📱'}
+                </div>
+                <div>
+                    <p className="font-sans text-[0.58rem] font-semibold uppercase tracking-[0.15em] text-[#a8926f]">
+                        {isBank ? 'Bank' : 'Mobile'}
+                    </p>
+                    <p className="font-sans text-[0.9rem] text-[#2c2416] font-medium leading-tight">{title}</p>
+                </div>
+            </div>
+
+            {/* Details */}
+            <div className="space-y-2">
+                {isBank ? (
+                    <>
+                        <DetailRow label="Account holder" value={option.accountName} />
+                        <DetailRow label={giftResolvedAccountNumberLabel(option)} value={option.accountNumber} mono />
+                        <DetailRow label={giftResolvedSwiftLabel(option)} value={option.swiftCode} mono />
+                        {(option.customFields || [])
+                            .filter((f) => f.value.trim() && f.label.trim())
+                            .map((f) => (
+                                <DetailRow key={f.id} label={f.label} value={f.value} mono />
+                            ))}
+                    </>
+                ) : (
+                    <>
+                        <DetailRow label="Account name" value={option.mobileAccountName} />
+                        <DetailRow label={giftResolvedMobileNumberLabel(option)} value={option.mobileNumber} mono />
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
 export default function ArchivedInvitationView({ data }: ArchivedInvitationViewProps) {
-    const cleanTheme = resolveTheme(data.theme);
+    resolveTheme(data.theme); // kept for potential future theme use
     const hasGifts = !!(data.giftMessage?.trim() || (data.giftOptions && data.giftOptions.length > 0));
 
     return (
         <main className="min-h-screen bg-[#faf7f2]">
-            {/* HERO */}
+            {/* ── HERO ── */}
             <section className="relative min-h-[100dvh] overflow-hidden bg-[#1a1008] flex flex-col">
-                {/* Hero image */}
+                {/* Hero image — warm sepia treatment */}
                 {data.heroImage && (
                     <div
                         aria-hidden
@@ -36,18 +99,18 @@ export default function ArchivedInvitationView({ data }: ArchivedInvitationViewP
                         }}
                     />
                 )}
-                {/* Warm vignette overlay */}
+                {/* Warm amber vignette — darkens toward the bottom */}
                 <div
                     aria-hidden
                     className="absolute inset-0 bg-gradient-to-b from-[rgba(55,35,10,0.04)] via-[rgba(42,28,8,0.18)] to-[rgba(26,16,3,0.78)]"
                 />
-                {/* Top fade */}
+                {/* Subtle top fade */}
                 <div
                     aria-hidden
                     className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-[rgba(250,247,242,0.1)] to-transparent"
                 />
 
-                {/* Bottom-anchored content */}
+                {/* Bottom-anchored text */}
                 <div className="relative z-10 flex flex-col items-center justify-end flex-1 text-center px-6 pb-14 md:pb-20 max-w-3xl mx-auto w-full">
                     <p className="font-sans text-[0.6rem] tracking-[0.45em] uppercase text-[#d4b77e] mb-5">
                         A wedding remembered
@@ -71,34 +134,55 @@ export default function ArchivedInvitationView({ data }: ArchivedInvitationViewP
                     </p>
                 </div>
 
-                {/* Scroll cue — only if gifts exist */}
+                {/* Scroll cue — fading line only, no text */}
                 {hasGifts && (
-                    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 opacity-45 pointer-events-none">
-                        <span className="font-sans text-[0.55rem] tracking-[0.25em] uppercase text-[#e0ceaa]">Gifts</span>
-                        <div className="w-px h-7 bg-gradient-to-b from-[rgba(212,183,130,0.6)] to-transparent" />
+                    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex flex-col items-center opacity-40 pointer-events-none">
+                        <div className="w-px h-8 bg-gradient-to-b from-[rgba(212,183,130,0.7)] to-transparent" />
                     </div>
                 )}
             </section>
 
-            {/* GIFTS */}
+            {/* ── GIFTS ── */}
             {hasGifts && (
-                <section className="bg-[#faf7f2] border-t border-[rgba(200,175,130,0.22)]">
-                    <div className="flex items-center gap-4 justify-center pt-12 px-8">
+                <section className="bg-[#faf7f2] border-t border-[rgba(200,175,130,0.22)] px-6 pb-16">
+                    {/* Ornament */}
+                    <div className="flex items-center gap-4 justify-center pt-12 mb-8">
                         <div className="flex-1 max-w-[56px] h-px bg-gradient-to-r from-transparent to-[#c9a96e]" />
-                        <span className="font-sans text-[0.65rem] tracking-[0.3em] text-[#c9a96e]">&#xB7; &#xB7; &#xB7;</span>
+                        <span className="font-sans text-[0.65rem] tracking-[0.3em] text-[#c9a96e]">· · ·</span>
                         <div className="flex-1 max-w-[56px] h-px bg-gradient-to-l from-transparent to-[#c9a96e]" />
                     </div>
-                    <InvitationGifts
-                        giftMessage={data.giftMessage}
-                        giftOptions={data.giftOptions || []}
-                        accentClass={cleanTheme.accent}
-                        headerLabel="Gifts & Registry"
-                        tagline="Your generosity is still warmly welcomed — and deeply appreciated."
-                    />
+
+                    <div className="max-w-xl mx-auto text-center">
+                        {/* Label */}
+                        <p className="font-sans text-[0.58rem] font-semibold uppercase tracking-[0.22em] text-[#a8926f] mb-3">
+                            Gifts &amp; Registry
+                        </p>
+
+                        {/* Tagline */}
+                        <p className="font-serif italic text-[1rem] text-[#4a3f30] leading-[1.8] mb-8">
+                            Your generosity is still warmly welcomed &mdash; and deeply appreciated.
+                        </p>
+
+                        {/* Gift message */}
+                        {data.giftMessage?.trim() && (
+                            <p className="font-serif text-[1.05rem] text-[#3a301f] leading-relaxed whitespace-pre-line mb-8">
+                                {data.giftMessage}
+                            </p>
+                        )}
+
+                        {/* Gift option cards */}
+                        {data.giftOptions && data.giftOptions.length > 0 && (
+                            <div className="flex flex-col gap-4">
+                                {data.giftOptions.map((option, idx) => (
+                                    <GiftCard key={option.id || idx} option={option} />
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </section>
             )}
 
-            {/* FOOTNOTE */}
+            {/* ── FOOTNOTE ── */}
             {data.footnote && (
                 <footer className="bg-[#faf7f2] py-5 text-center font-sans text-[0.6rem] tracking-[0.12em] uppercase text-[#c4b49a]">
                     {data.footnote}
