@@ -10,6 +10,14 @@ import type { SelectExpense } from '@/app/actions/budget';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+interface LifecycleState {
+    clientLocked: boolean;
+    clientLockedAt: string | null;
+    isArchived: boolean;
+    archivedAt: string | null;
+    archiveMessage: string | null;
+}
+
 interface ClientOverviewProps {
     liveData: InvitationData;
     guests: SelectGuest[];
@@ -18,6 +26,9 @@ interface ClientOverviewProps {
     hasInvitation: boolean;
     onNavigate: (tab: 'builder' | 'budget' | 'seating' | 'schedule') => void;
     onInvitationSaved: (updates: Pick<InvitationData, 'bride' | 'groom' | 'date'>) => void;
+    slug?: string;
+    lifecycle?: LifecycleState | null;
+    onLifecycleChange?: (patch: LifecycleState) => void;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
