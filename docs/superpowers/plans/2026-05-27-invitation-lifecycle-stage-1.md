@@ -593,10 +593,13 @@ git commit -m "@ feat(lifecycle): admin LifecyclePanel with confirm-dialog toggl
 
 ---
 
-## Task 7: Mount `<LifecyclePanel>` inside the admin builder
+## Task 7: Mount `<LifecyclePanel>` as a top-level admin sidebar tab
+
+> **Superseded by a follow-up fix** that moved this from the per-client builder column to a dedicated "Lifecycle" sidebar tab (sibling of "Entitlements") via a new `<AdminLifecyclePanel>` wrapper component. The builder column no longer mounts `<LifecyclePanel>` directly. See the fix commit tagged `fix(lifecycle): promote Lifecycle to top-level admin sidebar tab`.
 
 **Files:**
 - Modify: `src/app/admin/page.tsx`
+- Create: `src/components/admin/AdminLifecyclePanel.tsx`
 
 - [ ] **Step 1: Import the panel**
 

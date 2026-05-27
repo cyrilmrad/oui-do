@@ -154,9 +154,9 @@ Palette matches the existing dashboard (stones + emerald accents). No tabs visib
 
 ## Admin UI
 
-### New `<LifecyclePanel>` component
+### New `<LifecyclePanel>` + `<AdminLifecyclePanel>` components
 
-`src/components/admin/LifecyclePanel.tsx`. Mounted in the admin builder next to `<ClientEntitlementsPanel>`.
+`src/components/admin/LifecyclePanel.tsx` handles the toggle controls for a single client. It is not mounted inside the per-client builder column. Instead, a top-level wrapper `src/components/admin/AdminLifecyclePanel.tsx` is mounted as a dedicated **"Lifecycle" sidebar tab** — a sibling of the "Entitlements" tab — in `src/app/admin/page.tsx`. The wrapper fetches all clients, renders a search box, and embeds one `<LifecyclePanel>` per client. This gives the admin a cross-client lifecycle dashboard without having to open each client's builder individually.
 
 ```
 ┌─ LIFECYCLE ───────────────────────────────────────┐
@@ -219,16 +219,17 @@ No new color tokens.
 ```
 src/db/schema.ts                                    (4 new columns)
 src/app/api/admin/clients/[slug]/lifecycle/route.ts (NEW)
-src/app/api/admin/clients/route.ts                  (return flags)
+src/app/api/admin/clients/route.ts                  (return flags + timestamps)
 src/app/api/rsvp/route.ts                           (403 when archived)
 src/app/invite/[slug]/page.tsx                      (branch on isArchived)
 src/app/dashboard/page.tsx                          (lock check + render)
-src/app/admin/page.tsx                              (mount LifecyclePanel)
+src/app/admin/page.tsx                              (Lifecycle sidebar tab; no longer mounts LifecyclePanel in builder)
 src/components/ArchivedInvitationView.tsx           (NEW)
 src/components/InvitationGifts.tsx                  (NEW — extracted from InvitationPreview)
 src/components/InvitationPreview.tsx                (use extracted InvitationGifts)
 src/components/dashboard/DashboardLockedScreen.tsx  (NEW)
-src/components/admin/LifecyclePanel.tsx             (NEW)
+src/components/admin/LifecyclePanel.tsx             (NEW — single-client controls)
+src/components/admin/AdminLifecyclePanel.tsx        (NEW — top-level tab; lists all clients)
 src/components/admin/ClientList.tsx                 (derived status pill)
 src/components/ConfirmDialog.tsx                    (NEW — generic confirm modal)
 ```

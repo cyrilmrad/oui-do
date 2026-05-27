@@ -11,7 +11,7 @@ import InvitationPreview, {
 } from '@/components/InvitationPreview';
 import { InvitationBlogEditor } from '@/components/blog/InvitationBlogEditor';
 import { wrapMarkdownBoldSegment } from '@/lib/rsvpClosedMessageBold';
-import { LogOut, Users, Plus, LayoutDashboard, ChevronRight, ChevronDown, Copy, Link, QrCode, Download, Share, Lock, Trash2, Shield, Loader2 } from 'lucide-react';
+import { LogOut, Users, Plus, LayoutDashboard, ChevronRight, ChevronDown, Copy, Link, QrCode, Download, Share, Lock, Trash2, Shield, Loader2, Archive } from 'lucide-react';
 import BudgetTracker from '@/components/BudgetTracker';
 import TableSeating from '@/components/TableSeating';
 import ClientEntitlementsPanel from '@/components/admin/ClientEntitlementsPanel';
@@ -35,7 +35,7 @@ import { FormalInvitationSection } from '@/components/admin/builder/FormalInvita
 import { HeroSection } from '@/components/admin/builder/HeroSection';
 import { GiftOptionsSection } from '@/components/admin/builder/GiftOptionsSection';
 import { NavigationEditorSection } from '@/components/admin/builder/NavigationEditorSection';
-import LifecyclePanel from '@/components/admin/LifecyclePanel';
+import AdminLifecyclePanel from '@/components/admin/AdminLifecyclePanel';
 import { DashboardOverview } from '@/components/admin/DashboardOverview';
 import { ScheduleBuilder } from '@/components/admin/ScheduleBuilder';
 import { ClientOverview } from '@/components/admin/ClientOverview';
@@ -320,7 +320,7 @@ export default function AdminDashboard() {
     };
 
     // Budget State
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'clients-list' | 'builder' | 'budget' | 'seating' | 'entitlements' | 'schedule' | 'client-overview'>('dashboard');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'clients-list' | 'builder' | 'budget' | 'seating' | 'entitlements' | 'lifecycle' | 'schedule' | 'client-overview'>('dashboard');
     /** True when the selected client already has an invitation row in the DB. */
     const [hasInvitation, setHasInvitation] = useState(true);
     const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
@@ -866,6 +866,24 @@ export default function AdminDashboard() {
                             <Shield className="w-4 h-4 shrink-0" />
                             <span className="font-label uppercase tracking-[0.05em] text-[0.65rem] font-bold text-left leading-snug">Entitlements</span>
                         </button>
+                        <button
+                            className={`w-full flex items-center gap-2 py-2.5 px-3 rounded-r-full transition-all duration-200 ${activeTab === 'lifecycle' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm scale-[0.99]' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
+                            onClick={() => {
+                                setLiveData(defaultData);
+                                setActiveTab('lifecycle');
+                                setHeroImageFile(null); setHeroImagePreview(null);
+                                setMetadataImageFile(null); setMetadataImagePreview(null);
+                                setHeroVideoFile(null); setHeroVideoPreview(null);
+                                setHeroLogoFile(null); setHeroLogoPreview(null);
+                                setAudioFile(null); setAudioPreview(null);
+                                setFormalImageFile(null); setFormalImagePreview(null);
+                                setDetailsBgFile(null); setDetailsBgPreview(null);
+                                setCustomFiles({});
+                            }}
+                        >
+                            <Archive className="w-4 h-4 shrink-0" />
+                            <span className="font-label uppercase tracking-[0.05em] text-[0.65rem] font-bold text-left leading-snug">Lifecycle</span>
+                        </button>
                     </nav>
 
                     <div className="mt-auto px-2 mb-3">
@@ -895,7 +913,7 @@ export default function AdminDashboard() {
             <main className="flex-1 min-w-0 flex flex-col h-full relative bg-surface">
 
                 {/* Top Nav Tabs */}
-                {liveData.slug && activeTab !== 'clients-list' && activeTab !== 'entitlements' && activeTab !== 'dashboard' && (
+                {liveData.slug && activeTab !== 'clients-list' && activeTab !== 'entitlements' && activeTab !== 'lifecycle' && activeTab !== 'dashboard' && (
                     <div className="h-14 border-b border-surface-container-highest flex items-center px-8 gap-0 shrink-0 bg-surface-container-low/50">
                         {/* Back Button + Client Name */}
                         <button
@@ -965,6 +983,12 @@ export default function AdminDashboard() {
                     {activeTab === 'entitlements' && !isCreatingClient && (
                         <div className="w-full h-full overflow-y-auto">
                             <ClientEntitlementsPanel />
+                        </div>
+                    )}
+
+                    {activeTab === 'lifecycle' && !isCreatingClient && (
+                        <div className="w-full h-full overflow-y-auto">
+                            <AdminLifecyclePanel />
                         </div>
                     )}
 
@@ -1275,15 +1299,6 @@ export default function AdminDashboard() {
                                         />
 
                                         <FootnoteSection footnote={liveData.footnote || ''} onChange={handleInputChange} />
-
-                                        <LifecyclePanel
-                                            slug={liveData.slug || ''}
-                                            clientLocked={Boolean((liveData as any).clientLocked)}
-                                            isArchived={Boolean((liveData as any).isArchived)}
-                                            clientLockedAt={((liveData as any).clientLockedAt as string | null) ?? null}
-                                            archivedAt={((liveData as any).archivedAt as string | null) ?? null}
-                                            onChange={(patch) => setLiveData(prev => ({ ...prev, ...patch }) as typeof prev)}
-                                        />
                                     </div>
                                 </div>
                                 {/* Right Column - Live Preview */}

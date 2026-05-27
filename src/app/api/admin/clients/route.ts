@@ -50,7 +50,9 @@ export async function GET(request: Request) {
                     heroImage: inv?.heroImage || null,
                     date: inv?.date || null,
                     clientLocked: inv?.clientLocked ?? false,
-                    isArchived: inv?.isArchived ?? false
+                    clientLockedAt: inv?.clientLockedAt ? inv.clientLockedAt.toISOString() : null,
+                    isArchived: inv?.isArchived ?? false,
+                    archivedAt: inv?.archivedAt ? inv.archivedAt.toISOString() : null
                 };
             });
 
