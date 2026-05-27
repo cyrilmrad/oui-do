@@ -29,7 +29,7 @@ export default function ArchivedInvitationView({ data }: ArchivedInvitationViewP
     const heroSrc = data.heroImage || '';
 
     return (
-        <main className={`min-h-screen ${cleanTheme.background}`}>
+        <main className={`@container min-h-screen ${cleanTheme.background}`}>
             {/* Hero band — softened photo with thank-you title */}
             <section className="relative w-full overflow-hidden" style={{ minHeight: '70vh' }}>
                 {heroSrc && (
