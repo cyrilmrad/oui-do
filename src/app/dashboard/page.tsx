@@ -46,6 +46,7 @@ import { useGiftOptions } from '@/hooks/useGiftOptions';
 import { FeatureLockedMessage } from '@/components/dashboard/FeatureLockedMessage';
 import { getStatusBadge } from '@/components/dashboard/GuestStatusBadge';
 import { GuestsTab } from '@/components/dashboard/GuestsTab';
+import DashboardLockedScreen from '@/components/dashboard/DashboardLockedScreen';
 import { toast } from 'sonner';
 type DashboardTab = 'overview' | 'guests' | 'messages' | 'budget' | 'seating' | 'settings';
 
@@ -167,8 +168,9 @@ export default function DashboardPage() {
                                 navigationPages: mergeNavigationPages(dbData.navigationPages),
                                 footnote: dbData.footnote || "",
                                 showRsvp: dbData.showRsvp !== false,
-                                rsvpClosedMessage: dbData.rsvpClosedMessage ?? ""
-                            });
+                                rsvpClosedMessage: dbData.rsvpClosedMessage ?? "",
+                                clientLocked: (dbData as any).clientLocked ?? false
+                            } as any);
                         }
                     }
 
@@ -1256,12 +1258,18 @@ export default function DashboardPage() {
             {/* Main Content Area */}
             <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto bg-stone-50/50 pt-16 md:pt-0">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-                    {activeTab === 'overview' && renderOverview()}
-                    {activeTab === 'guests' && <GuestsTab userSlug={userSlug} rsvps={rsvps} setRsvps={setRsvps} />}
-                    {activeTab === 'messages' && renderMessages()}
-                    {activeTab === 'budget' && renderBudget()}
-                    {activeTab === 'seating' && renderSeating()}
-                    {activeTab === 'settings' && renderSettings()}
+                    {Boolean((weddingDetails as any).clientLocked) ? (
+                        <DashboardLockedScreen bride={weddingDetails.bride} groom={weddingDetails.groom} />
+                    ) : (
+                        <>
+                            {activeTab === 'overview' && renderOverview()}
+                            {activeTab === 'guests' && <GuestsTab userSlug={userSlug} rsvps={rsvps} setRsvps={setRsvps} />}
+                            {activeTab === 'messages' && renderMessages()}
+                            {activeTab === 'budget' && renderBudget()}
+                            {activeTab === 'seating' && renderSeating()}
+                            {activeTab === 'settings' && renderSettings()}
+                        </>
+                    )}
                 </div>
             </main>
         </div>
