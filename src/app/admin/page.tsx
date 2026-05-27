@@ -35,6 +35,7 @@ import { FormalInvitationSection } from '@/components/admin/builder/FormalInvita
 import { HeroSection } from '@/components/admin/builder/HeroSection';
 import { GiftOptionsSection } from '@/components/admin/builder/GiftOptionsSection';
 import { NavigationEditorSection } from '@/components/admin/builder/NavigationEditorSection';
+import LifecyclePanel from '@/components/admin/LifecyclePanel';
 import { DashboardOverview } from '@/components/admin/DashboardOverview';
 import { ScheduleBuilder } from '@/components/admin/ScheduleBuilder';
 import { ClientOverview } from '@/components/admin/ClientOverview';
@@ -1274,6 +1275,15 @@ export default function AdminDashboard() {
                                         />
 
                                         <FootnoteSection footnote={liveData.footnote || ''} onChange={handleInputChange} />
+
+                                        <LifecyclePanel
+                                            slug={liveData.slug || ''}
+                                            clientLocked={Boolean((liveData as any).clientLocked)}
+                                            isArchived={Boolean((liveData as any).isArchived)}
+                                            clientLockedAt={((liveData as any).clientLockedAt as string | null) ?? null}
+                                            archivedAt={((liveData as any).archivedAt as string | null) ?? null}
+                                            onChange={(patch) => setLiveData(prev => ({ ...prev, ...patch }) as typeof prev)}
+                                        />
                                     </div>
                                 </div>
                                 {/* Right Column - Live Preview */}
