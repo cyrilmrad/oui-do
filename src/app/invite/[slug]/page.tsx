@@ -3,6 +3,7 @@ import InvitationPreview, {
     InvitationData,
     Theme
 } from '@/components/InvitationPreview';
+import ArchivedInvitationView from '@/components/ArchivedInvitationView';
 import type { NavigationPagesContent } from '@/lib/navigationPages';
 import { db } from '@/db';
 import { invitations, guests as guestsTable } from '@/db/schema';
@@ -25,8 +26,12 @@ export async function generateMetadata({
     }
 
     const data = result[0];
-    const title = `${data.bride} & ${data.groom} | Wedding Invitation`;
-    const description = `You are invited to the wedding of ${data.bride} & ${data.groom}. Join us on ${data.date || 'our special day'}.`;
+    const title = data.isArchived
+        ? `Thank you from ${data.bride} & ${data.groom}`
+        : `${data.bride} & ${data.groom} | Wedding Invitation`;
+    const description = data.isArchived
+        ? `${data.bride} & ${data.groom} thank you for celebrating with them${data.date ? ` on ${data.date}` : ''}.`
+        : `You are invited to the wedding of ${data.bride} & ${data.groom}. Join us on ${data.date || 'our special day'}.`;
     const imageUrl =
         data.metadataImageUrl ||
         data.heroImage ||
@@ -130,6 +135,10 @@ export default async function InvitePage({
             background: "bg-stone-50"
         }
     };
+
+    if (dbData.isArchived) {
+        return <ArchivedInvitationView data={clientData} />;
+    }
 
     return <InvitationPreview data={clientData} guestData={guestData} />;
 }
