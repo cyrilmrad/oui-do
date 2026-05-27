@@ -48,7 +48,9 @@ export async function GET(request: Request) {
                     bride: inv?.bride || 'Bride',
                     groom: inv?.groom || 'Groom',
                     heroImage: inv?.heroImage || null,
-                    date: inv?.date || null
+                    date: inv?.date || null,
+                    clientLocked: inv?.clientLocked ?? false,
+                    isArchived: inv?.isArchived ?? false
                 };
             });
 
