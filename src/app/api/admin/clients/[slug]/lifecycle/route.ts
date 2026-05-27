@@ -7,6 +7,7 @@ import { requireAdmin } from '@/lib/entitlements/guard';
 interface LifecyclePatchBody {
     clientLocked?: boolean;
     isArchived?: boolean;
+    archiveMessage?: string;
 }
 
 export async function PATCH(
@@ -31,9 +32,13 @@ export async function PATCH(
         return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
 
-    if (typeof body.clientLocked !== 'boolean' && typeof body.isArchived !== 'boolean') {
+    if (
+        typeof body.clientLocked !== 'boolean' &&
+        typeof body.isArchived !== 'boolean' &&
+        typeof body.archiveMessage !== 'string'
+    ) {
         return NextResponse.json(
-            { error: 'Provide at least one of clientLocked or isArchived (boolean).' },
+            { error: 'Provide at least one of clientLocked, isArchived, or archiveMessage.' },
             { status: 400 }
         );
     }
@@ -49,6 +54,9 @@ export async function PATCH(
         updates.isArchived = body.isArchived;
         updates.archivedAt = body.isArchived ? now : null;
     }
+    if (typeof body.archiveMessage === 'string') {
+        updates.archiveMessage = body.archiveMessage.trim() || null;
+    }
 
     try {
         const updated = await db
@@ -60,7 +68,8 @@ export async function PATCH(
                 clientLocked: invitations.clientLocked,
                 clientLockedAt: invitations.clientLockedAt,
                 isArchived: invitations.isArchived,
-                archivedAt: invitations.archivedAt
+                archivedAt: invitations.archivedAt,
+                archiveMessage: invitations.archiveMessage
             });
 
         if (updated.length === 0) {
