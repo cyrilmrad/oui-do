@@ -37,20 +37,38 @@ export async function generateMetadata({
         data.heroImage ||
         "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070&auto=format&fit=crop";
 
+    const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
+    const pageUrl = baseUrl ? `${baseUrl}/invite/${slug}` : undefined;
+
     return {
         title,
         description,
         openGraph: {
             title,
             description,
-            images: [imageUrl],
+            ...(pageUrl ? { url: pageUrl } : {}),
+            siteName: 'Oui-Do',
+            type: 'website',
+            images: [
+                {
+                    url: imageUrl,
+                    secureUrl: imageUrl,
+                    width: 1200,
+                    height: 630,
+                    alt: title,
+                }
+            ],
         },
         twitter: {
             card: 'summary_large_image',
             title,
             description,
             images: [imageUrl],
-        }
+        },
+        // schema.org image — used by some crawlers (including WhatsApp Web) as a fallback
+        other: {
+            'image': imageUrl,
+        },
     };
 }
 
