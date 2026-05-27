@@ -52,7 +52,8 @@ export async function GET(request: Request) {
                     clientLocked: inv?.clientLocked ?? false,
                     clientLockedAt: inv?.clientLockedAt ? inv.clientLockedAt.toISOString() : null,
                     isArchived: inv?.isArchived ?? false,
-                    archivedAt: inv?.archivedAt ? inv.archivedAt.toISOString() : null
+                    archivedAt: inv?.archivedAt ? inv.archivedAt.toISOString() : null,
+                    archiveMessage: inv?.archiveMessage ?? null
                 };
             });
 
