@@ -35,6 +35,9 @@ import { FormalInvitationSection } from '@/components/admin/builder/FormalInvita
 import { HeroSection } from '@/components/admin/builder/HeroSection';
 import { GiftOptionsSection } from '@/components/admin/builder/GiftOptionsSection';
 import { NavigationEditorSection } from '@/components/admin/builder/NavigationEditorSection';
+import TemplateSection from '@/components/admin/builder/TemplateSection';
+import NoirTemplate from '@/components/NoirTemplate';
+import { TemplateId, DEFAULT_TEMPLATE_ID } from '@/lib/templates';
 import { DashboardOverview } from '@/components/admin/DashboardOverview';
 import { ScheduleBuilder } from '@/components/admin/ScheduleBuilder';
 import { ClientOverview } from '@/components/admin/ClientOverview';
@@ -114,6 +117,7 @@ export default function AdminDashboard() {
     // Builder State
     const [liveData, setLiveData] = useState<InvitationData>(defaultData);
     const [themeSelection, setThemeSelection] = useState<string>("emerald");
+    const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>(DEFAULT_TEMPLATE_ID);
     const [isSaving, setIsSaving] = useState(false);
     const [navigationEditorOpen, setNavigationEditorOpen] = useState(false);
 
@@ -797,6 +801,7 @@ export default function AdminDashboard() {
                 <div className="px-2 mb-3">
                     <button
                         onClick={() => {
+                            setSelectedTemplate(DEFAULT_TEMPLATE_ID);
                             setLiveData(defaultData);
                             setIsCreatingClient(true);
                             setHeroImageFile(null); setHeroImagePreview(null);
@@ -821,6 +826,7 @@ export default function AdminDashboard() {
                         <button
                             className={`w-full flex items-center gap-2 py-2.5 px-3 rounded-r-full transition-all duration-200 ${activeTab === 'dashboard' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm scale-[0.99]' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
                             onClick={() => {
+                                setSelectedTemplate(DEFAULT_TEMPLATE_ID);
                                 setLiveData(defaultData);
                                 setActiveTab('dashboard');
                                 setHeroImageFile(null); setHeroImagePreview(null);
@@ -841,6 +847,7 @@ export default function AdminDashboard() {
                         <button
                             className={`w-full flex items-center gap-2 py-2.5 px-3 rounded-r-full transition-all duration-200 ${activeTab === 'clients-list' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm scale-[0.99]' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
                             onClick={() => {
+                                setSelectedTemplate(DEFAULT_TEMPLATE_ID);
                                 setLiveData(defaultData); // Clear builder
                                 setActiveTab('clients-list');
                                 setHeroImageFile(null); setHeroImagePreview(null);
@@ -860,6 +867,7 @@ export default function AdminDashboard() {
                         <button
                             className={`w-full flex items-center gap-2 py-2.5 px-3 rounded-r-full transition-all duration-200 ${activeTab === 'entitlements' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm scale-[0.99]' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
                             onClick={() => {
+                                setSelectedTemplate(DEFAULT_TEMPLATE_ID);
                                 setLiveData(defaultData);
                                 setActiveTab('entitlements');
                                 setHeroImageFile(null); setHeroImagePreview(null);
@@ -910,6 +918,7 @@ export default function AdminDashboard() {
                         {/* Back Button + Client Name */}
                         <button
                             onClick={() => {
+                                setSelectedTemplate(DEFAULT_TEMPLATE_ID);
                                 setLiveData(defaultData);
                                 setActiveTab('clients-list');
                                 setHeroImageFile(null); setHeroImagePreview(null);
@@ -992,6 +1001,7 @@ export default function AdminDashboard() {
                                         const dbData = await res.json();
                                         if (dbData) {
                                             setThemeSelection(getThemeSelectionFromTheme(dbData.theme as Theme | null));
+                                            setSelectedTemplate(DEFAULT_TEMPLATE_ID);
                                             setLiveData({
                                                 ...defaultData,
                                                 ...dbData,
@@ -1104,6 +1114,11 @@ export default function AdminDashboard() {
                                                 </button>
                                             </div>
                                         </div>
+
+                                        <TemplateSection
+                                            selectedTemplate={selectedTemplate}
+                                            onTemplateChange={setSelectedTemplate}
+                                        />
 
                                         <CoupleSection bride={liveData.bride} groom={liveData.groom} onChange={handleInputChange} />
 
@@ -1351,8 +1366,11 @@ export default function AdminDashboard() {
                                             <div className="h-full w-full overflow-y-auto pt-12">
                                                 <div className="pointer-events-auto flex justify-center items-start px-4 pb-10">
                                                     {liveData.slug ? (
-                                                        <div className="w-full min-w-0 max-w-[390px] shrink-0 overflow-hidden rounded-[2rem] border border-stone-300/70 bg-stone-200/40 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.28)] ring-1 ring-black/5">
-                                                            <InvitationPreview data={previewData} isPreview />
+                                                        <div className={`w-full min-w-0 max-w-[390px] shrink-0 overflow-hidden rounded-[2rem] border border-stone-300/70 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.28)] ring-1 ring-black/5 ${selectedTemplate === 'noir' ? 'bg-stone-950 h-[640px]' : 'bg-stone-200/40'}`}>
+                                                            {selectedTemplate === 'noir'
+                                                                ? <NoirTemplate data={previewData} isPreview />
+                                                                : <InvitationPreview data={previewData} isPreview />
+                                                            }
                                                         </div>
                                                     ) : (
                                                         <div className="min-h-[12rem] w-full max-w-[390px] flex items-center justify-center text-stone-400 italic text-center px-4">
