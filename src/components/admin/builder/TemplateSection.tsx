@@ -20,7 +20,7 @@ export default function TemplateSection({ selectedTemplate, onTemplateChange }: 
             </div>
 
             <p className="text-secondary font-body text-sm mb-6">
-                Choose the visual experience for this invitation. Switching template only affects the preview — it will be saved when you publish.
+                Choose the visual experience for this invitation. The preview updates instantly — DB persistence coming soon.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

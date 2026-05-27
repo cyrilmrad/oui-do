@@ -195,7 +195,9 @@ export default function NoirTemplate({ data, isPreview = false }: NoirTemplatePr
     const heroHasMedia = !!(data.heroVideo || data.heroImage);
     const heroBgStyle: React.CSSProperties = heroHasMedia
         ? {
-            backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.5) 100%), url('${data.heroVideo ? '' : data.heroImage}')`,
+            backgroundImage: data.heroImage
+                ? `linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.5) 100%), url('${data.heroImage}')`
+                : `linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.5) 100%)`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
         }
@@ -349,7 +351,7 @@ export default function NoirTemplate({ data, isPreview = false }: NoirTemplatePr
             {/* ── RSVP — always rendered ── */}
             <SnapSection sectionHeight={sectionHeight}>
                 <div style={{ width: '100%', padding: '0 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    {data.showRsvp ? (
+                    {data.showRsvp !== false ? (
                         <>
                             <p style={{ fontFamily: 'var(--font-headline, Georgia, serif)', fontSize: 24, color: '#ddd', textAlign: 'center', marginBottom: 6 }}>
                                 Will you join us?
