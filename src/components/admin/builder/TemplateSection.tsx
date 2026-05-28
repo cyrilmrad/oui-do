@@ -48,7 +48,7 @@ export default function TemplateSection({ selectedTemplate, onTemplateChange }: 
                                     </div>
                                 ) : (
                                     <div className="w-full h-full bg-gradient-to-b from-stone-900 to-stone-950 flex items-end justify-center pb-2">
-                                        <span className="text-stone-500 text-xs font-label tracking-widest">NOIR</span>
+                                        <span className="text-stone-500 text-xs font-label tracking-widest">SWIPE</span>
                                     </div>
                                 )}
                             </div>

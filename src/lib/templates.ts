@@ -1,6 +1,6 @@
 // src/lib/templates.ts
 
-export type TemplateId = 'classic' | 'noir';
+export type TemplateId = 'classic' | 'swipe';
 
 export interface TemplateDefinition {
     id: TemplateId;
@@ -14,9 +14,9 @@ export const TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         name: 'Classic',
         description: 'Continuous scroll · Light & timeless',
     },
-    noir: {
-        id: 'noir',
-        name: 'Noir',
+    swipe: {
+        id: 'swipe',
+        name: 'Swipe',
         description: 'Full-screen snap sections · Dark & dramatic',
     },
 };

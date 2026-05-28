@@ -36,7 +36,7 @@ import { HeroSection } from '@/components/admin/builder/HeroSection';
 import { GiftOptionsSection } from '@/components/admin/builder/GiftOptionsSection';
 import { NavigationEditorSection } from '@/components/admin/builder/NavigationEditorSection';
 import TemplateSection from '@/components/admin/builder/TemplateSection';
-import NoirTemplate from '@/components/NoirTemplate';
+import SwipeTemplate from '@/components/SwipeTemplate';
 import { TemplateId, DEFAULT_TEMPLATE_ID } from '@/lib/templates';
 import { DashboardOverview } from '@/components/admin/DashboardOverview';
 import { ScheduleBuilder } from '@/components/admin/ScheduleBuilder';
@@ -1366,9 +1366,9 @@ export default function AdminDashboard() {
                                             <div className="h-full w-full overflow-y-auto pt-12">
                                                 <div className="pointer-events-auto flex justify-center items-start px-4 pb-10">
                                                     {liveData.slug ? (
-                                                        <div className={`w-full min-w-0 max-w-[390px] shrink-0 overflow-hidden rounded-[2rem] border border-stone-300/70 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.28)] ring-1 ring-black/5 ${selectedTemplate === 'noir' ? 'bg-stone-950 h-[640px]' : 'bg-stone-200/40'}`}>
-                                                            {selectedTemplate === 'noir'
-                                                                ? <NoirTemplate data={previewData} isPreview />
+                                                        <div className={`w-full min-w-0 max-w-[390px] shrink-0 overflow-hidden rounded-[2rem] border border-stone-300/70 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.28)] ring-1 ring-black/5 ${selectedTemplate === 'swipe' ? 'bg-stone-950 h-[640px]' : 'bg-stone-200/40'}`}>
+                                                            {selectedTemplate === 'swipe'
+                                                                ? <SwipeTemplate data={previewData} isPreview />
                                                                 : <InvitationPreview data={previewData} isPreview />
                                                             }
                                                         </div>
