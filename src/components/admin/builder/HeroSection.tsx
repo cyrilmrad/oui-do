@@ -135,6 +135,7 @@ export function HeroSection({
                         <option value="emerald">Emerald &amp; Stone (Default Pattern)</option>
                         <option value="slate">Slate &amp; Monochrome</option>
                         <option value="rose">Rose &amp; Blush</option>
+                        <option value="noir">Noir &amp; Dark (Swipe template)</option>
                         <option value="custom">Custom Brand Colors</option>
                     </select>
                     {themeSelection === 'custom' && (

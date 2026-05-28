@@ -54,7 +54,8 @@ import { toast } from 'sonner';
 const THEME_PRESETS: Record<string, Theme> = {
     emerald: { primaryText: "text-stone-800", accent: "text-emerald-700", bgAccent: "bg-emerald-700/10", borderAccent: "border-emerald-700", background: "bg-stone-50" },
     slate: { primaryText: "text-slate-900", accent: "text-slate-600", bgAccent: "bg-slate-600/10", borderAccent: "border-slate-600", background: "bg-slate-50" },
-    rose: { primaryText: "text-rose-950", accent: "text-rose-600", bgAccent: "bg-rose-600/10", borderAccent: "border-rose-600", background: "bg-rose-50" }
+    rose: { primaryText: "text-rose-950", accent: "text-rose-600", bgAccent: "bg-rose-600/10", borderAccent: "border-rose-600", background: "bg-rose-50" },
+    noir: { primaryText: "text-stone-100", accent: "text-stone-300", bgAccent: "bg-stone-300/5", borderAccent: "border-stone-300/20", background: "bg-stone-950", name: 'noir' },
 };
 
 const getThemeSelectionFromTheme = (theme?: Theme | null): string => {

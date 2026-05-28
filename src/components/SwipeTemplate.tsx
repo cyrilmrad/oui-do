@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import {
     InvitationData,
     GiftOption,
+    Theme,
     GIFT_DEFAULT_ACCOUNT_NUMBER_LABEL,
     GIFT_DEFAULT_SWIFT_LABEL,
     GIFT_DEFAULT_MOBILE_NUMBER_LABEL,
@@ -12,6 +13,55 @@ import {
 interface SwipeTemplateProps {
     data: InvitationData;
     isPreview?: boolean;
+}
+
+// ─── Theme → dark-mode accent mapping ────────────────────────────────────────
+// Maps existing Classic theme presets to appropriate accent colors for the
+// dark Swipe template. Noir = pure monochrome white/gray.
+
+interface SwipeColors {
+    accent: string;       // used for section labels, sub-labels, link text
+    accentDim: string;    // used for divider tints, card border tints
+    dot: string;          // active dot color
+}
+
+const NOIR_COLORS: SwipeColors = {
+    accent: 'rgba(255,255,255,0.4)',
+    accentDim: 'rgba(255,255,255,0.07)',
+    dot: 'rgba(255,255,255,0.85)',
+};
+
+const SWIPE_PALETTE: Record<string, SwipeColors> = {
+    emerald: { accent: 'rgba(16,185,129,0.85)',  accentDim: 'rgba(16,185,129,0.12)',  dot: '#10b981' },
+    rose:    { accent: 'rgba(244,63,94,0.85)',   accentDim: 'rgba(244,63,94,0.12)',   dot: '#f43f5e' },
+    slate:   { accent: 'rgba(148,163,184,0.75)', accentDim: 'rgba(148,163,184,0.10)', dot: '#94a3b8' },
+    noir:    NOIR_COLORS,
+};
+
+// Map Tailwind accent class → palette key for unnamed presets
+const ACCENT_CLASS_MAP: Record<string, string> = {
+    'text-emerald-700': 'emerald',
+    'text-rose-600':    'rose',
+    'text-slate-600':   'slate',
+};
+
+function getSwipeColors(theme: Theme | undefined): SwipeColors {
+    if (!theme) return NOIR_COLORS;
+
+    // Named preset or explicitly 'noir'
+    if (theme.name && SWIPE_PALETTE[theme.name]) return SWIPE_PALETTE[theme.name];
+
+    // Custom theme with a raw hex accent
+    if (theme.name === 'custom' && theme.rawAccent) {
+        const hex = theme.rawAccent;
+        return { accent: hex, accentDim: hex + '22', dot: hex };
+    }
+
+    // Unnamed preset — identify by Tailwind accent class
+    const paletteKey = ACCENT_CLASS_MAP[theme.accent];
+    if (paletteKey) return SWIPE_PALETTE[paletteKey];
+
+    return NOIR_COLORS;
 }
 
 // ─── Shared section wrapper ───────────────────────────────────────────────────
@@ -45,15 +95,15 @@ function SnapSection({ children, background = '#0d0d0d', sectionHeight }: Sectio
 
 // ─── Frosted card ─────────────────────────────────────────────────────────────
 
-function FrostedCard({ children }: { children: React.ReactNode }) {
+function FrostedCard({ children, accentDim = 'rgba(255,255,255,0.07)' }: { children: React.ReactNode; accentDim?: string }) {
     return (
         <div
             style={{
                 width: '100%',
                 background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.09)',
+                border: `1px solid ${accentDim}`,
                 borderRadius: 12,
-                padding: '24px',
+                padding: '22px',
                 backdropFilter: 'blur(16px)',
                 WebkitBackdropFilter: 'blur(16px)',
             }}
@@ -65,7 +115,7 @@ function FrostedCard({ children }: { children: React.ReactNode }) {
 
 // ─── Section label ────────────────────────────────────────────────────────────
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionLabel({ children, accent }: { children: React.ReactNode; accent: string }) {
     return (
         <p
             style={{
@@ -73,8 +123,27 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
                 fontSize: 9,
                 letterSpacing: '0.35em',
                 textTransform: 'uppercase' as const,
-                color: '#555',
-                marginBottom: 20,
+                color: accent,
+                marginBottom: 18,
+            }}
+        >
+            {children}
+        </p>
+    );
+}
+
+// ─── Inline card sub-label ────────────────────────────────────────────────────
+
+function CardLabel({ children, accent }: { children: React.ReactNode; accent: string }) {
+    return (
+        <p
+            style={{
+                fontFamily: 'var(--font-body, Manrope, sans-serif)',
+                fontSize: 8,
+                letterSpacing: '0.3em',
+                textTransform: 'uppercase' as const,
+                color: accent,
+                marginBottom: 8,
             }}
         >
             {children}
@@ -84,42 +153,28 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 // ─── Divider ──────────────────────────────────────────────────────────────────
 
-function Divider() {
+function Divider({ accentDim }: { accentDim: string }) {
     return (
         <div
             style={{
                 width: 40,
                 height: 1,
-                background: 'rgba(255,255,255,0.12)',
+                background: accentDim,
                 margin: '16px auto',
             }}
         />
     );
 }
 
-// ─── Gift divider (between gift cards) ───────────────────────────────────────
+// ─── Card gap (between stacked cards in a slide) ─────────────────────────────
 
-function GiftDivider() {
-    return (
-        <div
-            style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                margin: '4px 0',
-            }}
-        >
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
-            <div style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.12)' }} />
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
-        </div>
-    );
+function CardGap() {
+    return <div style={{ height: 10 }} />;
 }
 
 // ─── Dot progress indicator (single, fixed outside scroll container) ──────────
 
-function DotIndicator({ total, active }: { total: number; active: number }) {
+function DotIndicator({ total, active, dot }: { total: number; active: number; dot: string }) {
     return (
         <div
             style={{
@@ -141,7 +196,7 @@ function DotIndicator({ total, active }: { total: number; active: number }) {
                         width: 4,
                         height: i === active ? 14 : 4,
                         borderRadius: i === active ? 2 : '50%',
-                        background: i === active ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.18)',
+                        background: i === active ? dot : 'rgba(255,255,255,0.18)',
                         transition: 'height 0.4s cubic-bezier(0.34,1.56,0.64,1), background 0.3s ease, border-radius 0.4s ease',
                     }}
                 />
@@ -150,58 +205,54 @@ function DotIndicator({ total, active }: { total: number; active: number }) {
     );
 }
 
-// ─── Gift card ────────────────────────────────────────────────────────────────
+// ─── Gift card (each option = its own FrostedCard) ────────────────────────────
 
-function GiftCard({ option }: { option: GiftOption }) {
+function GiftCard({ option, colors }: { option: GiftOption; colors: SwipeColors }) {
     if (option.type === 'bank') {
         return (
-            <div style={{ width: '100%', padding: '14px 0' }}>
-                <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: '#555', marginBottom: 6 }}>
-                    {option.bankName || 'Bank Transfer'}
-                </p>
+            <FrostedCard accentDim={colors.accentDim}>
+                <CardLabel accent={colors.accent}>{option.bankName || 'Bank Transfer'}</CardLabel>
                 {option.accountName && (
-                    <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 14, color: '#ccc', marginBottom: 6 }}>
+                    <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 15, color: '#ddd', marginBottom: 8, fontWeight: 500 }}>
                         {option.accountName}
                     </p>
                 )}
                 {option.accountNumber && (
-                    <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 11, color: '#666', marginBottom: 2 }}>
+                    <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 11, color: '#666', marginBottom: 3 }}>
                         {option.accountNumberLabel || GIFT_DEFAULT_ACCOUNT_NUMBER_LABEL}
-                        <span style={{ color: '#888', marginLeft: 6 }}>{option.accountNumber}</span>
+                        <span style={{ color: '#999', marginLeft: 6 }}>{option.accountNumber}</span>
                     </p>
                 )}
                 {option.swiftCode && (
                     <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 11, color: '#666' }}>
                         {option.swiftCodeLabel || GIFT_DEFAULT_SWIFT_LABEL}
-                        <span style={{ color: '#888', marginLeft: 6 }}>{option.swiftCode}</span>
+                        <span style={{ color: '#999', marginLeft: 6 }}>{option.swiftCode}</span>
                     </p>
                 )}
                 {option.customFields?.map(f => (
-                    <p key={f.id} style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 11, color: '#666', marginTop: 2 }}>
-                        {f.label}<span style={{ color: '#888', marginLeft: 6 }}>{f.value}</span>
+                    <p key={f.id} style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 11, color: '#666', marginTop: 3 }}>
+                        {f.label}<span style={{ color: '#999', marginLeft: 6 }}>{f.value}</span>
                     </p>
                 ))}
-            </div>
+            </FrostedCard>
         );
     }
     // mobile
     return (
-        <div style={{ width: '100%', padding: '14px 0' }}>
-            <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: '#555', marginBottom: 6 }}>
-                {option.serviceName || 'Mobile Transfer'}
-            </p>
+        <FrostedCard accentDim={colors.accentDim}>
+            <CardLabel accent={colors.accent}>{option.serviceName || 'Mobile Transfer'}</CardLabel>
             {option.mobileAccountName && (
-                <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 14, color: '#ccc', marginBottom: 6 }}>
+                <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 15, color: '#ddd', marginBottom: 8, fontWeight: 500 }}>
                     {option.mobileAccountName}
                 </p>
             )}
             {option.mobileNumber && (
-                <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 12, color: '#666' }}>
+                <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 11, color: '#666' }}>
                     {option.mobileNumberLabel || GIFT_DEFAULT_MOBILE_NUMBER_LABEL}
-                    <span style={{ color: '#888', marginLeft: 6 }}>{option.mobileNumber}</span>
+                    <span style={{ color: '#999', marginLeft: 6 }}>{option.mobileNumber}</span>
                 </p>
             )}
-        </div>
+        </FrostedCard>
     );
 }
 
@@ -214,12 +265,15 @@ export default function SwipeTemplate({ data, isPreview = false }: SwipeTemplate
     const [guestName, setGuestName] = useState('');
     const [pax, setPax] = useState('');
 
+    // Derive accent colors from the invitation theme
+    const colors = getSwipeColors(data.theme);
+
     // Build ordered list of section keys — drives dot count and scroll tracking
+    // Reception is merged into the ceremony slide (no separate 'reception' key)
     const sectionKeys: string[] = ['hero'];
     if (data.showFormalInvitation && data.formalInvitationImage) sectionKeys.push('formal');
     if (data.showHouses) sectionKeys.push('houses');
-    sectionKeys.push('ceremony');
-    if (data.receptionVenue) sectionKeys.push('reception');
+    sectionKeys.push('ceremony'); // venue + reception (if set) on same slide
     if ((data.giftOptions?.length ?? 0) > 0) sectionKeys.push('gifts');
     sectionKeys.push('rsvp');
 
@@ -269,7 +323,6 @@ export default function SwipeTemplate({ data, isPreview = false }: SwipeTemplate
             >
                 {/* ── Hero ── */}
                 <SnapSection sectionHeight={sectionHeight} background="transparent">
-                    {/* Video background */}
                     {data.heroVideo && (
                         <video
                             autoPlay muted loop playsInline
@@ -277,10 +330,8 @@ export default function SwipeTemplate({ data, isPreview = false }: SwipeTemplate
                             src={data.heroVideo}
                         />
                     )}
-                    {/* Image / gradient overlay */}
                     <div style={{ position: 'absolute', inset: 0, zIndex: 1, ...heroBgStyle }} />
 
-                    {/* Content */}
                     <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '40px 24px', width: '100%' }}>
                         {data.showHeroLogo && data.heroLogoUrl && (
                             <img src={data.heroLogoUrl} alt="logo" style={{ maxHeight: 64, maxWidth: 160, objectFit: 'contain', marginBottom: 8, opacity: 0.9 }} />
@@ -297,7 +348,6 @@ export default function SwipeTemplate({ data, isPreview = false }: SwipeTemplate
                         )}
                     </div>
 
-                    {/* Scroll hint */}
                     <div style={{ position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: 'rgba(255,255,255,0.3)', zIndex: 2 }}>
                         <div style={{ width: 1, height: 24, background: 'linear-gradient(180deg, rgba(255,255,255,0.3), transparent)' }} />
                         <span style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase' }}>scroll</span>
@@ -328,14 +378,11 @@ export default function SwipeTemplate({ data, isPreview = false }: SwipeTemplate
                 {data.showHouses && (
                     <SnapSection sectionHeight={sectionHeight} background="#0c0c0c">
                         <div style={{ width: '100%', padding: '0 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', maxHeight: '100%', overflowY: 'auto' }}>
-                            <SectionLabel>Family</SectionLabel>
-                            <FrostedCard>
-                                {/* Bride&apos;s house */}
+                            <SectionLabel accent={colors.accent}>Family</SectionLabel>
+                            <FrostedCard accentDim={colors.accentDim}>
                                 <div style={{ textAlign: 'center' }}>
                                     {data.housesData?.brideLabel && (
-                                        <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 9, letterSpacing: '0.25em', textTransform: 'uppercase' as const, color: '#555', marginBottom: 4 }}>
-                                            {data.housesData.brideLabel}
-                                        </p>
+                                        <CardLabel accent={colors.accent}>{data.housesData.brideLabel}</CardLabel>
                                     )}
                                     <p style={{ fontFamily: 'var(--font-headline, Georgia, serif)', fontSize: 18, color: '#eee', letterSpacing: '0.04em', marginBottom: 4 }}>
                                         {data.housesData?.brideName || "The Bride's Family"}
@@ -352,14 +399,11 @@ export default function SwipeTemplate({ data, isPreview = false }: SwipeTemplate
                                     )}
                                 </div>
 
-                                <Divider />
+                                <Divider accentDim={colors.accentDim} />
 
-                                {/* Groom&apos;s house */}
                                 <div style={{ textAlign: 'center' }}>
                                     {data.housesData?.groomLabel && (
-                                        <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 9, letterSpacing: '0.25em', textTransform: 'uppercase' as const, color: '#555', marginBottom: 4 }}>
-                                            {data.housesData.groomLabel}
-                                        </p>
+                                        <CardLabel accent={colors.accent}>{data.housesData.groomLabel}</CardLabel>
                                     )}
                                     <p style={{ fontFamily: 'var(--font-headline, Georgia, serif)', fontSize: 18, color: '#eee', letterSpacing: '0.04em', marginBottom: 4 }}>
                                         {data.housesData?.groomName || "The Groom's Family"}
@@ -380,74 +424,80 @@ export default function SwipeTemplate({ data, isPreview = false }: SwipeTemplate
                     </SnapSection>
                 )}
 
-                {/* ── Ceremony ── */}
+                {/* ── Ceremony + Reception (same slide) ── */}
                 <SnapSection sectionHeight={sectionHeight}>
-                    <div style={{ width: '100%', padding: '0 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <SectionLabel>Ceremony</SectionLabel>
-                        <FrostedCard>
-                            <p style={{ fontFamily: 'var(--font-headline, Georgia, serif)', fontSize: 20, color: '#eee', textAlign: 'center', marginBottom: 6 }}>{data.venue}</p>
+                    <div style={{ width: '100%', padding: '0 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', maxHeight: '100%', overflowY: 'auto' }}>
+                        <SectionLabel accent={colors.accent}>
+                            {data.receptionVenue ? 'Ceremony & Reception' : 'Ceremony'}
+                        </SectionLabel>
+
+                        {/* Ceremony card */}
+                        <FrostedCard accentDim={colors.accentDim}>
+                            <CardLabel accent={colors.accent}>Ceremony</CardLabel>
+                            <p style={{ fontFamily: 'var(--font-headline, Georgia, serif)', fontSize: 18, color: '#eee', textAlign: 'center', marginBottom: 6 }}>{data.venue}</p>
                             <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 12, color: '#777', textAlign: 'center', lineHeight: 1.7 }}>
                                 {data.date}{data.time ? ` · ${data.time}` : ''}
                             </p>
-                            <Divider />
-                            <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 11, color: '#555', textAlign: 'center', letterSpacing: '0.05em' }}>
-                                {data.location}
-                            </p>
+                            {data.location && (
+                                <>
+                                    <Divider accentDim={colors.accentDim} />
+                                    <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 11, color: '#555', textAlign: 'center', letterSpacing: '0.05em' }}>
+                                        {data.location}
+                                    </p>
+                                </>
+                            )}
                             {data.mapLink && (
                                 <p style={{ textAlign: 'center', marginTop: 14 }}>
-                                    <a href={data.mapLink} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 10, color: '#888', letterSpacing: '0.15em', textTransform: 'uppercase', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: 2 }}>
+                                    <a href={data.mapLink} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 10, color: colors.accent, letterSpacing: '0.15em', textTransform: 'uppercase', textDecoration: 'none', borderBottom: `1px solid ${colors.accentDim}`, paddingBottom: 2 }}>
                                         View on Map ↗
                                     </a>
                                 </p>
                             )}
                         </FrostedCard>
+
+                        {/* Reception card (same slide) */}
+                        {data.receptionVenue && (
+                            <>
+                                <CardGap />
+                                <FrostedCard accentDim={colors.accentDim}>
+                                    <CardLabel accent={colors.accent}>Reception</CardLabel>
+                                    <p style={{ fontFamily: 'var(--font-headline, Georgia, serif)', fontSize: 18, color: '#eee', textAlign: 'center', marginBottom: 6 }}>{data.receptionVenue}</p>
+                                    {(data.receptionTime || data.date) && (
+                                        <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 12, color: '#777', textAlign: 'center', lineHeight: 1.7 }}>
+                                            {data.date}{data.receptionTime ? ` · ${data.receptionTime}` : ''}
+                                        </p>
+                                    )}
+                                    {(data.receptionLocation || data.receptionAddress) && (
+                                        <>
+                                            <Divider accentDim={colors.accentDim} />
+                                            <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 11, color: '#555', textAlign: 'center', letterSpacing: '0.05em', lineHeight: 1.6 }}>
+                                                {data.receptionLocation}
+                                                {data.receptionAddress && <><br />{data.receptionAddress}</>}
+                                            </p>
+                                        </>
+                                    )}
+                                </FrostedCard>
+                            </>
+                        )}
                     </div>
                 </SnapSection>
 
-                {/* ── Reception ── */}
-                {data.receptionVenue && (
-                    <SnapSection sectionHeight={sectionHeight} background="#0f0f0f">
-                        <div style={{ width: '100%', padding: '0 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <SectionLabel>Reception</SectionLabel>
-                            <FrostedCard>
-                                <p style={{ fontFamily: 'var(--font-headline, Georgia, serif)', fontSize: 20, color: '#eee', textAlign: 'center', marginBottom: 6 }}>{data.receptionVenue}</p>
-                                {(data.receptionTime || data.date) && (
-                                    <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 12, color: '#777', textAlign: 'center', lineHeight: 1.7 }}>
-                                        {data.date}{data.receptionTime ? ` · ${data.receptionTime}` : ''}
-                                    </p>
-                                )}
-                                {(data.receptionLocation || data.receptionAddress) && (
-                                    <>
-                                        <Divider />
-                                        <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 11, color: '#555', textAlign: 'center', letterSpacing: '0.05em', lineHeight: 1.6 }}>
-                                            {data.receptionLocation}
-                                            {data.receptionAddress && <><br />{data.receptionAddress}</>}
-                                        </p>
-                                    </>
-                                )}
-                            </FrostedCard>
-                        </div>
-                    </SnapSection>
-                )}
-
-                {/* ── Gifts ── */}
+                {/* ── Gifts — each option as its own card ── */}
                 {(data.giftOptions?.length ?? 0) > 0 && (
                     <SnapSection sectionHeight={sectionHeight} background="#0a0a0a">
-                        <div style={{ width: '100%', padding: '0 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <SectionLabel>Gift Registry</SectionLabel>
+                        <div style={{ width: '100%', padding: '0 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', maxHeight: '100%', overflowY: 'auto' }}>
+                            <SectionLabel accent={colors.accent}>Gift Registry</SectionLabel>
                             {data.giftMessage && (
-                                <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 12, color: '#666', textAlign: 'center', marginBottom: 20, lineHeight: 1.6 }}>
+                                <p style={{ fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 12, color: '#666', textAlign: 'center', marginBottom: 16, lineHeight: 1.6 }}>
                                     {data.giftMessage}
                                 </p>
                             )}
-                            <FrostedCard>
-                                {data.giftOptions!.map((option, idx) => (
-                                    <React.Fragment key={option.id}>
-                                        {idx > 0 && <GiftDivider />}
-                                        <GiftCard option={option} />
-                                    </React.Fragment>
-                                ))}
-                            </FrostedCard>
+                            {data.giftOptions!.map((option, idx) => (
+                                <React.Fragment key={option.id}>
+                                    {idx > 0 && <CardGap />}
+                                    <GiftCard option={option} colors={colors} />
+                                </React.Fragment>
+                            ))}
                         </div>
                     </SnapSection>
                 )}
@@ -467,14 +517,14 @@ export default function SwipeTemplate({ data, isPreview = false }: SwipeTemplate
                                     <button
                                         disabled={isPreview}
                                         onClick={() => !isPreview && setAttending(true)}
-                                        style={{ flex: 1, padding: '12px', borderRadius: 8, fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 12, fontWeight: 600, letterSpacing: '0.05em', cursor: isPreview ? 'default' : 'pointer', background: attending === true ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)', border: attending === true ? '1px solid rgba(255,255,255,0.4)' : '1px solid rgba(255,255,255,0.12)', color: attending === true ? '#fff' : '#888', transition: '0.2s' }}
+                                        style={{ flex: 1, padding: '12px', borderRadius: 8, fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 12, fontWeight: 600, letterSpacing: '0.05em', cursor: isPreview ? 'default' : 'pointer', background: attending === true ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)', border: attending === true ? `1px solid ${colors.dot}` : '1px solid rgba(255,255,255,0.1)', color: attending === true ? '#fff' : '#777', transition: '0.2s' }}
                                     >
                                         ✓ Attending
                                     </button>
                                     <button
                                         disabled={isPreview}
                                         onClick={() => !isPreview && setAttending(false)}
-                                        style={{ flex: 1, padding: '12px', borderRadius: 8, fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 12, fontWeight: 600, letterSpacing: '0.05em', cursor: isPreview ? 'default' : 'pointer', background: attending === false ? 'rgba(255,255,255,0.08)' : 'transparent', border: attending === false ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(255,255,255,0.08)', color: attending === false ? '#aaa' : '#555', transition: '0.2s' }}
+                                        style={{ flex: 1, padding: '12px', borderRadius: 8, fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 12, fontWeight: 600, letterSpacing: '0.05em', cursor: isPreview ? 'default' : 'pointer', background: attending === false ? 'rgba(255,255,255,0.06)' : 'transparent', border: attending === false ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(255,255,255,0.08)', color: attending === false ? '#aaa' : '#444', transition: '0.2s' }}
                                     >
                                         ✕ Decline
                                     </button>
@@ -497,7 +547,7 @@ export default function SwipeTemplate({ data, isPreview = false }: SwipeTemplate
                                 />
                                 <button
                                     disabled={isPreview}
-                                    style={{ width: '100%', padding: '14px', background: isPreview ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 8, color: isPreview ? '#555' : '#fff', fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: isPreview ? 'default' : 'pointer' }}
+                                    style={{ width: '100%', padding: '14px', background: isPreview ? 'rgba(255,255,255,0.05)' : colors.accentDim, border: `1px solid ${isPreview ? 'rgba(255,255,255,0.1)' : colors.dot}`, borderRadius: 8, color: isPreview ? '#444' : colors.dot, fontFamily: 'var(--font-body, Manrope, sans-serif)', fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: isPreview ? 'default' : 'pointer' }}
                                 >
                                     {isPreview ? 'Preview only' : 'Send RSVP'}
                                 </button>
@@ -515,7 +565,7 @@ export default function SwipeTemplate({ data, isPreview = false }: SwipeTemplate
             </div>
 
             {/* ── Single fixed dot indicator — anchored to outer wrapper, not scroll ── */}
-            <DotIndicator active={activeSection} total={totalSections} />
+            <DotIndicator active={activeSection} total={totalSections} dot={colors.dot} />
         </div>
     );
 }
