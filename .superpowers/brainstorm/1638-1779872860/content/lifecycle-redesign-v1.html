@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lifecycle Redesign</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #f0ede8;
+  color: #1a1a1a;
+  padding: 32px 20px 80px;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+.page-header h1 { font-size: 1rem; font-weight: 600; color: #444; letter-spacing: .04em; }
+.page-header p { font-size: 0.78rem; color: #999; margin-top: 5px; }
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 32px;
+  max-width: 1100px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+.panel-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #999;
+  margin-bottom: 10px;
+}
+
+/* ══════════════════════
+   LEFT — CLIENT LIST
+══════════════════════ */
+.client-list {
+  background: #1a1612;
+  border-radius: 16px;
+  overflow: hidden;
+  padding: 20px 0;
+}
+
+.cl-header {
+  padding: 0 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.cl-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.cl-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+}
+.cl-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 7px 12px;
+}
+.cl-search input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 0.75rem;
+  width: 100%;
+}
+.cl-search-icon { color: rgba(255,255,255,0.3); font-size: 0.8rem; }
+
+.cl-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+}
+.cl-row:hover { background: rgba(255,255,255,0.03); }
+.cl-row.active { background: rgba(255,255,255,0.05); }
+.cl-row.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: #c9a96e;
+  border-radius: 0 2px 2px 0;
+}
+
+.cl-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.1);
+  filter: grayscale(0.4);
+}
+
+.cl-info { flex: 1; min-width: 0; }
+.cl-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cl-slug {
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: .05em;
+  margin-top: 2px;
+}
+
+.cl-pills { display: flex; gap: 4px; flex-shrink: 0; }
+
+/* Status pills */
+.pill {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pill-dot { width: 5px; height: 5px; border-radius: 50%; }
+
+.pill-live { background: rgba(16,185,129,0.12); color: #34d399; }
+.pill-live .pill-dot { background: #34d399; }
+
+.pill-locked { background: rgba(245,158,11,0.12); color: #fbbf24; }
+.pill-locked .pill-dot { background: #fbbf24; }
+
+.pill-archived { background: rgba(148,163,184,0.12); color: #94a3b8; }
+.pill-archived .pill-dot { background: #94a3b8; }
+
+.pill-closed { background: rgba(148,163,184,0.08); color: #64748b; }
+.pill-closed .pill-dot { background: #64748b; }
+
+
+/* ══════════════════════
+   RIGHT — CLIENT OVERVIEW
+══════════════════════ */
+.overview {
+  background: #faf9f7;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* Top bar */
+.ov-topbar {
+  background: white;
+  border-bottom: 1px solid #f0ede8;
+  padding: 0 24px;
+  display: flex;
+  gap: 0;
+}
+.ov-tab {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #b0a898;
+  padding: 14px 16px;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.ov-tab.active { color: #1a1612; border-bottom-color: #1a1612; }
+
+/* Overview body */
+.ov-body {
+  padding: 28px 28px 36px;
+  max-height: 680px;
+  overflow-y: auto;
+}
+
+/* Client header */
+.ov-client-header { margin-bottom: 24px; }
+.ov-client-eyebrow {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #b0a898;
+  margin-bottom: 6px;
+}
+.ov-client-name {
+  font-family: Georgia, serif;
+  font-size: 2rem;
+  font-weight: 400;
+  color: #1a1612;
+  line-height: 1.1;
+}
+.ov-client-date {
+  font-size: 0.75rem;
+  color: #b0a898;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Stat cards */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: white;
+  border: 1px solid #f0ede8;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.stat-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: #b0a898;
+  margin-bottom: 6px;
+}
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1a1612;
+  line-height: 1;
+}
+.stat-sub { font-size: 0.65rem; color: #b0a898; margin-top: 4px; }
+
+/* ── LIFECYCLE SECTION ── */
+.lifecycle-section {
+  background: white;
+  border: 1px solid #f0ede8;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.lifecycle-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid #f5f3f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lifecycle-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lifecycle-header-icon {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: #f5f3f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+.lifecycle-header-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: #2c2416;
+}
+
+/* Current phase badge */
+.phase-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.phase-badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+.phase-live { background: rgba(16,185,129,0.1); color: #059669; }
+.phase-live .phase-badge-dot { background: #10b981; }
+.phase-locked { background: rgba(245,158,11,0.1); color: #d97706; }
+.phase-locked .phase-badge-dot { background: #f59e0b; }
+.phase-archived { background: rgba(148,163,184,0.12); color: #64748b; }
+.phase-archived .phase-badge-dot { background: #94a3b8; }
+
+/* Control rows */
+.lc-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-bottom: 1px solid #f8f6f3;
+  gap: 12px;
+}
+.lc-control:last-of-type { border-bottom: none; }
+
+.lc-control-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.lc-control-icon {
+  font-size: 0.85rem;
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: #f8f6f3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.lc-control-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #2c2416;
+  display: block;
+}
+.lc-control-desc {
+  font-size: 0.65rem;
+  color: #b0a898;
+  margin-top: 1px;
+  display: block;
+  line-height: 1.4;
+}
+
+/* Action button */
+.lc-btn {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+/* Off state — neutral */
+.lc-btn-off {
+  background: #f5f3f0;
+  border-color: #e8e3db;
+  color: #6b5a3e;
+}
+.lc-btn-off:hover { background: #eceae5; }
+
+/* On state — active/warning */
+.lc-btn-locked {
+  background: rgba(245,158,11,0.08);
+  border-color: rgba(245,158,11,0.3);
+  color: #b45309;
+}
+.lc-btn-archived {
+  background: rgba(148,163,184,0.1);
+  border-color: rgba(148,163,184,0.3);
+  color: #475569;
+}
+
+/* Status dot on button */
+.btn-dot { width: 5px; height: 5px; border-radius: 50%; }
+.btn-dot-green { background: #10b981; }
+.btn-dot-amber { background: #f59e0b; }
+.btn-dot-slate { background: #94a3b8; }
+
+/* Archive message */
+.lc-message-area {
+  padding: 12px 18px 14px;
+  background: #faf9f7;
+  border-top: 1px solid #f0ede8;
+}
+.lc-message-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #b0a898;
+  margin-bottom: 6px;
+}
+.lc-message-input {
+  width: 100%;
+  background: white;
+  border: 1px solid #e8e3db;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.75rem;
+  color: #4a3f30;
+  resize: none;
+  font-family: inherit;
+  line-height: 1.5;
+  outline: none;
+  font-style: italic;
+}
+.lc-message-input::placeholder { color: #d4c9b8; }
+.lc-message-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+.lc-save-btn {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid #e8e3db;
+  background: white;
+  color: #6b5a3e;
+  cursor: pointer;
+}
+
+/* Timestamps */
+.lc-timestamps {
+  padding: 10px 18px;
+  background: #faf9f7;
+  border-top: 1px solid #f0ede8;
+  display: flex;
+  gap: 20px;
+}
+.lc-ts-item { font-size: 0.6rem; color: #c4b8a8; }
+.lc-ts-item strong { color: #8a7968; font-weight: 600; }
+
+/* Quick nav */
+.quick-nav-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 16px;
+}
+.quick-nav-btn {
+  background: white;
+  border: 1px solid #f0ede8;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.quick-nav-btn:hover { border-color: #d4c5a9; }
+.quick-nav-icon { font-size: 1rem; }
+.quick-nav-label { font-size: 0.72rem; font-weight: 600; color: #2c2416; }
+.quick-nav-sub { font-size: 0.6rem; color: #b0a898; }
+
+/* Section header */
+.section-eyebrow {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #b0a898;
+  margin-bottom: 10px;
+}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Lifecycle Redesign — Integrated into Client Overview</h1>
+  <p>Left: ClientList with status pills · Right: ClientOverview with lifecycle section</p>
+</div>
+
+<div class="two-col">
+
+  <!-- ═══════════════════ LEFT: CLIENT LIST ═══════════════════ -->
+  <div>
+    <div class="panel-label">Admin sidebar → Active Clients</div>
+    <div class="client-list">
+      <div class="cl-header">
+        <div class="cl-header-top">
+          <span class="cl-title">Active Clients</span>
+        </div>
+        <div class="cl-search">
+          <span class="cl-search-icon">⌕</span>
+          <input placeholder="Search clients…" readonly>
+        </div>
+      </div>
+
+      <!-- Row 1: Live -->
+      <div class="cl-row active">
+        <div class="cl-avatar" style="background-image:url('https://images.unsplash.com/photo-1519741497674-611481863552?w=100&q=70')"></div>
+        <div class="cl-info">
+          <div class="cl-name">Sophie &amp; Julien</div>
+          <div class="cl-slug">/sophie-julien</div>
+        </div>
+        <div class="cl-pills">
+          <span class="pill pill-live"><span class="pill-dot"></span>Live</span>
+        </div>
+      </div>
+
+      <!-- Row 2: Client locked -->
+      <div class="cl-row">
+        <div class="cl-avatar" style="background-image:url('https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=100&q=70')"></div>
+        <div class="cl-info">
+          <div class="cl-name">Amina &amp; Karim</div>
+          <div class="cl-slug">/amina-karim</div>
+        </div>
+        <div class="cl-pills">
+          <span class="pill pill-locked"><span class="pill-dot"></span>Paused</span>
+        </div>
+      </div>
+
+      <!-- Row 3: Archived -->
+      <div class="cl-row">
+        <div class="cl-avatar" style="background-image:url('https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=100&q=70')"></div>
+        <div class="cl-info">
+          <div class="cl-name">Léa &amp; Thomas</div>
+          <div class="cl-slug">/lea-thomas</div>
+        </div>
+        <div class="cl-pills">
+          <span class="pill pill-archived"><span class="pill-dot"></span>Archived</span>
+        </div>
+      </div>
+
+      <!-- Row 4: Closed (locked + archived) -->
+      <div class="cl-row">
+        <div class="cl-avatar" style="background: rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.2); font-size:1rem;">◯</div>
+        <div class="cl-info">
+          <div class="cl-name">Nadia &amp; Mehdi</div>
+          <div class="cl-slug">/nadia-mehdi</div>
+        </div>
+        <div class="cl-pills">
+          <span class="pill pill-locked"><span class="pill-dot"></span>Paused</span>
+          <span class="pill pill-archived"><span class="pill-dot"></span>Archived</span>
+        </div>
+      </div>
+
+      <!-- Row 5: In Progress (no date, no pills) -->
+      <div class="cl-row">
+        <div class="cl-avatar" style="background: rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.2); font-size:1rem;">◯</div>
+        <div class="cl-info">
+          <div class="cl-name">Yasmine &amp; Rayan</div>
+          <div class="cl-slug">/yasmine-rayan</div>
+        </div>
+        <div class="cl-pills">
+          <!-- No pill for in-progress clients -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ RIGHT: CLIENT OVERVIEW ═══════════════════ -->
+  <div>
+    <div class="panel-label">Client selected → Overview tab</div>
+    <div class="overview">
+      <!-- Top tab bar -->
+      <div class="ov-topbar">
+        <div class="ov-tab active">Overview</div>
+        <div class="ov-tab">Builder</div>
+        <div class="ov-tab">Budget</div>
+        <div class="ov-tab">Seating</div>
+        <div class="ov-tab">Schedule</div>
+      </div>
+
+      <div class="ov-body">
+        <!-- Client header -->
+        <div class="ov-client-header">
+          <div class="ov-client-eyebrow">Client Overview · /sophie-julien</div>
+          <div class="ov-client-name">Sophie &amp; Julien</div>
+          <div class="ov-client-date">📅 15 June 2025</div>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">Guests</div>
+            <div class="stat-value">127</div>
+            <div class="stat-sub">attending + pending</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Attending</div>
+            <div class="stat-value">84</div>
+            <div class="stat-sub">66% confirmed</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Budget</div>
+            <div class="stat-value">€12k</div>
+            <div class="stat-sub">of €18k estimated</div>
+          </div>
+        </div>
+
+        <!-- ── LIFECYCLE SECTION ── -->
+        <div class="section-eyebrow">Client Status</div>
+        <div class="lifecycle-section">
+
+          <!-- Header with current phase badge -->
+          <div class="lifecycle-header">
+            <div class="lifecycle-header-left">
+              <div class="lifecycle-header-icon">⚡</div>
+              <span class="lifecycle-header-title">Lifecycle</span>
+            </div>
+            <span class="phase-badge phase-live">
+              <span class="phase-badge-dot"></span>Live
+            </span>
+          </div>
+
+          <!-- Control 1: Dashboard access -->
+          <div class="lc-control">
+            <div class="lc-control-left">
+              <div class="lc-control-icon">🔓</div>
+              <div>
+                <span class="lc-control-title">Dashboard access</span>
+                <span class="lc-control-desc">Client can log in and edit their dashboard</span>
+              </div>
+            </div>
+            <button class="lc-btn lc-btn-off">
+              <span class="btn-dot btn-dot-green"></span>
+              Active
+            </button>
+          </div>
+
+          <!-- Control 2: Public invitation -->
+          <div class="lc-control">
+            <div class="lc-control-left">
+              <div class="lc-control-icon">🌐</div>
+              <div>
+                <span class="lc-control-title">Public invitation</span>
+                <span class="lc-control-desc">Live at /invite/sophie-julien</span>
+              </div>
+            </div>
+            <button class="lc-btn lc-btn-off">
+              <span class="btn-dot btn-dot-green"></span>
+              Live
+            </button>
+          </div>
+
+          <!-- Archive message (shown only when archived) -->
+          <div class="lc-message-area">
+            <div class="lc-message-label">Personal thank-you note <span style="color:#d4c9b8;font-weight:400;text-transform:none;letter-spacing:0">(shown on archived page)</span></div>
+            <textarea class="lc-message-input" rows="2" placeholder="e.g. For every kind word and shared laugh — our hearts are full."></textarea>
+            <div class="lc-message-footer">
+              <button class="lc-save-btn">Save note</button>
+            </div>
+          </div>
+
+          <!-- Timestamps -->
+          <div class="lc-timestamps">
+            <span class="lc-ts-item">Last locked: <strong>—</strong></span>
+            <span class="lc-ts-item">Last archived: <strong>—</strong></span>
+          </div>
+        </div>
+
+        <!-- Quick nav -->
+        <div class="section-eyebrow" style="margin-top:20px">Quick Access</div>
+        <div class="quick-nav-grid">
+          <div class="quick-nav-btn">
+            <span class="quick-nav-icon">✏️</span>
+            <div>
+              <div class="quick-nav-label">Invitation Builder</div>
+              <div class="quick-nav-sub">Edit content &amp; design</div>
+            </div>
+          </div>
+          <div class="quick-nav-btn">
+            <span class="quick-nav-icon">💰</span>
+            <div>
+              <div class="quick-nav-label">Budget Tracker</div>
+              <div class="quick-nav-sub">Expenses &amp; payments</div>
+            </div>
+          </div>
+          <div class="quick-nav-btn">
+            <span class="quick-nav-icon">🪑</span>
+            <div>
+              <div class="quick-nav-label">Table Seating</div>
+              <div class="quick-nav-sub">Arrange guest tables</div>
+            </div>
+          </div>
+          <div class="quick-nav-btn">
+            <span class="quick-nav-icon">📋</span>
+            <div>
+              <div class="quick-nav-label">Day-of Schedule</div>
+              <div class="quick-nav-sub">Supplier runsheet</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

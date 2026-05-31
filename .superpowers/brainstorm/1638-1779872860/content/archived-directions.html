@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archived Invitation — Design Directions</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', serif;
+    background: #f5f3ef;
+    color: #1a1a1a;
+    padding: 32px 20px 80px;
+  }
+  .page-header {
+    text-align: center;
+    margin-bottom: 48px;
+    font-family: 'system-ui', sans-serif;
+  }
+  .page-header h1 { font-size: 1.1rem; font-weight: 600; color: #444; letter-spacing: .05em; }
+  .page-header p { font-size: 0.85rem; color: #888; margin-top: 6px; }
+
+  /* ─── OPTION WRAPPER ─── */
+  .directions { display: flex; flex-direction: column; gap: 56px; max-width: 900px; margin: 0 auto; }
+
+  .direction-label {
+    font-family: 'system-ui', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 10px;
+  }
+  .direction-name {
+    font-family: 'system-ui', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #222;
+    margin-bottom: 4px;
+  }
+  .direction-desc {
+    font-family: 'system-ui', sans-serif;
+    font-size: 0.8rem;
+    color: #777;
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+
+  .preview-shell {
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+  .preview-shell:hover { border-color: #c9a96e; box-shadow: 0 8px 40px rgba(0,0,0,0.12); }
+  .preview-shell.selected { border-color: #c9a96e; box-shadow: 0 0 0 3px rgba(201,169,110,0.25); }
+  .selected-badge {
+    display: none;
+    position: absolute;
+    top: 14px; right: 14px;
+    background: #c9a96e;
+    color: white;
+    font-family: system-ui, sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    z-index: 10;
+  }
+  .preview-shell.selected .selected-badge { display: block; }
+
+  /* ══════════════════════════════════════════
+     OPTION A — The Cinematic Spread
+  ══════════════════════════════════════════ */
+  .opt-a {
+    background: #1a1612;
+    min-height: 600px;
+    display: flex;
+    flex-direction: column;
+  }
+  .opt-a .hero {
+    position: relative;
+    height: 420px;
+    overflow: hidden;
+  }
+  .opt-a .hero-img {
+    position: absolute; inset: 0;
+    background-image: url('https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&q=80');
+    background-size: cover;
+    background-position: center 30%;
+    filter: sepia(0.4) brightness(0.6);
+  }
+  .opt-a .hero-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(26,22,18,0.7) 100%);
+  }
+  .opt-a .hero-content {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    height: 100%;
+    padding: 0 32px 48px;
+    text-align: center;
+    color: white;
+  }
+  .opt-a .eyebrow {
+    font-size: 0.65rem;
+    letter-spacing: .5em;
+    text-transform: uppercase;
+    color: #c9a96e;
+    margin-bottom: 16px;
+    font-family: system-ui, sans-serif;
+  }
+  .opt-a h1 { font-size: 4.5rem; font-weight: 400; line-height: 1; color: #fff; margin-bottom: 16px; }
+  .opt-a .date-line { font-size: 0.85rem; color: rgba(255,255,255,0.65); letter-spacing: .1em; font-style: italic; }
+  .opt-a .couple { font-size: 1rem; color: rgba(255,255,255,0.8); margin-top: 12px; font-style: italic; }
+  .opt-a .below {
+    background: #1a1612;
+    padding: 40px 32px;
+    border-top: 1px solid rgba(201,169,110,0.2);
+    text-align: center;
+  }
+  .opt-a .gift-label {
+    font-family: system-ui; font-size: 0.6rem; letter-spacing: .25em; text-transform: uppercase;
+    color: #c9a96e; margin-bottom: 16px;
+  }
+  .opt-a .gift-text { color: rgba(255,255,255,0.55); font-size: 0.85rem; line-height: 1.7; max-width: 400px; margin: 0 auto 24px; font-style: italic; }
+  .opt-a .gift-btn {
+    display: inline-block; border: 1px solid rgba(201,169,110,0.5);
+    color: #c9a96e; font-family: system-ui; font-size: 0.7rem;
+    letter-spacing: .12em; text-transform: uppercase;
+    padding: 10px 28px; border-radius: 2px;
+  }
+
+  /* ══════════════════════════════════════════
+     OPTION B — The Keepsake Letter
+  ══════════════════════════════════════════ */
+  .opt-b {
+    background: #faf8f4;
+    min-height: 600px;
+    padding: 56px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .opt-b .letterhead {
+    text-align: center;
+    margin-bottom: 40px;
+    width: 100%;
+  }
+  .opt-b .monogram {
+    width: 64px; height: 64px; border-radius: 50%;
+    border: 1px solid #d4c5a9;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 1.4rem;
+    color: #8b7355;
+    background: #fff;
+  }
+  .opt-b .amp { color: #c9a96e; font-style: italic; font-size: 1.6rem; }
+  .opt-b h1 { font-size: 2.2rem; font-weight: 400; color: #2c2416; margin-bottom: 8px; }
+  .opt-b .wedding-date { font-family: system-ui; font-size: 0.7rem; letter-spacing: .2em; text-transform: uppercase; color: #a8926f; }
+
+  .opt-b .letter-photo {
+    width: 100%; max-width: 500px;
+    height: 260px; border-radius: 4px; overflow: hidden;
+    margin: 32px auto;
+    position: relative;
+  }
+  .opt-b .letter-photo img-placeholder {
+    display: block; width: 100%; height: 100%;
+    background-image: url('https://images.unsplash.com/photo-1519741497674-611481863552?w=900&q=80');
+    background-size: cover; background-position: center 30%;
+    filter: sepia(0.25) saturate(0.9);
+  }
+  .opt-b .photo-bg {
+    width: 100%; height: 100%;
+    background-image: url('https://images.unsplash.com/photo-1519741497674-611481863552?w=900&q=80');
+    background-size: cover; background-position: center 30%;
+    filter: sepia(0.2) saturate(0.9);
+  }
+  .opt-b .photo-border {
+    position: absolute; inset: 8px;
+    border: 1px solid rgba(255,255,255,0.6);
+    pointer-events: none;
+  }
+
+  .opt-b .letter-body {
+    max-width: 500px; width: 100%; text-align: center;
+  }
+  .opt-b .letter-body p {
+    font-size: 1.05rem; color: #4a3f30; line-height: 1.9;
+    margin-bottom: 16px;
+  }
+  .opt-b .signature { font-style: italic; font-size: 1.3rem; color: #8b7355; margin-top: 8px; }
+  .opt-b hr { border: none; border-top: 1px solid #e0d5c0; margin: 32px 0; }
+  .opt-b .gift-section { text-align: center; }
+  .opt-b .gift-tag {
+    font-family: system-ui; font-size: 0.6rem; letter-spacing: .2em; text-transform: uppercase;
+    color: #a8926f; margin-bottom: 12px;
+  }
+  .opt-b .gift-note { font-size: 0.85rem; color: #7a6a52; font-style: italic; margin-bottom: 20px; }
+  .opt-b .gift-pill {
+    display: inline-block; background: #fff; border: 1px solid #d4c5a9;
+    border-radius: 40px; padding: 8px 24px;
+    font-family: system-ui; font-size: 0.75rem; color: #6b5a3e;
+    margin: 4px;
+  }
+
+  /* ══════════════════════════════════════════
+     OPTION C — The Immersive Editorial
+  ══════════════════════════════════════════ */
+  .opt-c {
+    background: #f0ede6;
+    min-height: 620px;
+  }
+  .opt-c .strip {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr 1fr;
+    height: 280px;
+    gap: 3px;
+  }
+  .opt-c .strip-img {
+    background-size: cover; background-position: center;
+    filter: saturate(0.7) brightness(0.95);
+  }
+  .opt-c .strip-img:nth-child(1) {
+    background-image: url('https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600&q=80');
+    background-position: center top;
+  }
+  .opt-c .strip-img:nth-child(2) {
+    background-image: url('https://images.unsplash.com/photo-1519741497674-611481863552?w=900&q=80');
+    background-position: center 30%;
+    filter: saturate(0.8);
+  }
+  .opt-c .strip-img:nth-child(3) {
+    background-image: url('https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=600&q=80');
+    background-position: center;
+    filter: saturate(0.7) brightness(0.95);
+  }
+  .opt-c .editorial-body {
+    padding: 48px 48px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .opt-c .big-rule {
+    width: 40px; height: 1px; background: #a8926f; margin: 0 auto 24px;
+  }
+  .opt-c h1 {
+    font-size: 3.2rem; font-weight: 400;
+    color: #1e1a14; margin-bottom: 6px;
+    line-height: 1.1;
+  }
+  .opt-c .sub { font-size: 0.8rem; font-family: system-ui; color: #a8926f; letter-spacing: .15em; text-transform: uppercase; margin-bottom: 24px; }
+  .opt-c .body-text { font-size: 0.95rem; color: #5a4e3c; line-height: 1.9; max-width: 480px; margin-bottom: 24px; }
+  .opt-c .couple-sig { font-style: italic; font-size: 1.2rem; color: #6b5a3e; }
+  .opt-c .divider { width: 100%; height: 1px; background: #d8cfc0; margin: 32px 0; }
+  .opt-c .gifts-row {
+    display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;
+  }
+  .opt-c .gift-card {
+    background: #fff; border: 1px solid #ddd5c3;
+    border-radius: 8px; padding: 16px 24px; text-align: center;
+    min-width: 140px;
+  }
+  .opt-c .gift-icon { font-size: 1.3rem; margin-bottom: 8px; }
+  .opt-c .gift-card-label { font-family: system-ui; font-size: 0.65rem; letter-spacing: .12em; text-transform: uppercase; color: #9a8468; }
+  .opt-c .gift-card-title { font-size: 0.9rem; color: #3a301f; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="page-header">
+  <h1>Archived Invitation — 3 Design Directions</h1>
+  <p>Click a design to select it — then tell me what you like or dislike in the terminal</p>
+</div>
+
+<div class="directions">
+
+  <!-- ─── OPTION A ─── -->
+  <div>
+    <div class="direction-label">Option A</div>
+    <div class="direction-name">The Cinematic Spread</div>
+    <div class="direction-desc">Full-bleed sepia hero with a dramatic dark vignette. Large serif "Thank You" anchors the bottom of the image. Gifts live in a dark editorial strip below — intimate, moody, magazine-editorial feel.</div>
+    <div class="preview-shell" id="opt-a" onclick="select('opt-a')">
+      <div class="selected-badge">✓ Selected</div>
+      <div class="opt-a">
+        <div class="hero">
+          <div class="hero-img"></div>
+          <div class="hero-overlay"></div>
+          <div class="hero-content">
+            <div class="eyebrow">A wedding remembered</div>
+            <h1>Thank You.</h1>
+            <div class="date-line">15 June 2025 · Paris, France</div>
+            <div class="couple">— Sophie &amp; Julien</div>
+          </div>
+        </div>
+        <div class="below">
+          <div class="gift-label">Gifts &amp; Registry</div>
+          <div class="gift-text">Your generosity continues to mean the world to us. Thank you for celebrating our beginning.</div>
+          <div class="gift-btn">View gift options</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── OPTION B ─── -->
+  <div>
+    <div class="direction-label">Option B</div>
+    <div class="direction-name">The Keepsake Letter</div>
+    <div class="direction-desc">Cream paper feel — like an opened, handwritten thank-you card. Monogram, framed photo with inner-border detail, a warm personal note. The most intimate and personal of the three directions.</div>
+    <div class="preview-shell" id="opt-b" onclick="select('opt-b')">
+      <div class="selected-badge">✓ Selected</div>
+      <div class="opt-b">
+        <div class="letterhead">
+          <div class="monogram"><span class="amp">&amp;</span></div>
+          <h1>Sophie &amp; Julien</h1>
+          <div class="wedding-date">15 June 2025 · Paris, France</div>
+        </div>
+        <div class="letter-photo">
+          <div class="photo-bg"></div>
+          <div class="photo-border"></div>
+        </div>
+        <div class="letter-body">
+          <p>
+            With all our hearts — thank you. For the joyful tears, the dancing that went too long, and every message of love you sent our way.
+          </p>
+          <p>Our wedding day was made beautiful because you were in it.</p>
+          <div class="signature">— Sophie &amp; Julien</div>
+          <hr>
+          <div class="gift-section">
+            <div class="gift-tag">Gifts &amp; Registry</div>
+            <div class="gift-note">Your generosity is still warmly welcomed.</div>
+            <div>
+              <span class="gift-pill">🏦 Bank transfer</span>
+              <span class="gift-pill">📱 Mobile transfer</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── OPTION C ─── -->
+  <div>
+    <div class="direction-label">Option C</div>
+    <div class="direction-name">The Immersive Editorial</div>
+    <div class="direction-desc">Three-photo strip at the top creates an album-opening moment. Clean editorial grid below with generous whitespace. Gifts shown as soft cards. Feels like a luxury wedding magazine feature.</div>
+    <div class="preview-shell" id="opt-c" onclick="select('opt-c')">
+      <div class="selected-badge">✓ Selected</div>
+      <div class="opt-c">
+        <div class="strip">
+          <div class="strip-img"></div>
+          <div class="strip-img"></div>
+          <div class="strip-img"></div>
+        </div>
+        <div class="editorial-body">
+          <div class="big-rule"></div>
+          <h1>Thank You,<br>with love.</h1>
+          <div class="sub">Sophie &amp; Julien · 15 June 2025</div>
+          <p class="body-text">
+            Every kind word, every gift, every moment shared — it carried us through the most beautiful day of our lives. We are so grateful you were there.
+          </p>
+          <div class="couple-sig">— Sophie &amp; Julien</div>
+          <div class="divider"></div>
+          <div class="gifts-row">
+            <div class="gift-card">
+              <div class="gift-icon">🏦</div>
+              <div class="gift-card-label">Bank</div>
+              <div class="gift-card-title">Wire transfer</div>
+            </div>
+            <div class="gift-card">
+              <div class="gift-icon">📱</div>
+              <div class="gift-card-label">Mobile</div>
+              <div class="gift-card-title">BaridiMob / CCP</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function select(id) {
+  document.querySelectorAll('.preview-shell').forEach(el => el.classList.remove('selected'));
+  document.getElementById(id).classList.add('selected');
+  if (window.__brainstorm_select) window.__brainstorm_select(id, document.getElementById(id).querySelector('.direction-name')?.textContent || id);
+}
+</script>
+</body>
+</html>

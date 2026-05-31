@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Noir Template — Full Preview</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#1a1a1a; font-family:'Georgia',serif; color:#fff; }
+
+  h1 { font-family:'Manrope',sans-serif; font-size:14px; font-weight:600; color:#aaa; text-align:center; padding:12px; letter-spacing:.1em; text-transform:uppercase; background:#111; border-bottom:1px solid #222; }
+
+  .device {
+    max-width:375px;
+    margin:24px auto;
+    border-radius:28px;
+    overflow:hidden;
+    box-shadow:0 0 0 8px #222, 0 0 0 10px #333, 0 32px 64px rgba(0,0,0,.8);
+    height:680px;
+    position:relative;
+  }
+
+  .snap-container {
+    height:100%;
+    overflow-y:scroll;
+    scroll-snap-type:y mandatory;
+    scrollbar-width:none;
+  }
+  .snap-container::-webkit-scrollbar { display:none; }
+
+  .snap-section {
+    height:100%;
+    scroll-snap-align:start;
+    position:relative;
+    overflow:hidden;
+  }
+
+  /* ── HERO ── */
+  .section-hero {
+    background: linear-gradient(180deg, rgba(0,0,0,.65) 0%, rgba(0,0,0,.2) 40%, rgba(0,0,0,.5) 100%),
+                url('https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=75') center/cover no-repeat;
+  }
+  .hero-content {
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    padding:40px 24px;
+  }
+  .hero-tagline { font-family:'Manrope',sans-serif; font-size:10px; letter-spacing:.35em; text-transform:uppercase; color:rgba(255,255,255,.6); }
+  .hero-names { font-family:'Georgia',serif; font-size:36px; font-weight:400; letter-spacing:.04em; text-align:center; line-height:1.15; text-shadow:0 2px 12px rgba(0,0,0,.5); }
+  .hero-ampersand { display:block; font-size:24px; color:rgba(255,255,255,.5); margin:2px 0; }
+  .hero-date { font-family:'Manrope',sans-serif; font-size:11px; letter-spacing:.2em; color:rgba(255,255,255,.55); text-transform:uppercase; margin-top:4px; }
+  .scroll-hint { position:absolute; bottom:24px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:4px; color:rgba(255,255,255,.3); font-family:'Manrope',sans-serif; font-size:9px; letter-spacing:.15em; text-transform:uppercase; }
+  .scroll-hint-line { width:1px; height:24px; background:linear-gradient(180deg,rgba(255,255,255,.3),transparent); }
+
+  /* ── DOTS ── */
+  .dots {
+    position:absolute;
+    right:14px;
+    top:50%;
+    transform:translateY(-50%);
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .dot { width:4px; height:4px; border-radius:50%; background:rgba(255,255,255,.2); transition:.2s; }
+  .dot.active { background:rgba(255,255,255,.8); height:12px; border-radius:2px; }
+
+  /* ── FROSTED CARD ── */
+  .section-details {
+    background:#0d0d0d;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:32px 24px;
+    gap:0;
+  }
+  .section-label {
+    font-family:'Manrope',sans-serif;
+    font-size:9px;
+    letter-spacing:.35em;
+    text-transform:uppercase;
+    color:#555;
+    margin-bottom:20px;
+  }
+  .frosted-card {
+    width:100%;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.09);
+    border-radius:12px;
+    padding:24px;
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+  }
+  .detail-title { font-size:18px; font-weight:400; color:#eee; text-align:center; margin-bottom:6px; letter-spacing:.02em; }
+  .detail-sub { font-family:'Manrope',sans-serif; font-size:12px; color:#777; text-align:center; line-height:1.7; }
+  .divider { width:40px; height:1px; background:rgba(255,255,255,.12); margin:16px auto; }
+  .detail-meta { font-family:'Manrope',sans-serif; font-size:11px; color:#555; text-align:center; letter-spacing:.05em; }
+
+  /* ── GIFTS ── */
+  .section-gifts { background:#0a0a0a; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; }
+  .gift-card { width:100%; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:16px 20px; margin-bottom:10px; }
+  .gift-label { font-family:'Manrope',sans-serif; font-size:9px; letter-spacing:.2em; color:#555; text-transform:uppercase; margin-bottom:4px; }
+  .gift-value { font-size:14px; color:#ccc; }
+
+  /* ── RSVP ── */
+  .section-rsvp { background:#0d0d0d; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; }
+  .rsvp-title { font-size:22px; text-align:center; color:#ddd; margin-bottom:6px; }
+  .rsvp-sub { font-family:'Manrope',sans-serif; font-size:12px; color:#555; text-align:center; margin-bottom:24px; }
+  .rsvp-btn-group { display:flex; gap:10px; width:100%; margin-bottom:20px; }
+  .rsvp-btn {
+    flex:1; padding:12px; border-radius:8px; font-family:'Manrope',sans-serif; font-size:12px; font-weight:600;
+    letter-spacing:.05em; text-align:center; cursor:pointer; transition:.2s;
+  }
+  .rsvp-btn-yes { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); color:#fff; }
+  .rsvp-btn-no { background:transparent; border:1px solid rgba(255,255,255,.08); color:#555; }
+  .rsvp-input {
+    width:100%; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:8px;
+    padding:12px 14px; font-family:'Manrope',sans-serif; font-size:13px; color:#ccc; margin-bottom:10px;
+  }
+  .rsvp-submit { width:100%; padding:14px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.18); border-radius:8px; color:#fff; font-family:'Manrope',sans-serif; font-size:12px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<h1>Noir Template — scroll-snap preview (drag the phone)</h1>
+
+<div class="device">
+  <div class="snap-container" id="snap">
+
+    <!-- HERO -->
+    <div class="snap-section section-hero">
+      <div class="hero-content">
+        <div class="hero-tagline">Together forever</div>
+        <div class="hero-names">
+          Sophie
+          <span class="hero-ampersand">&amp;</span>
+          James
+        </div>
+        <div class="hero-date">14 · June · 2025</div>
+      </div>
+      <div class="scroll-hint">
+        <div class="scroll-hint-line"></div>
+        <span>scroll</span>
+      </div>
+      <!-- Dots -->
+      <div class="dots">
+        <div class="dot active" id="d0"></div>
+        <div class="dot" id="d1"></div>
+        <div class="dot" id="d2"></div>
+        <div class="dot" id="d3"></div>
+        <div class="dot" id="d4"></div>
+      </div>
+    </div>
+
+    <!-- CEREMONY -->
+    <div class="snap-section section-details">
+      <div class="section-label">Ceremony</div>
+      <div class="frosted-card">
+        <div class="detail-title">St. Mary's Chapel</div>
+        <div class="detail-sub">Saturday, 14 June 2025<br>3:00 PM</div>
+        <div class="divider"></div>
+        <div class="detail-meta">12 Rue de Rivoli<br>Paris, France</div>
+      </div>
+      <div class="dots">
+        <div class="dot" id="d0b"></div>
+        <div class="dot active" id="d1b"></div>
+        <div class="dot" id="d2b"></div>
+        <div class="dot" id="d3b"></div>
+        <div class="dot" id="d4b"></div>
+      </div>
+    </div>
+
+    <!-- RECEPTION -->
+    <div class="snap-section section-details" style="background:#0f0f0f;">
+      <div class="section-label">Reception</div>
+      <div class="frosted-card">
+        <div class="detail-title">Château de Versailles</div>
+        <div class="detail-sub">Saturday, 14 June 2025<br>6:30 PM</div>
+        <div class="divider"></div>
+        <div class="detail-meta">Place d'Armes<br>Versailles, France</div>
+      </div>
+      <div class="dots">
+        <div class="dot" id="d0c"></div>
+        <div class="dot" id="d1c"></div>
+        <div class="dot active" id="d2c"></div>
+        <div class="dot" id="d3c"></div>
+        <div class="dot" id="d4c"></div>
+      </div>
+    </div>
+
+    <!-- GIFTS -->
+    <div class="snap-section section-gifts">
+      <div class="section-label">Gift Registry</div>
+      <div style="width:100%">
+        <div class="gift-card">
+          <div class="gift-label">Bank Transfer</div>
+          <div class="gift-value">Sophie Laurent</div>
+          <div style="font-family:'Manrope',sans-serif;font-size:11px;color:#555;margin-top:2px;">FR76 1234 5678 9012 3456</div>
+        </div>
+        <div class="gift-card">
+          <div class="gift-label">Mobile Transfer</div>
+          <div class="gift-value">+33 6 12 34 56 78</div>
+        </div>
+      </div>
+      <div class="dots">
+        <div class="dot" id="d0d"></div>
+        <div class="dot" id="d1d"></div>
+        <div class="dot" id="d2d"></div>
+        <div class="dot active" id="d3d"></div>
+        <div class="dot" id="d4d"></div>
+      </div>
+    </div>
+
+    <!-- RSVP -->
+    <div class="snap-section section-rsvp">
+      <div class="rsvp-title">Will you join us?</div>
+      <div class="rsvp-sub">Please respond by 1 June 2025</div>
+      <div class="rsvp-btn-group">
+        <div class="rsvp-btn rsvp-btn-yes">✓ Attending</div>
+        <div class="rsvp-btn rsvp-btn-no">✕ Decline</div>
+      </div>
+      <input class="rsvp-input" placeholder="Your full name" style="outline:none;"/>
+      <input class="rsvp-input" placeholder="Number of guests" style="outline:none;"/>
+      <div class="rsvp-submit">Send RSVP</div>
+      <div class="dots">
+        <div class="dot" id="d0e"></div>
+        <div class="dot" id="d1e"></div>
+        <div class="dot" id="d2e"></div>
+        <div class="dot" id="d3e"></div>
+        <div class="dot active" id="d4e"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<p style="text-align:center;font-family:sans-serif;font-size:12px;color:#555;padding:16px 0 32px;">
+  ↑ Scroll inside the phone to experience the snap sections &nbsp;·&nbsp; Does this feel right?
+</p>
+
+<script>
+  const snap = document.getElementById('snap');
+  snap.addEventListener('scroll', () => {
+    const idx = Math.round(snap.scrollTop / snap.clientHeight);
+    for (let i = 0; i < 5; i++) {
+      ['','b','c','d','e'].forEach(s => {
+        const d = document.getElementById('d'+i+s);
+        if (d) d.classList.toggle('active', i === idx);
+      });
+    }
+  });
+</script>
+</body>
+</html>

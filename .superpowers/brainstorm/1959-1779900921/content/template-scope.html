@@ -1,0 +1,46 @@
+<h2>What level of change do templates represent?</h2>
+<p class="subtitle">All three options use the exact same InvitationData from your DB — they differ in how much they visually change the invitation</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Style presets — same layout, different look</h3>
+      <p>Same sections in the same order. Templates change fonts, decorative elements, spacing, and color mood (beyond the current theme). Think "Champagne", "Garden", "Modern Black" — all the same structure, just visually distinct.</p>
+      <div style="margin-top:10px;display:flex;gap:8px;">
+        <div style="background:#f5f0e8;border:1px solid #c9b99a;border-radius:6px;padding:8px 14px;font-size:12px;color:#7a6a55;font-style:italic;">Champagne</div>
+        <div style="background:#1a1a1a;border:1px solid #444;border-radius:6px;padding:8px 14px;font-size:12px;color:#e0d9c8;font-style:italic;">Modern Black</div>
+        <div style="background:#edf4ee;border:1px solid #8fb89a;border-radius:6px;padding:8px 14px;font-size:12px;color:#3a6645;font-style:italic;">Garden</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Layout templates — different structures</h3>
+      <p>Each template is a fully different page design — the order, arrangement, and composition of sections changes. Hero could be split-screen or full-bleed. Details could be in cards or a timeline. The data is the same; the architecture of the page is not.</p>
+      <div style="margin-top:10px;display:flex;gap:8px;">
+        <div style="background:#f8f8f8;border:1px solid #ddd;border-radius:6px;padding:8px 14px;font-size:12px;color:#555;">Classic (current)</div>
+        <div style="background:#f8f8f8;border:1px solid #ddd;border-radius:6px;padding:8px 14px;font-size:12px;color:#555;">Split-screen</div>
+        <div style="background:#f8f8f8;border:1px solid #ddd;border-radius:6px;padding:8px 14px;font-size:12px;color:#555;">Timeline</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Both — style presets now, layout templates later</h3>
+      <p>Start with style presets (lower risk, no structural change). Add a <code>templateId</code> field to the DB now so the door is open for full layout templates down the road. The current invitation becomes "Classic" and continues unchanged.</p>
+      <div style="margin-top:10px;padding:8px 12px;background:#f0f4ff;border-radius:6px;font-size:12px;color:#4455aa;border-left:3px solid #6677cc;">
+        ✦ Recommended — lowest risk, existing invitations unaffected, extensible
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;padding:16px;background:#fafafa;border-radius:8px;border:1px solid #eee;">
+  <p class="label">Key constraint</p>
+  <p style="font-size:13px;color:#555;margin:4px 0 0;">All existing live invitations must keep rendering <strong>exactly as they are today</strong>. New templates only activate when an admin explicitly selects one in the builder.</p>
+</div>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archived Invitation — Fusion V1</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: #f5f0e8;
+    color: #2c2416;
+  }
+
+  /* ─── LABEL ─── */
+  .label-bar {
+    background: #f5f0e8;
+    padding: 20px 24px 0;
+    font-family: system-ui, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: #a8926f;
+    text-align: center;
+  }
+  .label-bar p { margin-top: 4px; font-weight: 400; color: #b8a888; font-size: 0.68rem; }
+
+  /* ══════════════════════════════════════════
+     PAGE SHELL
+  ══════════════════════════════════════════ */
+  .page {
+    max-width: 720px;
+    margin: 24px auto 60px;
+    background: #faf7f2;
+    box-shadow: 0 4px 60px rgba(80,60,20,0.12);
+    overflow: hidden;
+  }
+
+  /* ─── HERO ─── */
+  .hero {
+    position: relative;
+    height: 520px;
+    overflow: hidden;
+  }
+  .hero-img {
+    position: absolute; inset: 0;
+    background-image: url('https://images.unsplash.com/photo-1519741497674-611481863552?w=1400&q=85');
+    background-size: cover;
+    background-position: center 30%;
+    /* Warm sepia treatment instead of cold grayscale */
+    filter: sepia(0.45) brightness(0.72) saturate(0.85);
+  }
+  /* Warm vignette — amber/brown tones, not black */
+  .hero-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(60, 40, 15, 0.08) 0%,
+      rgba(45, 30, 10, 0.15) 40%,
+      rgba(30, 20, 5, 0.72) 100%
+    );
+  }
+  /* Soft top-edge bleed to cream */
+  .hero-top-fade {
+    position: absolute; top: 0; left: 0; right: 0; height: 80px;
+    background: linear-gradient(to bottom, rgba(250, 247, 242, 0.18), transparent);
+  }
+
+  .hero-content {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-end;
+    height: 100%;
+    padding: 0 40px 52px;
+    text-align: center;
+  }
+
+  /* Monogram circle — from Option B palette */
+  .hero-monogram {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: 1px solid rgba(212, 183, 130, 0.55);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+    background: rgba(250, 240, 220, 0.08);
+    backdrop-filter: blur(2px);
+  }
+  .hero-monogram span {
+    font-style: italic;
+    font-size: 1.3rem;
+    color: #d4b77e;
+  }
+
+  .eyebrow {
+    font-family: system-ui, sans-serif;
+    font-size: 0.62rem;
+    letter-spacing: .45em;
+    text-transform: uppercase;
+    color: #d4b77e;
+    margin-bottom: 18px;
+  }
+
+  .hero-title {
+    font-size: 5rem;
+    font-weight: 400;
+    line-height: 1;
+    color: #faf7f2;
+    margin-bottom: 20px;
+    text-shadow: 0 2px 24px rgba(20,12,4,0.4);
+  }
+
+  .hero-rule {
+    width: 36px; height: 1px;
+    background: rgba(212, 183, 130, 0.6);
+    margin: 0 auto 18px;
+  }
+
+  .hero-date {
+    font-size: 0.82rem;
+    color: rgba(250, 240, 215, 0.7);
+    letter-spacing: .08em;
+    font-style: italic;
+    margin-bottom: 10px;
+  }
+  .hero-couple {
+    font-size: 1.05rem;
+    color: rgba(250, 240, 215, 0.85);
+    font-style: italic;
+  }
+
+  /* ─── GIFT SECTION — cream from Option B ─── */
+  .gifts-section {
+    background: #faf7f2;
+    padding: 48px 48px 52px;
+    text-align: center;
+    border-top: 1px solid rgba(200, 175, 130, 0.22);
+    position: relative;
+  }
+
+  /* Subtle top ornament */
+  .gifts-ornament {
+    display: flex; align-items: center; gap: 16px;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+  .gifts-ornament-line {
+    flex: 1; max-width: 60px; height: 1px;
+    background: linear-gradient(to right, transparent, #c9a96e);
+  }
+  .gifts-ornament-line.right {
+    background: linear-gradient(to left, transparent, #c9a96e);
+  }
+  .gifts-ornament-dot { color: #c9a96e; font-size: 0.7rem; letter-spacing: .3em; }
+
+  .gifts-label {
+    font-family: system-ui, sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: #a8926f;
+    margin-bottom: 14px;
+  }
+  .gifts-tagline {
+    font-size: 1.05rem;
+    color: #4a3f30;
+    line-height: 1.8;
+    max-width: 380px;
+    margin: 0 auto 32px;
+    font-style: italic;
+  }
+
+  /* Gift option pills — warm B-palette */
+  .gift-pills {
+    display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .gift-pill {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff;
+    border: 1px solid #d4c5a9;
+    border-radius: 6px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .gift-pill:hover { border-color: #c9a96e; box-shadow: 0 2px 12px rgba(201,169,110,0.15); }
+  .gift-pill-icon { font-size: 1.1rem; }
+  .gift-pill-text { text-align: left; }
+  .gift-pill-type {
+    font-family: system-ui; font-size: 0.58rem;
+    letter-spacing: .12em; text-transform: uppercase;
+    color: #a8926f; display: block;
+  }
+  .gift-pill-name { font-size: 0.88rem; color: #3a301f; display: block; margin-top: 1px; }
+
+  /* ─── FOOTNOTE ─── */
+  .footnote {
+    padding: 20px 32px 32px;
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 0.62rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #c4b49a;
+  }
+</style>
+</head>
+<body>
+
+<div class="label-bar">
+  Fusion — Cinematic A × Warm Palette B
+  <p>Full-fidelity mockup · Tell me what to tweak — font size, vignette intensity, gift section layout…</p>
+</div>
+
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-img"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-top-fade"></div>
+
+    <div class="hero-content">
+      <div class="hero-monogram"><span>&amp;</span></div>
+      <div class="eyebrow">A wedding remembered</div>
+      <h1 class="hero-title">Thank You.</h1>
+      <div class="hero-rule"></div>
+      <div class="hero-date">15 June 2025 · Paris, France</div>
+      <div class="hero-couple">— Sophie &amp; Julien</div>
+    </div>
+  </div>
+
+  <!-- GIFTS -->
+  <div class="gifts-section">
+    <div class="gifts-ornament">
+      <div class="gifts-ornament-line"></div>
+      <div class="gifts-ornament-dot">· · ·</div>
+      <div class="gifts-ornament-line right"></div>
+    </div>
+
+    <div class="gifts-label">Gifts &amp; Registry</div>
+    <p class="gifts-tagline">Your generosity is still warmly welcomed — and deeply appreciated.</p>
+
+    <div class="gift-pills">
+      <div class="gift-pill">
+        <div class="gift-pill-icon">🏦</div>
+        <div class="gift-pill-text">
+          <span class="gift-pill-type">Bank</span>
+          <span class="gift-pill-name">Wire transfer</span>
+        </div>
+      </div>
+      <div class="gift-pill">
+        <div class="gift-pill-icon">📱</div>
+        <div class="gift-pill-text">
+          <span class="gift-pill-type">Mobile</span>
+          <span class="gift-pill-name">BaridiMob / CCP</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">Oui-Do · Wedding Invitations</div>
+</div>
+
+</body>
+</html>

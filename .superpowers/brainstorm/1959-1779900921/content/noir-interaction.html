@@ -1,0 +1,93 @@
+<h2>How does the Noir paginated experience work?</h2>
+<p class="subtitle">Each section becomes a full-screen "slide." Here are 3 ways to navigate between them.</p>
+
+<div class="options">
+
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Click / tap anywhere to advance</h3>
+      <p>The entire screen is a tap target. Tap to go forward, tap a back arrow to go back. Minimal UI — nothing distracts from the content. Each section fills the viewport.</p>
+      <div class="mockup" style="margin-top:10px;">
+        <div class="mockup-header">Noir — Tap to Advance</div>
+        <div class="mockup-body" style="background:#111;padding:0;height:160px;position:relative;border-radius:0 0 6px 6px;overflow:hidden;">
+          <div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+            <div style="color:#777;font-size:9px;letter-spacing:.25em;text-transform:uppercase;">Ceremony</div>
+            <div style="color:#fff;font-family:Georgia,serif;font-size:18px;">St. Mary's Chapel</div>
+            <div style="color:#999;font-size:11px;">3:00 PM · Paris, France</div>
+          </div>
+          <!-- Progress dots -->
+          <div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;">
+            <div style="width:5px;height:5px;border-radius:50%;background:#444;"></div>
+            <div style="width:5px;height:5px;border-radius:50%;background:#fff;"></div>
+            <div style="width:5px;height:5px;border-radius:50%;background:#444;"></div>
+            <div style="width:5px;height:5px;border-radius:50%;background:#444;"></div>
+          </div>
+          <!-- Tap hint -->
+          <div style="position:absolute;bottom:28px;right:14px;color:#555;font-size:9px;">tap →</div>
+          <!-- Back arrow -->
+          <div style="position:absolute;top:50%;left:10px;transform:translateY(-50%);color:#444;font-size:16px;">‹</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Arrow buttons + swipe on mobile</h3>
+      <p>Visible left/right arrow buttons for desktop. Swipe gesture on mobile. Progress bar at the top. More explicit navigation — users always know how to move.</p>
+      <div class="mockup" style="margin-top:10px;">
+        <div class="mockup-header">Noir — Arrow + Swipe</div>
+        <div class="mockup-body" style="background:#111;padding:0;height:160px;position:relative;border-radius:0 0 6px 6px;overflow:hidden;">
+          <!-- Progress bar -->
+          <div style="height:2px;background:#222;width:100%;">
+            <div style="height:100%;width:40%;background:linear-gradient(90deg,#777,#ccc);"></div>
+          </div>
+          <div style="height:calc(100% - 2px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+            <div style="color:#777;font-size:9px;letter-spacing:.25em;text-transform:uppercase;">Ceremony</div>
+            <div style="color:#fff;font-family:Georgia,serif;font-size:18px;">St. Mary's Chapel</div>
+            <div style="color:#999;font-size:11px;">3:00 PM · Paris, France</div>
+          </div>
+          <!-- Arrow buttons -->
+          <div style="position:absolute;top:50%;left:10px;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;border:1px solid #333;display:flex;align-items:center;justify-content:center;color:#666;font-size:14px;background:#1a1a1a;">‹</div>
+          <div style="position:absolute;top:50%;right:10px;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;border:1px solid #555;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:14px;background:#1a1a1a;">›</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Vertical scroll-snap</h3>
+      <p>Normal scroll — but each section snaps to fill the viewport when it enters. No clicks needed. Works naturally with mouse wheel, touch, and keyboard. Sections slide up into view.</p>
+      <div class="mockup" style="margin-top:10px;">
+        <div class="mockup-header">Noir — Scroll Snap</div>
+        <div class="mockup-body" style="background:#111;padding:0;height:160px;position:relative;border-radius:0 0 6px 6px;overflow:hidden;">
+          <!-- Showing section transition -->
+          <div style="position:absolute;top:0;left:0;right:0;height:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#111;border-bottom:1px solid #222;">
+            <div style="color:#555;font-size:8px;letter-spacing:.2em;text-transform:uppercase;">Hero</div>
+            <div style="color:#aaa;font-family:Georgia,serif;font-size:14px;">Sophie &amp; James</div>
+          </div>
+          <div style="position:absolute;bottom:0;left:0;right:0;height:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#0d0d0d;">
+            <div style="color:#555;font-size:8px;letter-spacing:.2em;text-transform:uppercase;">Ceremony</div>
+            <div style="color:#ccc;font-family:Georgia,serif;font-size:14px;">St. Mary's Chapel</div>
+          </div>
+          <!-- Scroll indicator -->
+          <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:4px;">
+            <div style="width:3px;height:12px;border-radius:2px;background:#333;"></div>
+            <div style="width:3px;height:12px;border-radius:2px;background:#666;"></div>
+            <div style="width:3px;height:12px;border-radius:2px;background:#333;"></div>
+          </div>
+          <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);color:#333;font-size:9px;">↓ scroll</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top:20px;padding:12px 16px;background:#1a1a1a;border-radius:8px;border:1px solid #333;font-size:12px;color:#888;">
+  <strong style="color:#ccc;">All 3 options:</strong> Full-screen dark sections, frosted glass detail cards, white/silver type. The difference is only how you move between sections.
+</div>

@@ -1,0 +1,112 @@
+<h2>Where does the template selector live in the builder?</h2>
+<p class="subtitle">The builder is a single scrolling form. These show 3 placements for the template picker.</p>
+
+<div class="options">
+
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>New "Section 00 — Design" at the top of the builder</h3>
+      <p>A dedicated section appears before "The Couple", making template selection the very first step. Sets the visual direction before filling in content.</p>
+      <div class="mockup" style="margin-top:10px;">
+        <div class="mockup-header">Invitation Builder (scroll view)</div>
+        <div class="mockup-body" style="padding:0;font-size:12px;">
+          <div style="background:#00150f;color:#e8f5e9;padding:8px 14px;font-size:11px;font-weight:600;letter-spacing:.05em;">00 — DESIGN TEMPLATE</div>
+          <div style="padding:10px 14px;background:#f7f5f0;border-bottom:1px solid #e0dbd4;">
+            <div style="display:flex;gap:8px;margin-bottom:6px;">
+              <div style="border:2px solid #00150f;border-radius:5px;padding:5px 8px;font-size:11px;background:#fff;flex:1;text-align:center;">
+                ✦ Classic<br><span style="font-size:10px;color:#888;">Current</span>
+              </div>
+              <div style="border:1px solid #ddd;border-radius:5px;padding:5px 8px;font-size:11px;background:#fff;flex:1;text-align:center;">
+                Champagne<br><span style="font-size:10px;color:#888;">Warm &amp; elegant</span>
+              </div>
+              <div style="border:1px solid #ddd;border-radius:5px;padding:5px 8px;font-size:11px;background:#fff;flex:1;text-align:center;">
+                Noir<br><span style="font-size:10px;color:#888;">Dark &amp; dramatic</span>
+              </div>
+            </div>
+          </div>
+          <div style="background:#00150f;color:#e8f5e9;padding:8px 14px;font-size:11px;font-weight:600;letter-spacing:.05em;">01 — THE COUPLE</div>
+          <div style="padding:8px 14px;background:#fafaf9;color:#888;font-size:11px;border-bottom:1px solid #eee;">Bride &amp; Groom names...</div>
+          <div style="background:#00150f;color:#e8f5e9;padding:8px 14px;font-size:11px;font-weight:600;letter-spacing:.05em;">02 — HERO</div>
+          <div style="padding:8px 14px;background:#fafaf9;color:#888;font-size:11px;">Hero image, theme colors...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Inside Section 02 — Hero, above the theme controls</h3>
+      <p>Template picker slots in right where the current color theme selector lives. Least disruption — same section, just expands it with template presets above the color swatches.</p>
+      <div class="mockup" style="margin-top:10px;">
+        <div class="mockup-header">Section 02 — Hero (expanded)</div>
+        <div class="mockup-body" style="padding:0;font-size:12px;">
+          <div style="background:#00150f;color:#e8f5e9;padding:8px 14px;font-size:11px;font-weight:600;letter-spacing:.05em;">02 — HERO</div>
+          <div style="padding:10px 14px;background:#fafaf9;border-bottom:1px solid #eee;">
+            <div style="font-size:11px;color:#555;margin-bottom:6px;font-weight:600;">Hero Image / Video</div>
+            <div style="height:24px;background:#e8e4df;border-radius:4px;"></div>
+          </div>
+          <div style="padding:10px 14px;background:#f0ede8;border-bottom:1px solid #ddd;">
+            <div style="font-size:11px;color:#555;margin-bottom:6px;font-weight:600;">✦ Invitation Template</div>
+            <div style="display:flex;gap:6px;">
+              <div style="border:2px solid #00150f;border-radius:4px;padding:4px 8px;font-size:10px;background:#fff;">Classic ✓</div>
+              <div style="border:1px solid #ccc;border-radius:4px;padding:4px 8px;font-size:10px;background:#fff;">Champagne</div>
+              <div style="border:1px solid #ccc;border-radius:4px;padding:4px 8px;font-size:10px;background:#fff;">Noir</div>
+            </div>
+          </div>
+          <div style="padding:10px 14px;background:#fafaf9;">
+            <div style="font-size:11px;color:#555;margin-bottom:6px;font-weight:600;">Theme Colors</div>
+            <div style="display:flex;gap:6px;">
+              <div style="width:20px;height:20px;border-radius:50%;background:#059669;border:2px solid #333;"></div>
+              <div style="width:20px;height:20px;border-radius:50%;background:#64748b;"></div>
+              <div style="width:20px;height:20px;border-radius:50%;background:#e11d48;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>A full-width template gallery at the top</h3>
+      <p>A visual gallery with mini invitation previews — actual thumbnails showing what each template looks like. Clicking one applies it. More visual and discoverable, but more complex to build.</p>
+      <div class="mockup" style="margin-top:10px;">
+        <div class="mockup-header">Builder — Template Gallery (top of page)</div>
+        <div class="mockup-body" style="padding:10px;font-size:12px;">
+          <div style="font-size:11px;color:#555;font-weight:600;margin-bottom:8px;">Choose a template for this invitation</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+            <div style="border:2px solid #00150f;border-radius:6px;overflow:hidden;">
+              <div style="height:60px;background:linear-gradient(180deg,#1a1a1a 0%,#f5f0e8 100%);"></div>
+              <div style="padding:5px 8px;background:#fff;">
+                <div style="font-size:10px;font-weight:600;">Classic ✓</div>
+                <div style="font-size:9px;color:#888;">Light &amp; timeless</div>
+              </div>
+            </div>
+            <div style="border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+              <div style="height:60px;background:linear-gradient(180deg,#c9a96e 0%,#f5f0e8 100%);"></div>
+              <div style="padding:5px 8px;background:#fff;">
+                <div style="font-size:10px;font-weight:600;">Champagne</div>
+                <div style="font-size:9px;color:#888;">Warm &amp; elegant</div>
+              </div>
+            </div>
+            <div style="border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+              <div style="height:60px;background:linear-gradient(180deg,#0f0f0f 0%,#2a2a2a 100%);"></div>
+              <div style="padding:5px 8px;background:#fff;">
+                <div style="font-size:10px;font-weight:600;">Noir</div>
+                <div style="font-size:9px;color:#888;">Dark &amp; dramatic</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top:20px;padding:12px 16px;background:#f0f4ff;border-radius:8px;border-left:3px solid #6677cc;font-size:13px;color:#445;">
+  <strong>Note:</strong> In all 3 options, switching template only affects the <em>visual presentation</em> — it never changes the saved invitation data. Existing invitations without a <code>templateId</code> default to Classic automatically.
+</div>

@@ -1,0 +1,112 @@
+<h2>Which templates should we ship?</h2>
+<p class="subtitle">Each card shows a mini preview of how the invitation would look. Same data — different visual style. Select all you want to include.</p>
+
+<div class="cards" data-multiselect style="grid-template-columns: repeat(2, 1fr); gap: 20px;">
+
+  <!-- CLASSIC -->
+  <div class="card" data-choice="classic" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:0;background:#f5f2ed;height:320px;position:relative;overflow:hidden;">
+      <!-- Hero area -->
+      <div style="height:140px;background:linear-gradient(180deg,rgba(20,20,20,0.55) 0%,rgba(20,20,20,0.1) 100%), url('https://images.unsplash.com/photo-1519741497674-611481863552?w=400&q=60') center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:14px;">
+        <div style="color:#fff;font-size:9px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:4px;opacity:.8;">Together Forever</div>
+        <div style="color:#fff;font-family:Georgia,serif;font-size:20px;letter-spacing:.05em;">Sophie &amp; James</div>
+        <div style="color:#fff;font-size:9px;opacity:.7;margin-top:3px;">14 June 2025</div>
+      </div>
+      <!-- Details card -->
+      <div style="margin:10px;background:rgba(255,255,255,0.88);border-radius:8px;padding:12px;backdrop-filter:blur(4px);">
+        <div style="text-align:center;font-family:Georgia,serif;font-size:11px;color:#2d4a35;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;">Ceremony</div>
+        <div style="text-align:center;font-size:10px;color:#555;line-height:1.5;">St. Mary's Chapel<br>3:00 PM · Paris, France</div>
+        <div style="height:1px;background:#d4e8d8;margin:8px 0;"></div>
+        <div style="display:flex;justify-content:center;gap:4px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#059669;"></div>
+          <div style="font-size:9px;color:#059669;letter-spacing:.05em;">RSVP</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Classic <span style="font-size:11px;color:#888;font-weight:400;">— current look</span></h3>
+      <p>Stone background, emerald accents, semi-transparent white card. Already live on all invitations.</p>
+    </div>
+  </div>
+
+  <!-- CHAMPAGNE -->
+  <div class="card" data-choice="champagne" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:0;background:#faf6ee;height:320px;position:relative;overflow:hidden;">
+      <!-- Decorative top border -->
+      <div style="height:4px;background:linear-gradient(90deg,#c9a96e,#e8d5a8,#c9a96e);"></div>
+      <!-- Hero area -->
+      <div style="height:136px;background:linear-gradient(180deg,rgba(10,6,2,0.5) 0%,rgba(10,6,2,0.15) 100%), url('https://images.unsplash.com/photo-1519741497674-611481863552?w=400&q=60') center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:12px;">
+        <div style="color:#f5e6c4;font-size:8px;letter-spacing:.3em;text-transform:uppercase;margin-bottom:5px;opacity:.9;">~ you are invited ~</div>
+        <div style="color:#fff;font-family:Georgia,serif;font-size:19px;letter-spacing:.06em;text-shadow:0 1px 4px rgba(0,0,0,.4);">Sophie &amp; James</div>
+        <div style="color:#f5e6c4;font-size:9px;margin-top:3px;opacity:.85;">14 · VI · 2025</div>
+      </div>
+      <!-- Details card -->
+      <div style="margin:10px;background:rgba(252,248,240,0.95);border:1px solid #e0c882;border-radius:6px;padding:12px;">
+        <div style="text-align:center;font-family:Georgia,serif;font-size:11px;color:#9a7a30;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;">Cérémonie</div>
+        <div style="text-align:center;font-size:10px;color:#6b5a3a;line-height:1.5;">St. Mary's Chapel<br>3:00 PM · Paris, France</div>
+        <div style="height:1px;background:linear-gradient(90deg,transparent,#c9a96e,transparent);margin:8px 0;"></div>
+        <div style="text-align:center;font-size:9px;color:#9a7a30;letter-spacing:.08em;">✦ RSVP ✦</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Champagne</h3>
+      <p>Warm ivory &amp; gold tones, ornamental dividers, serif-forward. Formal and opulent feel.</p>
+    </div>
+  </div>
+
+  <!-- NOIR -->
+  <div class="card" data-choice="noir" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:0;background:#111;height:320px;position:relative;overflow:hidden;">
+      <!-- Hero area -->
+      <div style="height:140px;background:linear-gradient(180deg,rgba(0,0,0,0.7) 0%,rgba(0,0,0,0.3) 100%), url('https://images.unsplash.com/photo-1519741497674-611481863552?w=400&q=60') center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:14px;">
+        <div style="color:#aaa;font-size:8px;letter-spacing:.35em;text-transform:uppercase;margin-bottom:5px;">together forever</div>
+        <div style="color:#fff;font-family:Georgia,serif;font-size:20px;letter-spacing:.04em;">Sophie &amp; James</div>
+        <div style="color:#888;font-size:9px;margin-top:3px;">14 June 2025</div>
+      </div>
+      <!-- Details card -->
+      <div style="margin:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:12px;backdrop-filter:blur(8px);">
+        <div style="text-align:center;font-family:Georgia,serif;font-size:11px;color:#c8c8c8;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;">Ceremony</div>
+        <div style="text-align:center;font-size:10px;color:#999;line-height:1.5;">St. Mary's Chapel<br>3:00 PM · Paris, France</div>
+        <div style="height:1px;background:rgba(255,255,255,0.1);margin:8px 0;"></div>
+        <div style="display:flex;justify-content:center;gap:4px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#e5e5e5;"></div>
+          <div style="font-size:9px;color:#ccc;letter-spacing:.05em;">RSVP</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Noir</h3>
+      <p>Deep charcoal background, frosted glass cards, silver &amp; white type. Dramatic and modern.</p>
+    </div>
+  </div>
+
+  <!-- BOTANICAL -->
+  <div class="card" data-choice="botanical" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:0;background:#f0f5f0;height:320px;position:relative;overflow:hidden;">
+      <!-- Botanical top accent -->
+      <div style="height:6px;background:linear-gradient(90deg,#7aad72,#a8c9a0,#7aad72);"></div>
+      <!-- Hero area -->
+      <div style="height:134px;background:linear-gradient(180deg,rgba(15,30,15,0.45) 0%,rgba(15,30,15,0.1) 100%), url('https://images.unsplash.com/photo-1519741497674-611481863552?w=400&q=60') center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:12px;">
+        <div style="color:#d4ecd4;font-size:8px;letter-spacing:.25em;text-transform:uppercase;margin-bottom:5px;opacity:.9;">avec amour</div>
+        <div style="color:#fff;font-family:Georgia,serif;font-size:19px;letter-spacing:.04em;">Sophie &amp; James</div>
+        <div style="color:#c8e6c8;font-size:9px;margin-top:3px;">14 June 2025</div>
+      </div>
+      <!-- Details card -->
+      <div style="margin:10px;background:rgba(240,248,240,0.95);border:1px solid #b8d8b8;border-radius:8px;padding:12px;">
+        <div style="text-align:center;font-family:Georgia,serif;font-size:11px;color:#3a6640;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;">🌿 Ceremony</div>
+        <div style="text-align:center;font-size:10px;color:#4a6a4a;line-height:1.5;">St. Mary's Chapel<br>3:00 PM · Paris, France</div>
+        <div style="height:1px;background:linear-gradient(90deg,transparent,#8fbc8f,transparent);margin:8px 0;"></div>
+        <div style="text-align:center;font-size:9px;color:#3a6640;letter-spacing:.06em;">✦ RSVP ✦</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Botanical</h3>
+      <p>Soft sage greens, botanical accents, airy spacing. Romantic garden party aesthetic.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top:16px;padding:12px 16px;background:#fafafa;border-radius:8px;border:1px solid #eee;font-size:12px;color:#666;">
+  <strong>Multi-select:</strong> Click all the templates you want to ship in the first version. Classic is always included (it's the default for all existing invitations).
+</div>
