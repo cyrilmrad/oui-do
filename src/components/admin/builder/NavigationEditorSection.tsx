@@ -20,6 +20,7 @@ interface NavigationEditorSectionProps {
     addLodgingHotel: () => void;
     removeLodgingHotel: (index: number) => void;
     updateLodgingHotel: (index: number, field: keyof NavigationLodgingHotel, value: string) => void;
+    onFormatHotelDescription: (idx: number, marker: '**' | '~~' | '__') => void;
     onHotelImageUpload: (idx: number, file: File) => Promise<void>;
     onHotelImageRemove: (idx: number, currentUrl: string) => Promise<void>;
     addExploringSpot: () => void;
@@ -43,6 +44,7 @@ export function NavigationEditorSection({
     addLodgingHotel,
     removeLodgingHotel,
     updateLodgingHotel,
+    onFormatHotelDescription,
     onHotelImageUpload,
     onHotelImageRemove,
     addExploringSpot,
@@ -201,7 +203,15 @@ export function NavigationEditorSection({
                                 )}
                                 <input type="text" placeholder="Title" value={hotel.title} onChange={(e) => updateLodgingHotel(idx, 'title', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
                                 <input type="text" placeholder="Subtitle / distance" value={hotel.subtitle} onChange={(e) => updateLodgingHotel(idx, 'subtitle', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
-                                <textarea placeholder="Description" value={hotel.description} onChange={(e) => updateLodgingHotel(idx, 'description', e.target.value)} rows={3} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface resize-y" />
+                                <div className="space-y-1.5">
+                                    <textarea id={`lodging-hotel-desc-${idx}`} placeholder="Description" value={hotel.description} onChange={(e) => updateLodgingHotel(idx, 'description', e.target.value)} rows={3} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface resize-y" />
+                                    <div className="flex items-center gap-2">
+                                        <button type="button" onClick={() => onFormatHotelDescription(idx, '**')} title="Bold selection" className="text-[0.7rem] font-label font-bold px-2.5 py-1 rounded-md border border-outline-variant/40 text-secondary hover:bg-surface-container-high transition-colors">B</button>
+                                        <button type="button" onClick={() => onFormatHotelDescription(idx, '~~')} title="Italic selection" className="text-[0.7rem] font-label italic px-2.5 py-1 rounded-md border border-outline-variant/40 text-secondary hover:bg-surface-container-high transition-colors">I</button>
+                                        <button type="button" onClick={() => onFormatHotelDescription(idx, '__')} title="Underline selection" className="text-[0.7rem] font-label underline px-2.5 py-1 rounded-md border border-outline-variant/40 text-secondary hover:bg-surface-container-high transition-colors">U</button>
+                                        <span className="text-[0.65rem] text-secondary/90">Select text, then Bold / Italic / Underline.</span>
+                                    </div>
+                                </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <input type="text" placeholder="Link label" value={hotel.linkText} onChange={(e) => updateLodgingHotel(idx, 'linkText', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />
                                     <input type="text" placeholder="URL" value={hotel.linkUrl} onChange={(e) => updateLodgingHotel(idx, 'linkUrl', e.target.value)} className="w-full border border-outline-variant/30 rounded-md p-2.5 text-sm bg-surface text-on-surface" />

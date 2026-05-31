@@ -32,7 +32,7 @@ import InvitationPreview, {
 } from '@/components/InvitationPreview';
 import { GiftOptionsList } from '@/components/GiftOptionsForm';
 import { InvitationBlogEditor } from '@/components/blog/InvitationBlogEditor';
-import { wrapMarkdownBoldSegment } from '@/lib/rsvpClosedMessageBold';
+import { wrapMarkdownBoldSegment, wrapMarkdownSegment } from '@/lib/rsvpClosedMessageBold';
 import BudgetTracker from '@/components/BudgetTracker';
 import TableSeating from '@/components/TableSeating';
 import { getExpensesBySlug } from '@/app/actions/budget';
@@ -956,7 +956,32 @@ export default function DashboardPage() {
                                         )}
                                         <input type="text" placeholder="Title" value={hotel.title} onChange={(e) => updateLodgingHotel(idx, 'title', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
                                         <input type="text" placeholder="Subtitle" value={hotel.subtitle} onChange={(e) => updateLodgingHotel(idx, 'subtitle', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                        <textarea placeholder="Description" value={hotel.description} onChange={(e) => updateLodgingHotel(idx, 'description', e.target.value)} rows={3} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none resize-y" />
+                                        <div className="space-y-1.5">
+                                            <textarea id={`dash-lodging-hotel-desc-${idx}`} placeholder="Description" value={hotel.description} onChange={(e) => updateLodgingHotel(idx, 'description', e.target.value)} rows={3} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none resize-y" />
+                                            <div className="flex items-center gap-2">
+                                                {([['**', 'B', 'font-bold', 'Bold selection'], ['~~', 'I', 'italic', 'Italic selection'], ['__', 'U', 'underline', 'Underline selection']] as const).map(([marker, glyph, glyphClass, title]) => (
+                                                    <button
+                                                        key={marker}
+                                                        type="button"
+                                                        title={title}
+                                                        onClick={() => {
+                                                            const el = document.getElementById(`dash-lodging-hotel-desc-${idx}`) as HTMLTextAreaElement | null;
+                                                            if (!el) return;
+                                                            const { value, caret } = wrapMarkdownSegment(el.value, el.selectionStart, el.selectionEnd, marker);
+                                                            updateLodgingHotel(idx, 'description', value);
+                                                            queueMicrotask(() => {
+                                                                el.focus();
+                                                                el.setSelectionRange(caret, caret);
+                                                            });
+                                                        }}
+                                                        className={`text-xs ${glyphClass} px-2.5 py-1 rounded-md border border-stone-200 text-stone-600 hover:bg-stone-100 transition-colors`}
+                                                    >
+                                                        {glyph}
+                                                    </button>
+                                                ))}
+                                                <span className="text-[10px] text-stone-400">Select text, then Bold / Italic / Underline.</span>
+                                            </div>
+                                        </div>
                                         <div className="grid grid-cols-2 gap-2">
                                             <input type="text" placeholder="Link label" value={hotel.linkText} onChange={(e) => updateLodgingHotel(idx, 'linkText', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
                                             <input type="text" placeholder="URL" value={hotel.linkUrl} onChange={(e) => updateLodgingHotel(idx, 'linkUrl', e.target.value)} className="w-full border border-stone-200 rounded-md p-2 text-sm text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
