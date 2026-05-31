@@ -13,6 +13,7 @@ import { useEntitlements } from '@/components/entitlements/EntitlementsContext';
 import { FeatureLockedMessage } from './FeatureLockedMessage';
 import { getStatusBadge } from './GuestStatusBadge';
 import { CsvImportModal, type CsvImportPreview } from './CsvImportModal';
+import { buildGuestDisplayRows, type GuestDisplayRow, type GuestListGuest } from '@/lib/guestListGrouping';
 import { toast } from 'sonner';
 
 type RsvpStatus = 'all' | 'attending' | 'declined' | 'pending';
@@ -22,8 +23,8 @@ const GUEST_IMPORT_FORMAT_HINT =
 
 interface GuestsTabProps {
     userSlug: string;
-    rsvps: any[];
-    setRsvps: Dispatch<SetStateAction<any[]>>;
+    rsvps: GuestListGuest[];
+    setRsvps: Dispatch<SetStateAction<GuestListGuest[]>>;
 }
 
 export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
@@ -35,7 +36,7 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
     const [isAddingGuest, setIsAddingGuest] = useState(false);
     const [newGuestData, setNewGuestData] = useState({ firstName: '', lastName: '', pax: 1 });
     const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
-    const [editGuestData, setEditGuestData] = useState<any>({});
+    const [editGuestData, setEditGuestData] = useState<Partial<GuestListGuest>>({});
     const [csvImportPreview, setCsvImportPreview] = useState<CsvImportPreview | null>(null);
     const [isGuestCsvImporting, setIsGuestCsvImporting] = useState(false);
     const [deletingGuestId, setDeletingGuestId] = useState<string | null>(null);
@@ -43,15 +44,12 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [exportFilter, setExportFilter] = useState<'all' | 'attending'>('all');
 
-    const filteredRsvps = useMemo(() => {
-        return rsvps.filter(rsvp => {
-            const matchesStatus = filterStatus === 'all' || rsvp.status === filterStatus;
-            const matchesSearch = `${rsvp.firstName} ${rsvp.lastName}`.toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesStatus && matchesSearch;
-        });
-    }, [filterStatus, searchQuery, rsvps]);
+    const displayRows = useMemo(
+        () => buildGuestDisplayRows(rsvps, { status: filterStatus, searchQuery }),
+        [filterStatus, searchQuery, rsvps]
+    );
 
-    const handleEditGuest = (guest: any) => {
+    const handleEditGuest = (guest: GuestListGuest) => {
         setEditingGuestId(guest.id);
         setEditGuestData(guest);
     };
@@ -237,6 +235,33 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
         toast.success("Personalized link copied", { description: url });
     };
 
+    const renderGuestActions = (row: GuestDisplayRow<GuestListGuest>) => {
+        if (deletingGuestId === row.guest.id) {
+            return (
+                <div className="flex items-center justify-end gap-2 text-sm text-stone-500">
+                    <Loader2 className="w-4 h-4 shrink-0 animate-spin text-rose-500" strokeWidth={2} aria-hidden />
+                    <span>Deleting…</span>
+                </div>
+            );
+        }
+
+        return (
+            <div className="flex items-center justify-end gap-3">
+                {row.kind === 'primary' && (
+                    <button type="button" onClick={() => copyGuestLink(row.guest.id)} className="text-stone-400 hover:text-stone-700 transition-colors" title="Copy Personalized Link">
+                        <Copy className="w-4 h-4" />
+                    </button>
+                )}
+                <button type="button" onClick={() => handleEditGuest(row.guest)} className="text-stone-400 hover:text-stone-700 transition-colors" title="Edit Guest">
+                    <Edit2 className="w-4 h-4" />
+                </button>
+                <button type="button" onClick={() => void handleDeleteGuest(row.guest.id)} className="text-stone-400 hover:text-rose-600 transition-colors" title="Delete Guest">
+                    <Trash2 className="w-4 h-4" />
+                </button>
+            </div>
+        );
+    };
+
     if (!hasFeature('guests')) {
         return <FeatureLockedMessage label="Guests" />;
     }
@@ -409,10 +434,13 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-stone-100">
-                            {filteredRsvps.length > 0 ? (
-                                filteredRsvps.map((rsvp) => (
-                                    editingGuestId === rsvp.id ? (
-                                        <tr key={rsvp.id} className="bg-stone-50 transition-colors">
+                            {displayRows.length > 0 ? (
+                                displayRows.map((row) => {
+                                    const rsvp = row.guest;
+                                    const isCompanion = row.kind !== 'primary';
+
+                                    return editingGuestId === rsvp.id ? (
+                                        <tr key={rsvp.id} className={`${isCompanion ? 'bg-stone-50/80' : 'bg-stone-50'} transition-colors`}>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex gap-2">
                                                     <input type="text" value={editGuestData.firstName || ""} onChange={e => setEditGuestData({...editGuestData, firstName: e.target.value})} className="w-full border border-stone-200 p-1.5 rounded text-sm outline-none" placeholder="First" />
@@ -420,7 +448,7 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <select value={editGuestData.status} onChange={e => setEditGuestData({...editGuestData, status: e.target.value})} className="border border-stone-200 p-1.5 rounded text-sm outline-none">
+                                                <select value={editGuestData.status ?? 'pending'} onChange={e => setEditGuestData({...editGuestData, status: e.target.value})} className="border border-stone-200 p-1.5 rounded text-sm outline-none">
                                                     <option value="pending">Pending</option>
                                                     <option value="attending">Attending</option>
                                                     <option value="declined">Declined</option>
@@ -440,11 +468,30 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
                                             </td>
                                         </tr>
                                     ) : (
-                                        <tr key={rsvp.id} className="hover:bg-stone-50/50 transition-colors">
+                                        <tr key={rsvp.id} className={`${isCompanion ? 'bg-stone-50/40 hover:bg-stone-50/80' : 'hover:bg-stone-50/50'} transition-colors`}>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-stone-900">{rsvp.firstName} {rsvp.lastName}</div>
+                                                <div className={`${isCompanion ? 'pl-6 border-l-2 border-stone-200' : ''}`}>
+                                                    <div className={`text-sm font-medium ${isCompanion ? 'text-stone-700' : 'text-stone-900'}`}>
+                                                        {rsvp.firstName} {rsvp.lastName}
+                                                    </div>
+                                                    {row.kind === 'primary' && Boolean(row.companionCount) && (
+                                                        <div className="text-[11px] text-stone-400 mt-0.5">
+                                                            {row.companionCount} named companion{row.companionCount === 1 ? '' : 's'}
+                                                        </div>
+                                                    )}
+                                                    {row.kind === 'companion' && (
+                                                        <div className="text-[11px] text-stone-400 mt-0.5">
+                                                            Companion of {row.parentName}
+                                                        </div>
+                                                    )}
+                                                    {row.kind === 'orphanCompanion' && (
+                                                        <div className="text-[11px] text-amber-600 mt-0.5">
+                                                            Companion record with missing parent
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(rsvp.status)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(rsvp.status ?? 'pending')}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-center">
                                                 <div className="text-sm text-stone-600 font-serif">{rsvp.pax}</div>
                                             </td>
@@ -452,28 +499,11 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
                                                 <div className="text-sm text-stone-500 truncate max-w-[150px]">{rsvp.message || "-"}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                {deletingGuestId === rsvp.id ? (
-                                                    <div className="flex items-center justify-end gap-2 text-sm text-stone-500">
-                                                        <Loader2 className="w-4 h-4 shrink-0 animate-spin text-rose-500" strokeWidth={2} aria-hidden />
-                                                        <span>Deleting…</span>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-center justify-end gap-3">
-                                                        <button type="button" onClick={() => copyGuestLink(rsvp.id)} className="text-stone-400 hover:text-stone-700 transition-colors" title="Copy Personalized Link">
-                                                            <Copy className="w-4 h-4" />
-                                                        </button>
-                                                        <button type="button" onClick={() => handleEditGuest(rsvp)} className="text-stone-400 hover:text-stone-700 transition-colors" title="Edit Guest">
-                                                            <Edit2 className="w-4 h-4" />
-                                                        </button>
-                                                        <button type="button" onClick={() => void handleDeleteGuest(rsvp.id)} className="text-stone-400 hover:text-rose-600 transition-colors" title="Delete Guest">
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                )}
+                                                {renderGuestActions(row)}
                                             </td>
                                         </tr>
-                                    )
-                                ))
+                                    );
+                                })
                             ) : (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-12 text-center text-stone-500 text-sm">
@@ -485,7 +515,7 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
                     </table>
                 </div>
                 <div className="px-6 py-4 border-t border-stone-100 bg-stone-50/30">
-                    <p className="text-xs text-stone-500">Showing {filteredRsvps.length} results</p>
+                    <p className="text-xs text-stone-500">Showing {displayRows.length} results</p>
                 </div>
             </div>
         </>

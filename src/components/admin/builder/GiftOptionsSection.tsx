@@ -16,6 +16,8 @@ interface GiftOptionsSectionProps {
 
     showRsvp: boolean;
     onToggleRsvp: (checked: boolean) => void;
+    multiGuestNameCollectionEnabled: boolean;
+    onToggleMultiGuestNameCollection: (checked: boolean) => void;
     rsvpClosedMessage: string;
     rsvpClosedMessageRef: RefObject<HTMLTextAreaElement | null>;
     onBoldRsvpMessage: () => void;
@@ -38,6 +40,8 @@ export function GiftOptionsSection({
     onCustomFieldChange,
     showRsvp,
     onToggleRsvp,
+    multiGuestNameCollectionEnabled,
+    onToggleMultiGuestNameCollection,
     rsvpClosedMessage,
     rsvpClosedMessageRef,
     onBoldRsvpMessage
@@ -83,6 +87,19 @@ export function GiftOptionsSection({
                     </label>
                     <p className="text-xs text-secondary pl-7 max-w-xl">
                         Disable if this couple collects responses elsewhere. The API will reject RSVP submissions when this is off.
+                    </p>
+                    <label className="flex items-center gap-3 cursor-pointer pt-3">
+                        <input
+                            type="checkbox"
+                            checked={multiGuestNameCollectionEnabled}
+                            onChange={(e) => onToggleMultiGuestNameCollection(e.target.checked)}
+                            disabled={!showRsvp}
+                            className="rounded border-outline-variant text-primary focus:ring-primary/20 disabled:opacity-50"
+                        />
+                        <span className="text-[0.8rem] font-body text-on-surface font-medium">Collect individual companion names and pax</span>
+                    </label>
+                    <p className="text-xs text-secondary pl-7 max-w-xl">
+                        Disabled by default. Personalized RSVP links can split a party into named guest records without exceeding the original pax.
                     </p>
                     {!showRsvp && (
                         <div className="pl-7 pt-4 space-y-2 max-w-2xl">

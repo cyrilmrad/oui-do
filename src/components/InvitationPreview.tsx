@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Clock, MapPin, Music, VolumeX, ExternalLink, Heart, MailOpen, CheckCircle2, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { NavigationPagesContent } from '@/lib/navigationPages';
 import { mergeNavigationPages } from '@/lib/navigationPages';
+import { clampPax, getVisibleCompanionRows, normalizeRsvpParty, splitFullNameOnFirstSpace, type RsvpCompanionNameInput } from '@/lib/multiGuestRsvp';
 import { InvitationBlogReadonly } from '@/components/blog/InvitationBlogReadonly';
 import InvitationGifts from '@/components/InvitationGifts';
 // Add-to-calendar (custom ICS + Google); re-enable when ready to show on the live invite.
@@ -182,6 +183,8 @@ export interface InvitationData {
     showRsvp?: boolean;
     /** When the form is off, non-empty text is shown under the RSVP title (use `**bold**`). */
     rsvpClosedMessage?: string;
+    /** Collect companion names under a personalized RSVP while preserving old behavior by default. */
+    multiGuestNameCollectionEnabled?: boolean;
     /** Optional personal thank-you note shown on the archived memorial page. */
     archiveMessage?: string;
 }
@@ -338,12 +341,29 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
     const [formData, setFormData] = useState({
         firstName: guestData?.firstName || '',
         lastName: guestData?.lastName || '',
+        fullName: guestData ? `${guestData.firstName} ${guestData.lastName}`.trim() : '',
         attending: guestData?.status && guestData.status !== 'pending' ? (guestData.status === 'attending' ? 'yes' : 'no') : 'yes',
         guests: guestData?.pax ? guestData.pax.toString() : '1',
         message: guestData?.message || ''
     });
+    const [companions, setCompanions] = useState<RsvpCompanionNameInput[]>([]);
+    const [companionNamesRevealed, setCompanionNamesRevealed] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState('');
+    const originalPartyPax = Math.max(1, clampPax(guestData?.pax ?? 1));
+    const multiGuestNameCollectionActive =
+        data.multiGuestNameCollectionEnabled === true &&
+        Boolean(guestData) &&
+        originalPartyPax > 1;
+    const visibleCompanionRows = useMemo(
+        () => getVisibleCompanionRows({
+            totalPax: originalPartyPax,
+            primaryPax: clampPax(formData.guests),
+            companionNamesRevealed
+        }),
+        [companionNamesRevealed, formData.guests, originalPartyPax]
+    );
+    const availableCompanionSlots = Math.max(0, Math.min(clampPax(formData.guests), originalPartyPax) - 1);
 
     const [hasOpened, setHasOpened] = useState(false);
     /** `main` | `lodging` | `exploring` | `page:${id}` */
@@ -461,7 +481,26 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        setFormData((prev) => {
+            if (name === 'fullName') {
+                const { firstName, lastName } = splitFullNameOnFirstSpace(value);
+                return { ...prev, fullName: value, firstName, lastName };
+            }
+
+            return { ...prev, [name]: value };
+        });
+        if (name === 'guests' && multiGuestNameCollectionActive) {
+            const nextPrimaryPax = clampPax(value);
+            setCompanions((prev) => prev.slice(0, Math.max(0, Math.min(nextPrimaryPax, originalPartyPax) - 1)));
+        }
+    };
+
+    const handleCompanionChange = (index: number, value: string) => {
+        setCompanions((prev) => {
+            const next = [...prev];
+            next[index] = { fullName: value };
+            return next.slice(0, availableCompanionSlots);
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -470,10 +509,28 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
         setSubmitError('');
 
         try {
+            const rawCompanions = multiGuestNameCollectionActive
+                ? companions.slice(0, visibleCompanionRows.length)
+                : [];
+            const normalizedParty = multiGuestNameCollectionActive
+                ? normalizeRsvpParty({
+                    totalPax: originalPartyPax,
+                    primaryPax: clampPax(formData.guests),
+                    companions: rawCompanions
+                })
+                : null;
             const res = await fetch('/api/rsvp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slug: data.slug, guestId: guestData?.id, ...formData })
+                body: JSON.stringify({
+                    slug: data.slug,
+                    guestId: guestData?.id,
+                    ...formData,
+                    ...(normalizedParty ? {
+                        guests: normalizedParty.selectedPax.toString(),
+                        companions: normalizedParty.companions
+                    } : {})
+                })
             });
 
             const result = await res.json();
@@ -483,8 +540,8 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
             }
 
             setRsvpSubmitted(true);
-        } catch (error: any) {
-            setSubmitError(error.message);
+        } catch (error) {
+            setSubmitError(error instanceof Error ? error.message : 'Failed to submit RSVP');
         } finally {
             setIsSubmitting(false);
         }
@@ -1340,36 +1397,51 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                 </div>
                                             </div>
                                         )}
-                                        <div className="grid grid-cols-1 @md:grid-cols-2 gap-10 @md:gap-8">
+                                        {guestData ? (
                                             <div className="space-y-3">
-                                                <label htmlFor="firstName" className="block text-xs uppercase tracking-[0.1em] text-stone-400">First Name</label>
+                                                <label htmlFor="fullName" className="block text-xs uppercase tracking-[0.1em] text-stone-400">Name</label>
                                                 <input
                                                     type="text"
-                                                    id="firstName"
-                                                    name="firstName"
+                                                    id="fullName"
+                                                    name="fullName"
                                                     required
-                                                    value={formData.firstName}
+                                                    value={formData.fullName}
                                                     onChange={handleInputChange}
-                                                    readOnly={!!guestData}
-                                                    className={`w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors placeholder:text-stone-300 font-light ${guestData ? 'text-stone-500 cursor-not-allowed border-dashed' : ''}`}
-                                                    placeholder="Jane"
+                                                    readOnly
+                                                    className="w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors placeholder:text-stone-300 font-light text-stone-500 cursor-not-allowed border-dashed"
+                                                    placeholder="Jane Doe"
                                                 />
                                             </div>
-                                            <div className="space-y-3">
-                                                <label htmlFor="lastName" className="block text-xs uppercase tracking-[0.1em] text-stone-400">Last Name</label>
-                                                <input
-                                                    type="text"
-                                                    id="lastName"
-                                                    name="lastName"
-                                                    required
-                                                    value={formData.lastName}
-                                                    onChange={handleInputChange}
-                                                    readOnly={!!guestData}
-                                                    className={`w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors placeholder:text-stone-300 font-light ${guestData ? 'text-stone-500 cursor-not-allowed border-dashed' : ''}`}
-                                                    placeholder="Doe"
-                                                />
+                                        ) : (
+                                            <div className="grid grid-cols-1 @md:grid-cols-2 gap-10 @md:gap-8">
+                                                <div className="space-y-3">
+                                                    <label htmlFor="firstName" className="block text-xs uppercase tracking-[0.1em] text-stone-400">First Name</label>
+                                                    <input
+                                                        type="text"
+                                                        id="firstName"
+                                                        name="firstName"
+                                                        required
+                                                        value={formData.firstName}
+                                                        onChange={handleInputChange}
+                                                        className="w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors placeholder:text-stone-300 font-light"
+                                                        placeholder="Jane"
+                                                    />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <label htmlFor="lastName" className="block text-xs uppercase tracking-[0.1em] text-stone-400">Last Name</label>
+                                                    <input
+                                                        type="text"
+                                                        id="lastName"
+                                                        name="lastName"
+                                                        required
+                                                        value={formData.lastName}
+                                                        onChange={handleInputChange}
+                                                        className="w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors placeholder:text-stone-300 font-light"
+                                                        placeholder="Doe"
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
 
                                         <div className="space-y-6 pt-4">
                                             <label className="block text-xs uppercase tracking-[0.1em] text-stone-400 text-center @md:text-left">Will you be attending?</label>
@@ -1417,28 +1489,90 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                             <motion.div
                                                 initial={{ opacity: 0, height: 0 }}
                                                 animate={{ opacity: 1, height: 'auto' }}
-                                                className="space-y-3 overflow-hidden pt-4"
+                                                className="space-y-8 overflow-hidden pt-4"
                                             >
-                                                <label htmlFor="guests" className="block text-xs uppercase tracking-[0.1em] text-stone-400">Number of Guests</label>
-                                                <div className="relative">
-                                                    <select
-                                                        id="guests"
-                                                        name="guests"
-                                                        value={formData.guests}
-                                                        onChange={handleInputChange}
-                                                        disabled={!!guestData && guestData.status !== 'pending'}
-                                                        className={`w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors appearance-none font-light ${guestData && guestData.status !== 'pending' ? 'text-stone-500 cursor-not-allowed border-dashed' : 'cursor-pointer'}`}
-                                                    >
-                                                        {Array.from({ length: guestData ? guestData.pax : 4 }, (_, i) => i + 1).map(num => (
-                                                            <option key={num} value={num}>{num} {num === 1 ? 'Person' : 'People'}</option>
-                                                        ))}
-                                                    </select>
-                                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400">
-                                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 9l-7 7-7-7" />
-                                                        </svg>
+                                                <div className="space-y-3">
+                                                    <label htmlFor="guests" className="block text-xs uppercase tracking-[0.1em] text-stone-400">
+                                                        {multiGuestNameCollectionActive ? 'Total Pax' : 'Number of Guests'}
+                                                    </label>
+                                                    <div className="relative">
+                                                        <select
+                                                            id="guests"
+                                                            name="guests"
+                                                            value={formData.guests}
+                                                            onChange={handleInputChange}
+                                                            disabled={!!guestData && guestData.status !== 'pending'}
+                                                            className={`w-full bg-transparent border-b border-stone-200 py-3 text-lg focus:outline-none focus:border-stone-800 transition-colors appearance-none font-light ${guestData && guestData.status !== 'pending' ? 'text-stone-500 cursor-not-allowed border-dashed' : 'cursor-pointer'}`}
+                                                        >
+                                                            {Array.from({ length: guestData ? guestData.pax : 4 }, (_, i) => i + 1).map(num => (
+                                                                <option key={num} value={num}>{num} {num === 1 ? 'Person' : 'People'}</option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400">
+                                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 9l-7 7-7-7" />
+                                                            </svg>
+                                                        </div>
                                                     </div>
+                                                    {multiGuestNameCollectionActive && (
+                                                        <p className="text-xs text-stone-400 leading-relaxed">
+                                                            Your invitation allows up to {originalPartyPax} {originalPartyPax === 1 ? 'person' : 'people'} total. Add names for the extra guests in the pax you selected.
+                                                        </p>
+                                                    )}
                                                 </div>
+                                                {multiGuestNameCollectionActive && !companionNamesRevealed && (
+                                                    <div className="pt-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setCompanionNamesRevealed(true)}
+                                                            className="text-xs uppercase tracking-[0.16em] text-stone-500 underline underline-offset-4 hover:text-stone-800 transition-colors"
+                                                        >
+                                                            Add guest names (optional)
+                                                        </button>
+                                                        {availableCompanionSlots === 0 && (
+                                                            <p className="text-xs text-stone-400 mt-3">
+                                                                Select at least 2 pax to add guest names.
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {multiGuestNameCollectionActive && companionNamesRevealed && visibleCompanionRows.length > 0 && (
+                                                    <div className="space-y-6">
+                                                        <AnimatePresence initial={false}>
+                                                            {visibleCompanionRows.map((row) => {
+                                                                const companion = companions[row.index] ?? { fullName: '' };
+
+                                                                return (
+                                                                    <motion.div
+                                                                        key={row.index}
+                                                                        initial={{ opacity: 0, y: -8 }}
+                                                                        animate={{ opacity: 1, y: 0 }}
+                                                                        exit={{ opacity: 0, y: -8 }}
+                                                                        className="rounded-2xl border border-stone-100 bg-stone-50/60 p-5 @md:p-6 space-y-5"
+                                                                    >
+                                                                        <div className="flex items-center justify-between gap-4">
+                                                                            <p className="text-xs uppercase tracking-[0.16em] text-stone-400">{row.label}</p>
+                                                                            <p className="text-[11px] text-stone-400">Optional</p>
+                                                                        </div>
+                                                                        <input
+                                                                            type="text"
+                                                                            id={`companion-${row.index}-fullName`}
+                                                                            value={companion.fullName}
+                                                                            onChange={(event) => handleCompanionChange(row.index, event.target.value)}
+                                                                            className="w-full bg-transparent border-b border-stone-200 py-2.5 text-base focus:outline-none focus:border-stone-800 transition-colors placeholder:text-stone-300 font-light"
+                                                                            placeholder="Guest full name"
+                                                                        />
+                                                                    </motion.div>
+                                                                );
+                                                            })}
+                                                        </AnimatePresence>
+                                                    </div>
+                                                )}
+                                                {multiGuestNameCollectionActive && companionNamesRevealed && visibleCompanionRows.length === 0 && (
+                                                    <p className="text-xs text-stone-400">
+                                                        Select at least 2 pax to add guest names.
+                                                    </p>
+                                                )}
                                             </motion.div>
                                         )}
 
