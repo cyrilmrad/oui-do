@@ -132,10 +132,22 @@ export function HeroSection({
                 <div className="space-y-1.5 pt-4 border-t border-outline-variant/20">
                     <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Styling Theme Token</label>
                     <select name="themeSelection" value={themeSelection} onChange={onThemeChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body font-semibold">
-                        <option value="emerald">Emerald &amp; Stone (Default Pattern)</option>
-                        <option value="slate">Slate &amp; Monochrome</option>
-                        <option value="rose">Rose &amp; Blush</option>
-                        <option value="noir">Noir &amp; Dark (Swipe template)</option>
+                        <optgroup label="Designer palettes — Dark">
+                            <option value="emerald-forest">Emerald Forest &mdash; deep forest + mint accent</option>
+                            <option value="noir-gold">Noir &amp; Gold &mdash; warm black + champagne accent</option>
+                            <option value="bordeaux">Bordeaux Velvet &mdash; wine-black + rose accent</option>
+                            <option value="sapphire">Midnight Sapphire &mdash; deep navy + powder blue accent</option>
+                        </optgroup>
+                        <optgroup label="Designer palettes — Light">
+                            <option value="ivory-sage">Ivory &amp; Sage &mdash; warm ivory + sage accent</option>
+                            <option value="blush-bordeaux">Blush &amp; Bordeaux &mdash; dusty blush + deep rose accent</option>
+                        </optgroup>
+                        <optgroup label="Legacy">
+                            <option value="emerald">Emerald &amp; Stone (Default Pattern)</option>
+                            <option value="slate">Slate &amp; Monochrome</option>
+                            <option value="rose">Rose &amp; Blush</option>
+                            <option value="noir">Noir &amp; Dark (Swipe template)</option>
+                        </optgroup>
                         <option value="custom">Custom Brand Colors</option>
                     </select>
                     {themeSelection === 'custom' && (

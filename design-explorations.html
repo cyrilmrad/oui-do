@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Swipe template — theme explorations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ─── Page chrome ──────────────────────────────────── */
+  :root {
+    --page-bg: #0e0e0e;
+    --page-fg: #d8d8d8;
+    --page-dim: #7a7a7a;
+    --page-line: rgba(255,255,255,0.08);
+    --serif: "Cormorant Garamond", "Noto Serif", serif;
+    --sans: "Manrope", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--page-bg);
+    color: var(--page-fg);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 48px 32px 96px;
+  }
+
+  /* ─── Intro ─────────────────────────────────────────── */
+  .intro {
+    max-width: 1180px;
+    margin: 0 auto 40px;
+    border-bottom: 1px solid var(--page-line);
+    padding-bottom: 28px;
+  }
+  .intro .tag {
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: #c9a96e;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .intro h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(34px, 5vw, 50px);
+    color: #f4f4f4;
+    margin: 0 0 12px;
+    letter-spacing: -0.01em;
+  }
+  .intro p {
+    color: var(--page-dim);
+    max-width: 640px;
+    line-height: 1.65;
+    margin: 0;
+    font-size: 15px;
+  }
+
+  /* ─── Stage layout ─────────────────────────────────── */
+  .stage-wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 64px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .stage-wrap { grid-template-columns: 1fr; gap: 40px; }
+  }
+
+  /* ─── Theme picker ─────────────────────────────────── */
+  .picker h3 {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.28em;
+    color: var(--page-dim);
+    text-transform: uppercase;
+    margin: 0 0 18px;
+  }
+  .theme-card {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 1px solid var(--page-line);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    color: var(--page-fg);
+    font-family: var(--sans);
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  }
+  .theme-card:hover {
+    border-color: rgba(255,255,255,0.22);
+    transform: translateY(-1px);
+  }
+  .theme-card.active {
+    border-color: rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.03);
+  }
+  .theme-card .name {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: #f0f0f0;
+  }
+  .theme-card .kind {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--page-dim);
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+  .swatches {
+    display: flex;
+    gap: 6px;
+  }
+  .sw {
+    flex: 1;
+    height: 24px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.06);
+    position: relative;
+  }
+  .sw::after {
+    content: attr(data-label);
+    position: absolute;
+    bottom: -16px;
+    left: 0;
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    color: var(--page-dim);
+    text-transform: uppercase;
+  }
+  .theme-card:last-of-type { margin-bottom: 0; }
+  .picker .hint {
+    margin-top: 24px;
+    padding: 14px 16px;
+    border: 1px dashed var(--page-line);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--page-dim);
+    line-height: 1.5;
+  }
+
+  /* ─── Phone preview ────────────────────────────────── */
+  .preview { display: flex; justify-content: center; }
+  .phone-shell { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+  .phone-shell .label {
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--page-dim);
+    font-weight: 600;
+  }
+  .phone {
+    width: 360px;
+    height: 720px;
+    border-radius: 40px;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.04) inset,
+      0 40px 80px -20px rgba(0,0,0,0.65),
+      0 0 0 1px rgba(255,255,255,0.05);
+    /* CSS variables driven by data-theme */
+    background: var(--t-bg);
+    transition: background 0.6s ease;
+  }
+  /* Aurora glows — always present, accent-driven */
+  .phone::before, .phone::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(40px);
+    pointer-events: none;
+    transition: background 0.6s ease;
+    z-index: 0;
+  }
+  .phone::before {
+    width: 280px; height: 280px;
+    top: -60px; left: -80px;
+    background: var(--t-glow-1);
+  }
+  .phone::after {
+    width: 260px; height: 260px;
+    bottom: -60px; right: -70px;
+    background: var(--t-glow-2);
+  }
+
+  /* ─── Slide content ────────────────────────────────── */
+  .stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 28px;
+    z-index: 2;
+  }
+  .section-label {
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    color: var(--t-accent);
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 30px;
+    transition: color 0.6s ease;
+  }
+  .card {
+    width: 100%;
+    background: var(--t-card-bg);
+    border: 1px solid var(--t-card-border);
+    border-radius: 16px;
+    padding: 32px 26px 30px;
+    text-align: center;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 12px 32px -16px var(--t-card-shadow);
+    transition: background 0.6s ease, border-color 0.6s ease, box-shadow 0.6s ease;
+  }
+  .card .house {
+    font-family: var(--serif);
+    font-size: 30px;
+    font-weight: 600;
+    color: var(--t-heading);
+    letter-spacing: 0.02em;
+    line-height: 1.15;
+    transition: color 0.6s ease;
+  }
+  .card .parent {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t-body);
+    margin-top: 10px;
+    letter-spacing: 0.04em;
+    transition: color 0.6s ease;
+  }
+  .card .parent.muted { color: var(--t-muted); }
+  .card .divider {
+    width: 36px;
+    height: 1px;
+    background: var(--t-card-border);
+    margin: 22px auto;
+    transition: background 0.6s ease;
+  }
+  .card .sublabel {
+    font-family: var(--sans);
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    color: var(--t-accent);
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    transition: color 0.6s ease;
+  }
+
+  /* Dot indicator */
+  .dots {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    z-index: 3;
+  }
+  .dots span {
+    width: 4px;
+    height: 4px;
+    border-radius: 99px;
+    background: var(--t-dot-idle);
+    transition: background 0.6s ease, height 0.4s ease;
+  }
+  .dots span.active {
+    height: 26px;
+    background: var(--t-accent);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     THEMES — each is (background, primary, accent)
+     ═══════════════════════════════════════════════════════ */
+
+  /* 1 — Emerald Forest (dark) */
+  [data-theme="emerald-forest"] {
+    --t-bg: #0a1f17;
+    --t-glow-1: rgba(16,185,129,0.28);
+    --t-glow-2: rgba(20,184,166,0.18);
+    --t-heading: #e6f5ed;
+    --t-body: #6f9b85;
+    --t-muted: #3a6b54;
+    --t-accent: #34d399;
+    --t-card-bg: rgba(16,185,129,0.08);
+    --t-card-border: rgba(16,185,129,0.22);
+    --t-card-shadow: rgba(0,0,0,0.4);
+    --t-dot-idle: rgba(255,255,255,0.18);
+  }
+
+  /* 2 — Noir & Gold (dark) */
+  [data-theme="noir-gold"] {
+    --t-bg: #100e0a;
+    --t-glow-1: rgba(201,169,110,0.22);
+    --t-glow-2: rgba(180,140,80,0.14);
+    --t-heading: #f4ead5;
+    --t-body: #9c8e6e;
+    --t-muted: #4a4234;
+    --t-accent: #c9a96e;
+    --t-card-bg: rgba(201,169,110,0.07);
+    --t-card-border: rgba(201,169,110,0.22);
+    --t-card-shadow: rgba(0,0,0,0.45);
+    --t-dot-idle: rgba(255,240,210,0.18);
+  }
+
+  /* 3 — Bordeaux Velvet (dark) */
+  [data-theme="bordeaux"] {
+    --t-bg: #1a0a10;
+    --t-glow-1: rgba(192,85,106,0.26);
+    --t-glow-2: rgba(150,60,80,0.18);
+    --t-heading: #f4dde2;
+    --t-body: #a06978;
+    --t-muted: #4d2a34;
+    --t-accent: #d97a8a;
+    --t-card-bg: rgba(217,122,138,0.08);
+    --t-card-border: rgba(217,122,138,0.22);
+    --t-card-shadow: rgba(0,0,0,0.45);
+    --t-dot-idle: rgba(255,210,220,0.18);
+  }
+
+  /* 4 — Midnight Sapphire (dark) */
+  [data-theme="sapphire"] {
+    --t-bg: #0a1024;
+    --t-glow-1: rgba(120,150,220,0.25);
+    --t-glow-2: rgba(80,110,180,0.16);
+    --t-heading: #e2eaf8;
+    --t-body: #6e8aab;
+    --t-muted: #2d3e5d;
+    --t-accent: #8aa8d4;
+    --t-card-bg: rgba(138,168,212,0.08);
+    --t-card-border: rgba(138,168,212,0.22);
+    --t-card-shadow: rgba(0,0,0,0.45);
+    --t-dot-idle: rgba(220,230,250,0.18);
+  }
+
+  /* 5 — Ivory & Sage (light) */
+  [data-theme="ivory-sage"] {
+    --t-bg: #f5f1e8;
+    --t-glow-1: rgba(122,155,126,0.28);
+    --t-glow-2: rgba(180,200,170,0.22);
+    --t-heading: #1f3a2a;
+    --t-body: #5a6e5e;
+    --t-muted: #a8b2a4;
+    --t-accent: #5a7a5e;
+    --t-card-bg: rgba(255,255,255,0.55);
+    --t-card-border: rgba(90,122,94,0.20);
+    --t-card-shadow: rgba(31,58,42,0.10);
+    --t-dot-idle: rgba(31,58,42,0.15);
+  }
+
+  /* 6 — Blush Bordeaux (light) */
+  [data-theme="blush-bordeaux"] {
+    --t-bg: #f5e7e4;
+    --t-glow-1: rgba(196,118,112,0.34);
+    --t-glow-2: rgba(220,160,140,0.24);
+    --t-heading: #5a1a25;
+    --t-body: #94555c;
+    --t-muted: #c79a9f;
+    --t-accent: #a04050;
+    --t-card-bg: rgba(255,255,255,0.55);
+    --t-card-border: rgba(160,64,80,0.22);
+    --t-card-shadow: rgba(90,26,37,0.12);
+    --t-dot-idle: rgba(90,26,37,0.15);
+  }
+
+  /* Reveal */
+  .picker, .preview {
+    opacity: 0;
+    transform: translateY(8px);
+    animation: rise 0.7s ease forwards;
+  }
+  .picker { animation-delay: 0.05s; }
+  .preview { animation-delay: 0.15s; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<section class="intro">
+  <div class="tag">Swipe template · theme system</div>
+  <h1>Three colors. Six combinations. One technique.</h1>
+  <p>Each theme is <code style="color:#c9a96e">(background, primary, accent)</code>. The Aurora Glow is built in — two soft radial pools always inherit the theme's accent, so depth and color always agree. Click any theme on the left.</p>
+</section>
+
+<div class="stage-wrap">
+
+  <!-- ── Picker ─────────────────────────────────────── -->
+  <aside class="picker">
+    <h3>Theme</h3>
+
+    <button class="theme-card active" data-target="emerald-forest">
+      <div class="name">Emerald Forest</div>
+      <div class="kind">Dark · Botanical</div>
+      <div class="swatches">
+        <div class="sw" data-label="bg" style="background:#0a1f17"></div>
+        <div class="sw" data-label="primary" style="background:#e6f5ed"></div>
+        <div class="sw" data-label="accent" style="background:#34d399"></div>
+      </div>
+    </button>
+
+    <button class="theme-card" data-target="noir-gold">
+      <div class="name">Noir &amp; Gold</div>
+      <div class="kind">Dark · Couture</div>
+      <div class="swatches">
+        <div class="sw" data-label="bg" style="background:#100e0a"></div>
+        <div class="sw" data-label="primary" style="background:#f4ead5"></div>
+        <div class="sw" data-label="accent" style="background:#c9a96e"></div>
+      </div>
+    </button>
+
+    <button class="theme-card" data-target="bordeaux">
+      <div class="name">Bordeaux Velvet</div>
+      <div class="kind">Dark · Romantic</div>
+      <div class="swatches">
+        <div class="sw" data-label="bg" style="background:#1a0a10"></div>
+        <div class="sw" data-label="primary" style="background:#f4dde2"></div>
+        <div class="sw" data-label="accent" style="background:#d97a8a"></div>
+      </div>
+    </button>
+
+    <button class="theme-card" data-target="sapphire">
+      <div class="name">Midnight Sapphire</div>
+      <div class="kind">Dark · Editorial</div>
+      <div class="swatches">
+        <div class="sw" data-label="bg" style="background:#0a1024"></div>
+        <div class="sw" data-label="primary" style="background:#e2eaf8"></div>
+        <div class="sw" data-label="accent" style="background:#8aa8d4"></div>
+      </div>
+    </button>
+
+    <button class="theme-card" data-target="ivory-sage">
+      <div class="name">Ivory &amp; Sage</div>
+      <div class="kind">Light · Garden</div>
+      <div class="swatches">
+        <div class="sw" data-label="bg" style="background:#f5f1e8"></div>
+        <div class="sw" data-label="primary" style="background:#1f3a2a"></div>
+        <div class="sw" data-label="accent" style="background:#5a7a5e"></div>
+      </div>
+    </button>
+
+    <button class="theme-card" data-target="blush-bordeaux">
+      <div class="name">Blush &amp; Bordeaux</div>
+      <div class="kind">Light · Soirée</div>
+      <div class="swatches">
+        <div class="sw" data-label="bg" style="background:#f5e7e4"></div>
+        <div class="sw" data-label="primary" style="background:#5a1a25"></div>
+        <div class="sw" data-label="accent" style="background:#a04050"></div>
+      </div>
+    </button>
+
+    <div class="hint">
+      The accent drives the aurora glow, the section label, the active dot, and the card border tint. Background and primary stay neutral so the accent reads as the brand color.
+    </div>
+  </aside>
+
+  <!-- ── Phone preview ───────────────────────────────── -->
+  <section class="preview">
+    <div class="phone-shell">
+      <div class="label">Family slide</div>
+      <div class="phone" id="phone" data-theme="emerald-forest">
+        <div class="stage">
+          <div class="section-label">Family</div>
+          <div class="card">
+            <div class="house">House of Mrad</div>
+            <div class="parent">Mr. &amp; Mrs. Mrad</div>
+            <div class="parent muted">Parents of the groom</div>
+            <div class="divider"></div>
+            <div class="sublabel">And</div>
+            <div class="house">House of Doe</div>
+            <div class="parent">Mr. &amp; Mrs. Doe</div>
+            <div class="parent muted">Parents of the bride</div>
+          </div>
+        </div>
+        <div class="dots">
+          <span></span><span></span><span class="active"></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  const phone = document.getElementById('phone');
+  const cards = document.querySelectorAll('.theme-card');
+  cards.forEach(card => {
+    card.addEventListener('click', () => {
+      cards.forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      phone.dataset.theme = card.dataset.target;
+    });
+  });
+</script>
+
+</body>
+</html>

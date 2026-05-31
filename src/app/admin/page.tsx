@@ -52,14 +52,29 @@ import {
 import { toast } from 'sonner';
 
 const THEME_PRESETS: Record<string, Theme> = {
+    // Legacy palettes (kept for backward compatibility with existing invitations).
     emerald: { primaryText: "text-stone-800", accent: "text-emerald-700", bgAccent: "bg-emerald-700/10", borderAccent: "border-emerald-700", background: "bg-stone-50" },
     slate: { primaryText: "text-slate-900", accent: "text-slate-600", bgAccent: "bg-slate-600/10", borderAccent: "border-slate-600", background: "bg-slate-50" },
     rose: { primaryText: "text-rose-950", accent: "text-rose-600", bgAccent: "bg-rose-600/10", borderAccent: "border-rose-600", background: "bg-rose-50" },
     noir: { primaryText: "text-stone-100", accent: "text-stone-300", bgAccent: "bg-stone-300/5", borderAccent: "border-stone-300/20", background: "bg-stone-950", name: 'noir' },
+
+    // Designer palettes — three-color trio (bg, primary, accent) + Aurora Glow on Swipe template.
+    // `name` is the source of truth for SwipeTemplate lookup; `rawPrimary/Accent/Background` mirror it for any custom-aware code.
+    'emerald-forest':  { primaryText: "text-emerald-50",  accent: "text-emerald-400", bgAccent: "bg-emerald-400/10",  borderAccent: "border-emerald-400", background: "bg-emerald-950",  name: 'emerald-forest',  rawPrimary: '#e6f5ed', rawAccent: '#34d399', rawBackground: '#0a1f17' },
+    'noir-gold':       { primaryText: "text-amber-50",    accent: "text-amber-400",   bgAccent: "bg-amber-400/10",    borderAccent: "border-amber-400",   background: "bg-stone-950",    name: 'noir-gold',       rawPrimary: '#f4ead5', rawAccent: '#c9a96e', rawBackground: '#100e0a' },
+    bordeaux:          { primaryText: "text-rose-50",     accent: "text-rose-400",    bgAccent: "bg-rose-400/10",     borderAccent: "border-rose-400",    background: "bg-rose-950",     name: 'bordeaux',        rawPrimary: '#f4dde2', rawAccent: '#d97a8a', rawBackground: '#1a0a10' },
+    sapphire:          { primaryText: "text-slate-50",    accent: "text-sky-300",     bgAccent: "bg-sky-300/10",      borderAccent: "border-sky-300",     background: "bg-slate-950",    name: 'sapphire',        rawPrimary: '#e2eaf8', rawAccent: '#8aa8d4', rawBackground: '#0a1024' },
+    'ivory-sage':      { primaryText: "text-emerald-950", accent: "text-emerald-700", bgAccent: "bg-emerald-700/10",  borderAccent: "border-emerald-700", background: "bg-stone-100",    name: 'ivory-sage',      rawPrimary: '#1f3a2a', rawAccent: '#5a7a5e', rawBackground: '#f5f1e8' },
+    'blush-bordeaux':  { primaryText: "text-rose-950",    accent: "text-rose-700",    bgAccent: "bg-rose-700/10",     borderAccent: "border-rose-700",    background: "bg-rose-50",      name: 'blush-bordeaux',  rawPrimary: '#5a1a25', rawAccent: '#a04050', rawBackground: '#f5e7e4' },
 };
 
 const getThemeSelectionFromTheme = (theme?: Theme | null): string => {
     if (!theme) return 'emerald';
+
+    // Named preset wins — covers all designer palettes that carry their own raw* fields.
+    if (theme.name && theme.name !== 'custom' && THEME_PRESETS[theme.name]) {
+        return theme.name;
+    }
 
     if (
         theme.name === 'custom' ||

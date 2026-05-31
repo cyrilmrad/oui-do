@@ -33,6 +33,11 @@ interface SwipeTheme {
     // Accent (labels, links, active state, dot)
     accent: string;     // section/field labels, link text
     dot: string;        // active dot on indicator
+    // Optional aurora glow — two soft radial pools positioned in opposite corners.
+    // When present, SnapSection renders two blurred discs in these colors.
+    aurora?: { glow1: string; glow2: string };
+    // Idle dot color (defaults to a translucent white if absent — keeps old themes unchanged).
+    dotIdle?: string;
 }
 
 const SWIPE_THEMES: Record<string, SwipeTheme> = {
@@ -80,6 +85,94 @@ const SWIPE_THEMES: Record<string, SwipeTheme> = {
         accent:      '#94a3b8',
         dot:         '#94a3b8',
     },
+
+    // ─── Designer palettes (3-color trio + Aurora Glow) ──────────────────────
+    // Each new theme defines (background, primary, accent) and gets two soft
+    // accent-tinted radial glows rendered by SnapSection.
+
+    'emerald-forest': {
+        bg:          '#0a1f17',
+        bgAlt:       '#08180f',
+        cardBg:      'rgba(16,185,129,0.08)',
+        cardBorder:  'rgba(16,185,129,0.22)',
+        heading:     '#e6f5ed',
+        body:        '#6f9b85',
+        muted:       '#3a6b54',
+        accent:      '#34d399',
+        dot:         '#34d399',
+        dotIdle:     'rgba(255,255,255,0.18)',
+        aurora:      { glow1: 'rgba(16,185,129,0.28)', glow2: 'rgba(20,184,166,0.18)' },
+    },
+
+    'noir-gold': {
+        bg:          '#100e0a',
+        bgAlt:       '#0c0a07',
+        cardBg:      'rgba(201,169,110,0.07)',
+        cardBorder:  'rgba(201,169,110,0.22)',
+        heading:     '#f4ead5',
+        body:        '#9c8e6e',
+        muted:       '#4a4234',
+        accent:      '#c9a96e',
+        dot:         '#c9a96e',
+        dotIdle:     'rgba(255,240,210,0.18)',
+        aurora:      { glow1: 'rgba(201,169,110,0.22)', glow2: 'rgba(180,140,80,0.14)' },
+    },
+
+    bordeaux: {
+        bg:          '#1a0a10',
+        bgAlt:       '#14070c',
+        cardBg:      'rgba(217,122,138,0.08)',
+        cardBorder:  'rgba(217,122,138,0.22)',
+        heading:     '#f4dde2',
+        body:        '#a06978',
+        muted:       '#4d2a34',
+        accent:      '#d97a8a',
+        dot:         '#d97a8a',
+        dotIdle:     'rgba(255,210,220,0.18)',
+        aurora:      { glow1: 'rgba(192,85,106,0.26)', glow2: 'rgba(150,60,80,0.18)' },
+    },
+
+    sapphire: {
+        bg:          '#0a1024',
+        bgAlt:       '#070c1c',
+        cardBg:      'rgba(138,168,212,0.08)',
+        cardBorder:  'rgba(138,168,212,0.22)',
+        heading:     '#e2eaf8',
+        body:        '#6e8aab',
+        muted:       '#2d3e5d',
+        accent:      '#8aa8d4',
+        dot:         '#8aa8d4',
+        dotIdle:     'rgba(220,230,250,0.18)',
+        aurora:      { glow1: 'rgba(120,150,220,0.25)', glow2: 'rgba(80,110,180,0.16)' },
+    },
+
+    'ivory-sage': {
+        bg:          '#f5f1e8',
+        bgAlt:       '#efe9dc',
+        cardBg:      'rgba(255,255,255,0.55)',
+        cardBorder:  'rgba(90,122,94,0.20)',
+        heading:     '#1f3a2a',
+        body:        '#5a6e5e',
+        muted:       '#a8b2a4',
+        accent:      '#5a7a5e',
+        dot:         '#5a7a5e',
+        dotIdle:     'rgba(31,58,42,0.15)',
+        aurora:      { glow1: 'rgba(122,155,126,0.28)', glow2: 'rgba(180,200,170,0.22)' },
+    },
+
+    'blush-bordeaux': {
+        bg:          '#f5e7e4',
+        bgAlt:       '#efddd9',
+        cardBg:      'rgba(255,255,255,0.55)',
+        cardBorder:  'rgba(160,64,80,0.22)',
+        heading:     '#5a1a25',
+        body:        '#94555c',
+        muted:       '#c79a9f',
+        accent:      '#a04050',
+        dot:         '#a04050',
+        dotIdle:     'rgba(90,26,37,0.15)',
+        aurora:      { glow1: 'rgba(196,118,112,0.34)', glow2: 'rgba(220,160,140,0.24)' },
+    },
 };
 
 // Tailwind accent class → theme key (for unnamed presets loaded from DB)
@@ -119,9 +212,10 @@ interface SectionProps {
     children: React.ReactNode;
     bg: string;
     sectionHeight: string;
+    aurora?: SwipeTheme['aurora'];
 }
 
-function SnapSection({ children, bg, sectionHeight }: SectionProps) {
+function SnapSection({ children, bg, sectionHeight, aurora }: SectionProps) {
     return (
         <section
             style={{
@@ -137,7 +231,43 @@ function SnapSection({ children, bg, sectionHeight }: SectionProps) {
                 justifyContent: 'center',
             }}
         >
-            {children}
+            {aurora && (
+                <>
+                    <div
+                        aria-hidden
+                        style={{
+                            position: 'absolute',
+                            top: '-15%',
+                            left: '-20%',
+                            width: '70%',
+                            height: '55%',
+                            background: aurora.glow1,
+                            filter: 'blur(60px)',
+                            borderRadius: '50%',
+                            pointerEvents: 'none',
+                            zIndex: 0,
+                        }}
+                    />
+                    <div
+                        aria-hidden
+                        style={{
+                            position: 'absolute',
+                            bottom: '-15%',
+                            right: '-15%',
+                            width: '65%',
+                            height: '50%',
+                            background: aurora.glow2,
+                            filter: 'blur(60px)',
+                            borderRadius: '50%',
+                            pointerEvents: 'none',
+                            zIndex: 0,
+                        }}
+                    />
+                </>
+            )}
+            <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                {children}
+            </div>
         </section>
     );
 }
@@ -316,7 +446,7 @@ function DotIndicator({ total, active, t }: { total: number; active: number; t: 
                         width: 4,
                         height: i === active ? 14 : 4,
                         borderRadius: i === active ? 2 : '50%',
-                        background: i === active ? t.dot : t.muted,
+                        background: i === active ? t.dot : (t.dotIdle ?? t.muted),
                         transition: 'height 0.4s cubic-bezier(0.34,1.56,0.64,1), background 0.3s ease, border-radius 0.4s ease',
                     }}
                 />
@@ -425,7 +555,7 @@ export default function SwipeTemplate({ data, isPreview = false }: SwipeTemplate
 
                 {/* ── Formal Invitation ── */}
                 {data.showFormalInvitation && data.formalInvitationImage && (
-                    <SnapSection bg={t.bgAlt} sectionHeight={sectionHeight}>
+                    <SnapSection bg={t.bgAlt} sectionHeight={sectionHeight} aurora={t.aurora}>
                         {data.formalInvitationIsVideo ? (
                             <video autoPlay muted loop playsInline style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} src={data.formalInvitationImage} />
                         ) : (
@@ -445,7 +575,7 @@ export default function SwipeTemplate({ data, isPreview = false }: SwipeTemplate
 
                 {/* ── Houses ── */}
                 {data.showHouses && (
-                    <SnapSection bg={t.bg} sectionHeight={sectionHeight}>
+                    <SnapSection bg={t.bg} sectionHeight={sectionHeight} aurora={t.aurora}>
                         <div style={{ width: '100%', padding: '0 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', maxHeight: '100%', overflowY: 'auto' }}>
                             <SectionLabel t={t}>Family</SectionLabel>
                             <FrostedCard t={t}>
@@ -500,7 +630,7 @@ export default function SwipeTemplate({ data, isPreview = false }: SwipeTemplate
                 )}
 
                 {/* ── Ceremony + Reception (same slide) ── */}
-                <SnapSection bg={t.bgAlt} sectionHeight={sectionHeight}>
+                <SnapSection bg={t.bgAlt} sectionHeight={sectionHeight} aurora={t.aurora}>
                     <div style={{ width: '100%', padding: '0 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', maxHeight: '100%', overflowY: 'auto' }}>
                         <SectionLabel t={t}>
                             {data.receptionVenue ? 'Ceremony & Reception' : 'Ceremony'}
@@ -567,7 +697,7 @@ export default function SwipeTemplate({ data, isPreview = false }: SwipeTemplate
 
                 {/* ── Gifts — each option: header label + one FieldCard per datum ── */}
                 {(data.giftOptions?.length ?? 0) > 0 && (
-                    <SnapSection bg={t.bg} sectionHeight={sectionHeight}>
+                    <SnapSection bg={t.bg} sectionHeight={sectionHeight} aurora={t.aurora}>
                         <div style={{ width: '100%', padding: '0 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', maxHeight: '100%', overflowY: 'auto' }}>
                             <SectionLabel t={t}>Gift Registry</SectionLabel>
                             {data.giftMessage && (
@@ -589,7 +719,7 @@ export default function SwipeTemplate({ data, isPreview = false }: SwipeTemplate
                 )}
 
                 {/* ── RSVP ── */}
-                <SnapSection bg={t.bgAlt} sectionHeight={sectionHeight}>
+                <SnapSection bg={t.bgAlt} sectionHeight={sectionHeight} aurora={t.aurora}>
                     <div style={{ width: '100%', padding: '0 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         {data.showRsvp !== false ? (
                             <>
