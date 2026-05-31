@@ -10,7 +10,7 @@ import InvitationPreview, {
     NavigationPagesContent
 } from '@/components/InvitationPreview';
 import { InvitationBlogEditor } from '@/components/blog/InvitationBlogEditor';
-import { wrapMarkdownBoldSegment } from '@/lib/rsvpClosedMessageBold';
+import { wrapMarkdownBoldSegment, wrapMarkdownSegment } from '@/lib/rsvpClosedMessageBold';
 import { LogOut, Users, Plus, LayoutDashboard, ChevronRight, ChevronDown, Copy, Link, QrCode, Download, Share, Lock, Trash2, Shield, Loader2 } from 'lucide-react';
 import BudgetTracker from '@/components/BudgetTracker';
 import TableSeating from '@/components/TableSeating';
@@ -1269,6 +1269,16 @@ export default function AdminDashboard() {
                                             addLodgingHotel={addLodgingHotel}
                                             removeLodgingHotel={removeLodgingHotel}
                                             updateLodgingHotel={updateLodgingHotel}
+                                            onFormatHotelDescription={(idx, marker) => {
+                                                const el = document.getElementById(`lodging-hotel-desc-${idx}`) as HTMLTextAreaElement | null;
+                                                if (!el) return;
+                                                const { value, caret } = wrapMarkdownSegment(el.value, el.selectionStart, el.selectionEnd, marker);
+                                                updateLodgingHotel(idx, 'description', value);
+                                                queueMicrotask(() => {
+                                                    el.focus();
+                                                    el.setSelectionRange(caret, caret);
+                                                });
+                                            }}
                                             onHotelImageUpload={async (idx, file) => {
                                                 const slug = liveData.slug;
                                                 if (!slug) return;

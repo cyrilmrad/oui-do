@@ -110,6 +110,75 @@ export function giftResolvedMobileNumberLabel(o: Pick<GiftOption, 'mobileNumberL
     return t || GIFT_DEFAULT_MOBILE_NUMBER_LABEL;
 }
 
+/**
+ * Inline formatting markers for hotel descriptions. All markers are distinct 2-char pairs
+ * (no overlap), so they nest unambiguously, e.g. `**~~__x__~~**` → bold+italic+underline.
+ *   `**bold**`  `~~italic~~`  `__underline__`
+ */
+const HOTEL_DESC_MARKERS: { marker: string; Tag: 'strong' | 'em' | 'u' }[] = [
+    { marker: '**', Tag: 'strong' },
+    { marker: '__', Tag: 'u' },
+    { marker: '~~', Tag: 'em' }
+];
+
+function hotelDescMarkerAt(text: string, i: number): string | null {
+    for (const { marker } of HOTEL_DESC_MARKERS) {
+        if (text.startsWith(marker, i)) return marker;
+    }
+    return null;
+}
+
+/** Index of `marker`'s matching close starting at `from`, skipping nested marker regions. -1 if none. */
+function hotelDescFindClose(text: string, from: number, marker: string): number {
+    let j = from;
+    while (j < text.length) {
+        const m = hotelDescMarkerAt(text, j);
+        if (m === marker) return j;
+        if (m) {
+            const inner = hotelDescFindClose(text, j + m.length, m);
+            j = inner === -1 ? j + m.length : inner + m.length;
+            continue;
+        }
+        j++;
+    }
+    return -1;
+}
+
+/**
+ * Renders `**bold**` / `~~italic~~` / `__underline__` (nestable) for hotel descriptions.
+ * Plain text (no markers, or unbalanced markers) renders unchanged; parent uses
+ * `whitespace-pre-line` for line breaks.
+ */
+function renderHotelDescription(text: string, keyPrefix = ''): React.ReactNode {
+    const nodes: React.ReactNode[] = [];
+    let i = 0;
+    let plainStart = 0;
+    let k = 0;
+    while (i < text.length) {
+        const m = hotelDescMarkerAt(text, i);
+        if (m) {
+            const close = hotelDescFindClose(text, i + m.length, m);
+            if (close !== -1) {
+                if (i > plainStart) nodes.push(text.slice(plainStart, i));
+                const inner = text.slice(i + m.length, close);
+                const Tag = HOTEL_DESC_MARKERS.find((r) => r.marker === m)!.Tag;
+                nodes.push(
+                    <Tag key={`${keyPrefix}${k}`} className={Tag === 'strong' ? 'font-semibold' : undefined}>
+                        {renderHotelDescription(inner, `${keyPrefix}${k}-`)}
+                    </Tag>
+                );
+                k += 1;
+                i = close + m.length;
+                plainStart = i;
+                continue;
+            }
+        }
+        i += 1;
+    }
+    if (plainStart < text.length) nodes.push(text.slice(plainStart));
+    return nodes;
+}
+
 /** Renders `**bold**` segments as `<strong>`; parent should use `whitespace-pre-line` for line breaks. */
 function renderRsvpClosedMessageBody(text: string): React.ReactNode {
     const parts = text.split(/(\*\*[\s\S]*?\*\*)/g);
@@ -1711,7 +1780,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                         )}
                                         <h3 className="text-2xl font-serif text-stone-800 mb-2">{hotel.title}</h3>
                                         <p className="text-stone-500 text-sm uppercase tracking-widest font-semibold mb-6">{hotel.subtitle}</p>
-                                        <p className="text-stone-600 font-light mb-8 leading-relaxed whitespace-pre-line">{hotel.description}</p>
+                                        <p className="text-stone-600 font-light mb-8 leading-relaxed whitespace-pre-line">{renderHotelDescription(hotel.description)}</p>
                                         <a
                                             href={hotel.linkUrl || '#'}
                                             target={hotel.linkUrl && hotel.linkUrl !== '#' ? '_blank' : undefined}
