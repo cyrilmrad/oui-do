@@ -97,7 +97,8 @@ export default function DashboardPage() {
         showNavigation: false,
         navigationPages: mergeNavigationPages(),
         showRsvp: true,
-        rsvpClosedMessage: ''
+        rsvpClosedMessage: '',
+        multiGuestNameCollectionEnabled: false
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -169,6 +170,7 @@ export default function DashboardPage() {
                                 footnote: dbData.footnote || "",
                                 showRsvp: dbData.showRsvp !== false,
                                 rsvpClosedMessage: dbData.rsvpClosedMessage ?? "",
+                                multiGuestNameCollectionEnabled: dbData.multiGuestNameCollectionEnabled === true,
                                 clientLocked: (dbData as any).clientLocked ?? false
                             } as any);
                         }
@@ -753,6 +755,19 @@ export default function DashboardPage() {
                                 </label>
                                 <p className="text-xs text-stone-500 pl-7">
                                     Turn off if you are not collecting replies on this page (e.g. RSVP by phone or another site).
+                                </p>
+                                <label className="flex items-center gap-3 cursor-pointer group pt-3">
+                                    <input
+                                        type="checkbox"
+                                        checked={weddingDetails.multiGuestNameCollectionEnabled === true}
+                                        onChange={(e) => setWeddingDetails((prev) => ({ ...prev, multiGuestNameCollectionEnabled: e.target.checked }))}
+                                        disabled={weddingDetails.showRsvp === false}
+                                        className="rounded border-stone-300 text-emerald-600 focus:ring-emerald-500 disabled:opacity-50"
+                                    />
+                                    <span className="text-sm font-medium text-stone-700 group-hover:text-stone-900">Collect individual companion names and pax</span>
+                                </label>
+                                <p className="text-xs text-stone-500 pl-7">
+                                    Disabled by default. Personalized RSVP links can split a party into named guest records without exceeding the original pax.
                                 </p>
                                 {weddingDetails.showRsvp === false && (
                                     <div className="pl-7 pt-4 space-y-2 max-w-2xl">

@@ -1,4 +1,4 @@
-import { pgTable, serial, text, varchar, timestamp, boolean, integer, jsonb, uuid, pgPolicy } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, varchar, timestamp, boolean, integer, jsonb, uuid, pgPolicy, index, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { sql, type InferSelectModel } from 'drizzle-orm';
 
 export const invitations = pgTable('invitations', {
@@ -42,6 +42,7 @@ export const invitations = pgTable('invitations', {
     showRsvp: boolean('show_rsvp').default(true),
     /** Shown on the invite when `show_rsvp` is false; use `**text**` for bold. */
     rsvpClosedMessage: text('rsvp_closed_message'),
+    multiGuestNameCollectionEnabled: boolean('multi_guest_name_collection_enabled').notNull().default(false),
     archiveMessage: text('archive_message'),
     clientLocked: boolean('client_locked').notNull().default(false),
     clientLockedAt: timestamp('client_locked_at'),
@@ -83,12 +84,15 @@ export const guests = pgTable('guests', {
     firstName: varchar('first_name', { length: 255 }).notNull(),
     lastName: varchar('last_name', { length: 255 }).notNull(),
     pax: integer('pax').notNull().default(1),
+    parentGuestId: uuid('parent_guest_id').references((): AnyPgColumn => guests.id, { onDelete: 'cascade' }),
     tableId: uuid('table_id').references(() => seatingTables.id, { onDelete: 'set null' }),
     status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending', 'attending', 'declined'
     message: text('message'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
 }, (t) => [
+    index('idx_guests_invitation_id').on(t.invitationId),
+    index('idx_guests_parent_guest_id').on(t.parentGuestId),
     pgPolicy("Admins have full access to guests", {
         as: 'permissive',
         for: 'all',

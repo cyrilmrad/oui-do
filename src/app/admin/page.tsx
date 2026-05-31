@@ -95,7 +95,8 @@ const defaultData: InvitationData = {
     theme: THEME_PRESETS.emerald,
     navigationPages: mergeNavigationPages(),
     showRsvp: true,
-    rsvpClosedMessage: ''
+    rsvpClosedMessage: '',
+    multiGuestNameCollectionEnabled: false
 };
 
 export default function AdminDashboard() {
@@ -1240,6 +1241,8 @@ export default function AdminDashboard() {
                                             onCustomFieldChange={handleCustomFieldChange}
                                             showRsvp={liveData.showRsvp !== false}
                                             onToggleRsvp={(checked) => setLiveData(prev => ({ ...prev, showRsvp: checked }))}
+                                            multiGuestNameCollectionEnabled={liveData.multiGuestNameCollectionEnabled === true}
+                                            onToggleMultiGuestNameCollection={(checked) => setLiveData(prev => ({ ...prev, multiGuestNameCollectionEnabled: checked }))}
                                             rsvpClosedMessage={liveData.rsvpClosedMessage || ''}
                                             rsvpClosedMessageRef={rsvpClosedMessageRef}
                                             onBoldRsvpMessage={() => {

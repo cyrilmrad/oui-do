@@ -147,6 +147,7 @@ export default async function InvitePage({
         footnote: dbData.footnote || "",
         showRsvp: dbData.showRsvp !== false,
         rsvpClosedMessage: dbData.rsvpClosedMessage ?? "",
+        multiGuestNameCollectionEnabled: dbData.multiGuestNameCollectionEnabled === true,
         theme: (dbData.theme as Theme) || {
             primaryText: "text-stone-800",
             accent: "text-emerald-700",

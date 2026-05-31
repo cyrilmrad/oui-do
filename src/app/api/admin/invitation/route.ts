@@ -32,6 +32,7 @@ export async function POST(request: Request) {
             'showFormalInvitation', 'formalInvitationImage', 'preCeremonyMedia',
             'showHouses', 'housesData', 'showNavigation', 'navigationPages',
             'customSections', 'footnote', 'showRsvp', 'rsvpClosedMessage',
+            'multiGuestNameCollectionEnabled',
         ] as const;
 
         const updateData: Record<string, unknown> = {};
