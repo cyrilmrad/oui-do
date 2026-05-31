@@ -1162,17 +1162,17 @@ export default function DashboardPage() {
     };
 
     return (
-        <div className="min-h-screen bg-stone-50 flex font-sans text-stone-800 selection:bg-stone-200 selection:text-stone-900">
+        <div className="h-screen overflow-hidden bg-stone-50 flex font-sans text-stone-800 selection:bg-stone-200 selection:text-stone-900">
 
             {/* Sidebar Navigation */}
-            <aside className="w-52 shrink-0 bg-white border-r border-stone-200 hidden md:flex flex-col">
+            <aside className="w-52 h-screen shrink-0 bg-white border-r border-stone-200 hidden md:flex flex-col">
                 <div className="p-4 border-b border-stone-100">
                     <h1 className="text-lg font-serif text-stone-900 tracking-wide leading-snug break-words">{weddingDetails.bride[0]} & {weddingDetails.groom[0]}</h1>
                     <p className="text-[10px] text-stone-400 uppercase tracking-widest mt-1">Guest Portal</p>
                 </div>
 
                 {!Boolean((weddingDetails as any).clientLocked) && (
-                <nav className="flex-1 p-2.5 space-y-1">
+                <nav className="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-1">
                     <button
                         onClick={() => setActiveTab('overview')}
                         className={`w-full flex items-center px-2.5 py-2.5 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'overview' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
@@ -1229,7 +1229,7 @@ export default function DashboardPage() {
                 </nav>
                 )}
 
-                <div className="p-2.5 border-t border-stone-100">
+                <div className="shrink-0 p-2.5 border-t border-stone-100">
                     <button onClick={handleSignOut} className="flex items-center w-full px-2.5 py-2.5 text-sm font-medium text-stone-500 hover:text-rose-600 transition-colors rounded-lg hover:bg-rose-50 group">
                         <LogOut className="w-5 h-5 mr-2 shrink-0 text-stone-400 group-hover:text-rose-500 transition-colors" />
                         Sign Out
@@ -1275,7 +1275,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Main Content Area */}
-            <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto bg-stone-50/50 pt-16 md:pt-0">
+            <main className="h-full flex-1 min-w-0 overflow-x-hidden overflow-y-auto bg-stone-50/50 pt-16 md:pt-0">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
                     {Boolean((weddingDetails as any).clientLocked) ? (
                         <DashboardLockedScreen bride={weddingDetails.bride} groom={weddingDetails.groom} />
