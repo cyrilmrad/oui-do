@@ -25,7 +25,7 @@ import { useGiftOptions } from '@/hooks/useGiftOptions';
 import { useCustomSections } from '@/hooks/useCustomSections';
 import { CustomSectionBlock, type CustomSectionFiles } from '@/components/admin/CustomSectionBlock';
 import { ClientList } from '@/components/admin/ClientList';
-import { NewClientForm } from '@/components/admin/NewClientForm';
+import { NewClientForm, NewClientFormState } from '@/components/admin/NewClientForm';
 import { CoupleSection } from '@/components/admin/builder/CoupleSection';
 import { CeremonyDetailsSection } from '@/components/admin/builder/CeremonyDetailsSection';
 import { FormalReceptionSection } from '@/components/admin/builder/FormalReceptionSection';
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
     const [isCreatingClient, setIsCreatingClient] = useState(false);
     const [isLoadingClientDetails, setIsLoadingClientDetails] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [newClientForm, setNewClientForm] = useState({ email: '', password: '', slug: '' });
+    const [newClientForm, setNewClientForm] = useState<NewClientFormState>({ email: '', password: '', slug: '', accountType: 'client-new' });
     const [onboardLoading, setOnboardLoading] = useState(false);
     const [onboardMessage, setOnboardMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [showSlugDropdown, setShowSlugDropdown] = useState(false);
@@ -450,20 +450,30 @@ export default function AdminDashboard() {
         setOnboardMessage(null);
 
         try {
+            const { accountType, email, password, slug } = newClientForm;
+            const payload = accountType === 'assistant'
+                ? { email, password, role: 'assistant' as const }
+                : { email, password, role: 'client' as const, slug, expectExisting: accountType === 'client-existing' };
+
             const response = await fetchWithAuth('/api/admin/create-client', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newClientForm)
+                body: JSON.stringify(payload)
             });
 
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result.error || 'Failed to create client');
+                throw new Error(result.error || 'Failed to create account');
             }
 
-            setOnboardMessage({ type: 'success', text: `Successfully created client ${newClientForm.slug}` });
-            setNewClientForm({ email: '', password: '', slug: '' });
+            const successText = accountType === 'assistant'
+                ? `Assistant ${email} created`
+                : accountType === 'client-existing'
+                    ? `Added ${email} to ${slug}`
+                    : `Created wedding ${slug}`;
+            setOnboardMessage({ type: 'success', text: successText });
+            setNewClientForm({ email: '', password: '', slug: '', accountType: 'client-new' });
             fetchClients(); // Refresh client list
             setTimeout(() => {
                 setIsCreatingClient(false);
@@ -834,6 +844,7 @@ export default function AdminDashboard() {
                         onClick={() => {
                             setLiveData(defaultData);
                             setIsCreatingClient(true);
+                            setNewClientForm({ email: '', password: '', slug: '', accountType: 'client-new' });
                             setHeroImageFile(null); setHeroImagePreview(null);
                             setMetadataImageFile(null); setMetadataImagePreview(null);
                             setHeroVideoFile(null); setHeroVideoPreview(null);
@@ -847,7 +858,7 @@ export default function AdminDashboard() {
                         className="w-full py-3 px-3 rounded-full text-[9px] font-label uppercase tracking-widest transition-all hover:opacity-90 font-bold text-on-primary shadow-xl shadow-primary/10 leading-tight"
                         style={{ background: 'linear-gradient(135deg, #00150F 0%, #062C22 100%)' }}
                     >
-                        New Client Instance
+                        New Account
                     </button>
                 </div>
                 )}
@@ -1550,6 +1561,8 @@ export default function AdminDashboard() {
                             slug={liveData.slug}
                             lifecycle={selectedLifecycle}
                             onLifecycleChange={(patch) => setSelectedLifecycle(prev => prev ? { ...prev, ...patch } : patch)}
+                            accounts={realClients.find(c => c.slug === liveData.slug)?.accounts ?? []}
+                            onAccountsChanged={() => fetchClients()}
                         />
                     )}
                 </div>
