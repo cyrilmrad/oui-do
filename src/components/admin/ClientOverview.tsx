@@ -33,6 +33,8 @@ interface ClientOverviewProps {
     slug?: string;
     lifecycle?: LifecycleState | null;
     onLifecycleChange?: (patch: LifecycleState) => void;
+    accounts?: { id: string; email: string }[];
+    onAccountsChanged?: () => void;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -106,6 +108,88 @@ function QuickNavButton({ icon, label, description, onClick }: QuickNavButtonPro
             </div>
             <ArrowRight className="w-4 h-4 text-stone-300 group-hover:text-stone-600 transition-colors shrink-0" />
         </button>
+    );
+}
+
+// ─── Accounts section ─────────────────────────────────────────────────────────
+
+interface AccountsSectionProps {
+    slug: string;
+    accounts: { id: string; email: string }[];
+    onAccountsChanged: () => void;
+}
+
+function AccountsSection({ slug, accounts, onAccountsChanged }: AccountsSectionProps) {
+    const [pendingDelete, setPendingDelete] = useState<{ id: string; email: string } | null>(null);
+    const [busy, setBusy] = useState(false);
+
+    async function handleDelete(userId: string) {
+        setBusy(true);
+        try {
+            const res = await fetchWithAuth(`/api/admin/clients/${encodeURIComponent(slug)}/account`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId }),
+            });
+            if (!res.ok) {
+                const { error } = await res.json().catch(() => ({ error: 'Request failed' }));
+                throw new Error(typeof error === 'string' ? error : 'Request failed');
+            }
+            toast.success('Account removed');
+            onAccountsChanged();
+        } catch (err: unknown) {
+            toast.error('Could not remove account', {
+                description: err instanceof Error ? err.message : 'Unknown error',
+            });
+        } finally {
+            setBusy(false);
+            setPendingDelete(null);
+        }
+    }
+
+    return (
+        <div className="bg-white border border-stone-200/70 rounded-xl shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-stone-100 flex items-center justify-center">
+                        <Users className="w-3.5 h-3.5 text-stone-500" />
+                    </div>
+                    <span className="text-sm font-semibold text-stone-700">Accounts</span>
+                </div>
+                <span className="text-[0.6rem] font-bold uppercase tracking-[0.1em] px-2.5 py-1 rounded-full bg-stone-100 text-stone-500">
+                    {accounts.length} {accounts.length === 1 ? 'login' : 'logins'}
+                </span>
+            </div>
+            <div className="divide-y divide-stone-100">
+                {accounts.length === 0 && (
+                    <p className="px-5 py-4 text-sm text-stone-400">No linked accounts.</p>
+                )}
+                {accounts.map(acc => (
+                    <div key={acc.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
+                        <span className="text-sm text-stone-700 truncate">{acc.email}</span>
+                        <button
+                            type="button"
+                            disabled={busy || accounts.length <= 1}
+                            onClick={() => setPendingDelete(acc)}
+                            title={accounts.length <= 1 ? 'Cannot remove the only account' : 'Remove account'}
+                            className="text-[0.7rem] font-label font-bold uppercase tracking-widest px-3 py-1.5 rounded-md text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                        >
+                            Remove
+                        </button>
+                    </div>
+                ))}
+            </div>
+
+            <ConfirmDialog
+                isOpen={pendingDelete !== null}
+                tone="danger"
+                title="Remove account"
+                body={`Remove ${pendingDelete?.email ?? ''} from this wedding? They will lose access to this dashboard. This cannot be undone.`}
+                confirmLabel="Remove"
+                onCancel={() => setPendingDelete(null)}
+                onConfirm={() => { if (pendingDelete) handleDelete(pendingDelete.id); }}
+            />
+        </div>
     );
 }
 
@@ -343,6 +427,8 @@ export function ClientOverview({
     slug,
     lifecycle,
     onLifecycleChange,
+    accounts,
+    onAccountsChanged,
 }: ClientOverviewProps) {
     const [miniForm, setMiniForm] = useState({
         bride: liveData.bride || '',
@@ -529,6 +615,19 @@ export function ClientOverview({
                             slug={slug}
                             lifecycle={lifecycle}
                             onLifecycleChange={onLifecycleChange}
+                        />
+                    </div>
+                )}
+                {/* ── Accounts ──────────────────────────────────────────────── */}
+                {slug && accounts && onAccountsChanged && (
+                    <div>
+                        <p className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-4">
+                            Accounts
+                        </p>
+                        <AccountsSection
+                            slug={slug}
+                            accounts={accounts}
+                            onAccountsChanged={onAccountsChanged}
                         />
                     </div>
                 )}

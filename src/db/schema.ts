@@ -207,6 +207,53 @@ export const weddingSchedules = pgTable('wedding_schedules', {
     })
 ]).enableRLS();
 
+/** Admin/assistant planner — calendar events (global, not per-client). */
+export const plannerEvents = pgTable('planner_events', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    title: varchar('title', { length: 255 }).notNull(),
+    description: text('description'),
+    /** ISO string — text avoids tz coercion; FullCalendar reads ISO strings natively. */
+    startAt: text('start_at').notNull(),
+    endAt: text('end_at'),
+    allDay: boolean('all_day').notNull().default(false),
+    /** Optional HEX color, e.g. '#10b981'. */
+    color: varchar('color', { length: 20 }),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+}, (t) => [
+    index('idx_planner_events_start_at').on(t.startAt),
+    pgPolicy('admin_and_assistant_all_planner_events', {
+        as: 'permissive',
+        for: 'all',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') IN ('admin', 'assistant')`,
+        withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') IN ('admin', 'assistant')`,
+    }),
+]).enableRLS();
+
+export type PlannerEventSelect = InferSelectModel<typeof plannerEvents>;
+
+/** Admin/assistant planner — to-do checklist items (global, not per-client). */
+export const plannerTodos = pgTable('planner_todos', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    title: varchar('title', { length: 255 }).notNull(),
+    description: text('description'),
+    isCompleted: boolean('is_completed').notNull().default(false),
+    /** Manual sort order for drag-to-reorder. */
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+}, (t) => [
+    index('idx_planner_todos_sort_order').on(t.sortOrder),
+    pgPolicy('admin_and_assistant_all_planner_todos', {
+        as: 'permissive',
+        for: 'all',
+        using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') IN ('admin', 'assistant')`,
+        withCheck: sql`(auth.jwt() -> 'app_metadata' ->> 'role') IN ('admin', 'assistant')`,
+    }),
+]).enableRLS();
+
+export type PlannerTodoSelect = InferSelectModel<typeof plannerTodos>;
+
 export const payments = pgTable('payments', {
     id: uuid('id').defaultRandom().primaryKey(),
     expenseId: uuid('expense_id').references(() => expenses.id, { onDelete: 'cascade' }).notNull(),

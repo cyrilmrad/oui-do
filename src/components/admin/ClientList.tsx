@@ -119,9 +119,19 @@ export function ClientList({ clients, searchQuery, onSearchChange, onSelectClien
                                         <div className="w-full h-full flex items-center justify-center text-outline-variant"><Users className="w-6 h-6 opacity-40" /></div>
                                     )}
                                 </div>
-                                <div>
+                                <div className="min-w-0">
                                     <h4 className="font-headline text-xl text-primary">{client.bride} & {client.groom}</h4>
                                     <p className="font-body text-xs text-secondary mt-1 tracking-widest lowercase">slug: /{client.slug}</p>
+                                    {Array.isArray(client.accounts) && client.accounts.length > 0 && (
+                                        <div className="mt-2 flex items-center gap-2 min-w-0">
+                                            <span className="font-label text-[0.6rem] font-bold uppercase tracking-wider text-secondary bg-surface-container-high px-2 py-0.5 rounded-full shrink-0">
+                                                {client.accounts.length} {client.accounts.length === 1 ? 'login' : 'logins'}
+                                            </span>
+                                            <span className="text-[0.7rem] text-secondary/80 font-body truncate">
+                                                {client.accounts.map((a: { id: string; email: string }) => a.email).join(', ')}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div className="hidden md:block w-1/4">
