@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Scripts
 set-admin.js
+
+# Superpowers brainstorm artifacts
+.superpowers/
