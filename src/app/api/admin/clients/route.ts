@@ -35,27 +35,39 @@ export async function GET(request: Request) {
         const allInvitations = await db.select().from(invitations);
         const userList = users ?? [];
 
-        // Filter for clients only and map to match mock structure
-        const clients = userList
-            .filter(user => user.app_metadata?.role === 'client')
-            .map(user => {
-                const slug = user.app_metadata?.slug || 'unknown-slug';
-                const inv = allInvitations.find(i => i.slug === slug);
-                return {
-                    id: user.id,
-                    slug: slug,
-                    email: user.email,
-                    bride: inv?.bride || 'Bride',
-                    groom: inv?.groom || 'Groom',
-                    heroImage: inv?.heroImage || null,
-                    date: inv?.date || null,
-                    clientLocked: inv?.clientLocked ?? false,
-                    clientLockedAt: inv?.clientLockedAt ? inv.clientLockedAt.toISOString() : null,
-                    isArchived: inv?.isArchived ?? false,
-                    archivedAt: inv?.archivedAt ? inv.archivedAt.toISOString() : null,
-                    archiveMessage: inv?.archiveMessage ?? null
-                };
+        // Group client users by slug → one entry per wedding (multiple logins allowed).
+        const bySlug = new Map<string, { id: string; email: string; createdAt: string }[]>();
+        for (const user of userList) {
+            if (user.app_metadata?.role !== 'client') continue;
+            const slug = user.app_metadata?.slug || 'unknown-slug';
+            if (!bySlug.has(slug)) bySlug.set(slug, []);
+            bySlug.get(slug)!.push({
+                id: user.id,
+                email: user.email ?? '',
+                createdAt: user.created_at ?? ''
             });
+        }
+
+        const clients = Array.from(bySlug.entries()).map(([slug, rawAccounts]) => {
+            // Oldest account first → its email is the representative used by the entitlements panel.
+            const accounts = [...rawAccounts].sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
+            const inv = allInvitations.find(i => i.slug === slug);
+            return {
+                id: slug,                       // stable card key (one card per wedding)
+                slug: slug,
+                email: accounts[0]?.email ?? null,
+                bride: inv?.bride || 'Bride',
+                groom: inv?.groom || 'Groom',
+                heroImage: inv?.heroImage || null,
+                date: inv?.date || null,
+                clientLocked: inv?.clientLocked ?? false,
+                clientLockedAt: inv?.clientLockedAt ? inv.clientLockedAt.toISOString() : null,
+                isArchived: inv?.isArchived ?? false,
+                archivedAt: inv?.archivedAt ? inv.archivedAt.toISOString() : null,
+                archiveMessage: inv?.archiveMessage ?? null,
+                accounts: accounts.map(a => ({ id: a.id, email: a.email }))
+            };
+        });
 
         return NextResponse.json(clients, { status: 200 });
 
