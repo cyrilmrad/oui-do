@@ -31,6 +31,14 @@ _Last updated: 2026-06-02_
 - [ ] **Stable sort tie-break** — `clients/route.ts` sorts accounts by `createdAt`
   with `(a < b ? -1 : 1)` (returns `1` for equal timestamps). Harmless today
   (distinct timestamps); make it a proper `-1 | 0 | 1` compare if it ever matters.
+- [ ] **`displayName` duplicated in entitlements UI** — the couple-name helper is
+  copy-pasted in `EntitlementsClientList.tsx` and `EntitlementsDetail.tsx`. Extract to
+  a shared `src/components/admin/entitlements/utils.ts` (or export from `types.ts`)
+  when the display logic next needs to change.
+- [ ] **`featureMeta.ts` lives in `src/lib/` but imports lucide-react** — the rest of
+  `src/lib/entitlements/*.ts` is pure (server-safe). `featureMeta.ts` pulls in React
+  icon components, so it's client-only. Consider moving it to
+  `src/components/admin/entitlements/featureMeta.ts` to keep `src/lib` free of UI deps.
 
 ## UI / UX
 
@@ -53,6 +61,9 @@ _Last updated: 2026-06-02_
 - [ ] **Decorative image removed from creation modal** — the old `NewClientForm`
   had a decorative Unsplash portrait at the bottom; the revamp dropped it for a
   cleaner form. Re-add a tasteful editorial flourish if the empty space feels bare.
+- [ ] **Escape-to-close on `PasswordManagerModal`** — the extracted password modal
+  (like the original) has no keyboard dismissal. Add an `Escape` key handler for
+  accessibility; applies to other admin modals too if standardized.
 
 ## Notes
 
