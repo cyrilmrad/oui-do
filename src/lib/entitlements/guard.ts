@@ -4,7 +4,7 @@ import type { FeatureKey } from '@/lib/features';
 import { assertFeatureEnabled, getClientEntitlementsBySlug } from '@/lib/entitlements/service';
 
 export type AuthGuardResult =
-    | { ok: true; user: User; isAdmin: boolean; clientSlug?: string }
+    | { ok: true; user: User; isAdmin: boolean; isAssistant?: boolean; clientSlug?: string }
     | { ok: false; status: number; message: string };
 
 export async function verifyBearerUser(accessToken: string | undefined): Promise<AuthGuardResult> {
@@ -15,6 +15,9 @@ export async function verifyBearerUser(accessToken: string | undefined): Promise
     const role = user.app_metadata?.role as string | undefined;
     if (role === 'admin') {
         return { ok: true, user, isAdmin: true };
+    }
+    if (role === 'assistant') {
+        return { ok: true, user, isAdmin: false, isAssistant: true };
     }
     if (role === 'client') {
         const clientSlug = user.app_metadata?.slug as string | undefined;
@@ -66,6 +69,17 @@ export async function requireAdmin(request: Request): Promise<AuthGuardResult> {
     if (!auth.ok) return auth;
     if (!auth.isAdmin) {
         return { ok: false, status: 403, message: 'Admin only' };
+    }
+    return auth;
+}
+
+/** Allows both admin and assistant roles — use for planner API routes only. */
+export async function requireAdminOrAssistant(request: Request): Promise<AuthGuardResult> {
+    const token = bearerTokenFromRequest(request);
+    const auth = await verifyBearerUser(token);
+    if (!auth.ok) return auth;
+    if (!auth.isAdmin && !auth.isAssistant) {
+        return { ok: false, status: 403, message: 'Admin or Assistant only' };
     }
     return auth;
 }

@@ -22,6 +22,7 @@ import {
     Trash2,
     ChevronDown,
     X,
+    Menu,
     ImagePlus
 } from 'lucide-react';
 import InvitationPreview, {
@@ -54,12 +55,19 @@ export default function DashboardPage() {
     const router = useRouter();
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
+    const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
 
 
     const handleSignOut = async () => {
         await supabase.auth.signOut();
         router.push('/login');
+    };
+
+    /** Switch tab and close the mobile drawer (used by the mobile nav). */
+    const goToTab = (tab: DashboardTab) => {
+        setActiveTab(tab);
+        setMobileNavOpen(false);
     };
 
     // Overview State
@@ -1264,40 +1272,95 @@ export default function DashboardPage() {
 
             {/* Mobile Nav Header */}
             <div className="md:hidden fixed top-0 inset-x-0 bg-white border-b border-stone-200 z-50 px-4 py-3 flex items-center justify-between">
+                <button onClick={() => setMobileNavOpen(true)} className="p-1 -ml-1 text-stone-700" aria-label="Open navigation">
+                    <Menu className="w-6 h-6" />
+                </button>
                 <h1 className="text-xl font-serif text-stone-900">{weddingDetails.bride[0]} & {weddingDetails.groom[0]}</h1>
-                {!Boolean((weddingDetails as any).clientLocked) && (
-                <div className="flex space-x-2">
-                    <button onClick={() => setActiveTab('overview')} className={`p-2 rounded-md ${activeTab === 'overview' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
-                        <LayoutDashboard className="w-5 h-5" />
-                    </button>
-                    {hasFeature('guests') && (
-                    <button onClick={() => setActiveTab('guests')} className={`p-2 rounded-md ${activeTab === 'guests' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
-                        <Users className="w-5 h-5" />
-                    </button>
-                    )}
-                    {hasFeature('messages') && (
-                    <button onClick={() => setActiveTab('messages')} className={`p-2 rounded-md ${activeTab === 'messages' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
-                        <Mail className="w-5 h-5" />
-                    </button>
-                    )}
-                    {hasFeature('budget') && (
-                    <button onClick={() => setActiveTab('budget')} className={`p-2 rounded-md ${activeTab === 'budget' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
-                        <Calculator className="w-5 h-5" />
-                    </button>
-                    )}
-                    {hasFeature('seating') && (
-                    <button onClick={() => setActiveTab('seating')} className={`p-2 rounded-md ${activeTab === 'seating' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
-                        <Armchair className="w-5 h-5" />
-                    </button>
-                    )}
-                    {hasFeature('settings') && (
-                    <button onClick={() => setActiveTab('settings')} className={`p-2 rounded-md ${activeTab === 'settings' ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}>
-                        <Settings className="w-5 h-5" />
-                    </button>
-                    )}
-                </div>
-                )}
+                <span className="w-8" />
             </div>
+
+            {/* Mobile Nav Drawer */}
+            {mobileNavOpen && (
+                <div className="md:hidden fixed inset-0 z-[60] flex">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileNavOpen(false)} />
+                    <aside className="relative flex flex-col h-full bg-white w-64 max-w-[80%] shadow-2xl z-10">
+                        <div className="p-4 border-b border-stone-100 flex items-center justify-between">
+                            <div>
+                                <h1 className="text-lg font-serif text-stone-900 tracking-wide leading-snug break-words">{weddingDetails.bride[0]} & {weddingDetails.groom[0]}</h1>
+                                <p className="text-[10px] text-stone-400 uppercase tracking-widest mt-1">Guest Portal</p>
+                            </div>
+                            <button onClick={() => setMobileNavOpen(false)} className="text-stone-400 hover:text-stone-700 transition-colors shrink-0" aria-label="Close navigation">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {!Boolean((weddingDetails as any).clientLocked) && (
+                        <nav className="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-1">
+                            <button
+                                onClick={() => goToTab('overview')}
+                                className={`w-full flex items-center px-2.5 py-2.5 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'overview' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
+                            >
+                                <LayoutDashboard className={`w-5 h-5 mr-2 shrink-0 transition-colors ${activeTab === 'overview' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
+                                Overview
+                            </button>
+                            {hasFeature('guests') && (
+                            <button
+                                onClick={() => goToTab('guests')}
+                                className={`w-full flex items-center px-2.5 py-2.5 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'guests' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
+                            >
+                                <Users className={`w-5 h-5 mr-2 shrink-0 transition-colors ${activeTab === 'guests' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
+                                Guests
+                            </button>
+                            )}
+                            {hasFeature('messages') && (
+                            <button
+                                onClick={() => goToTab('messages')}
+                                className={`w-full flex items-center gap-1 px-2.5 py-2.5 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'messages' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
+                            >
+                                <Mail className={`w-5 h-5 mr-1 shrink-0 transition-colors ${activeTab === 'messages' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
+                                <span className="truncate min-w-0">Messages</span>
+                                <span className="ml-auto shrink-0 bg-stone-200 text-stone-600 py-0.5 px-1.5 rounded-full text-[10px] font-semibold tabular-nums">{guestMessages.length}</span>
+                            </button>
+                            )}
+                            {hasFeature('budget') && (
+                            <button
+                                onClick={() => goToTab('budget')}
+                                className={`w-full flex items-center px-2.5 py-2.5 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'budget' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
+                            >
+                                <Calculator className={`w-5 h-5 mr-2 shrink-0 transition-colors ${activeTab === 'budget' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
+                                Budget
+                            </button>
+                            )}
+                            {hasFeature('seating') && (
+                            <button
+                                onClick={() => goToTab('seating')}
+                                className={`w-full flex items-center px-2.5 py-2.5 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'seating' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
+                            >
+                                <Armchair className={`w-5 h-5 mr-2 shrink-0 transition-colors ${activeTab === 'seating' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
+                                Seating
+                            </button>
+                            )}
+                            {hasFeature('settings') && (
+                            <button
+                                onClick={() => goToTab('settings')}
+                                className={`w-full flex items-center px-2.5 py-2.5 text-sm font-medium rounded-lg transition-colors group ${activeTab === 'settings' ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}
+                            >
+                                <Settings className={`w-5 h-5 mr-2 shrink-0 transition-colors ${activeTab === 'settings' ? 'text-stone-500' : 'text-stone-400 group-hover:text-stone-600'}`} />
+                                Settings
+                            </button>
+                            )}
+                        </nav>
+                        )}
+
+                        <div className="shrink-0 p-2.5 border-t border-stone-100 mt-auto">
+                            <button onClick={handleSignOut} className="flex items-center w-full px-2.5 py-2.5 text-sm font-medium text-stone-500 hover:text-rose-600 transition-colors rounded-lg hover:bg-rose-50 group">
+                                <LogOut className="w-5 h-5 mr-2 shrink-0 text-stone-400 group-hover:text-rose-500 transition-colors" />
+                                Sign Out
+                            </button>
+                        </div>
+                    </aside>
+                </div>
+            )}
 
             {/* Main Content Area */}
             <main className="h-full flex-1 min-w-0 overflow-x-hidden overflow-y-auto bg-stone-50/50 pt-16 md:pt-0">

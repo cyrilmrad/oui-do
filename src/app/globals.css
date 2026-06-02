@@ -94,3 +94,38 @@ body {
 [data-sonner-toast] [data-icon] {
   margin-right: 10px;
 }
+
+/* FullCalendar (Planner) — FullCalendar injects its own .fc classes at runtime.
+   Size everything off a slightly-smaller base; FullCalendar scales in em so this
+   shrinks the whole calendar proportionally. */
+.fc {
+  font-size: 0.85rem;
+}
+/* Hint that month-view day cells drill into the Day view, plus the navLink day numbers. */
+.fc .fc-daygrid-day,
+.fc a.fc-daygrid-day-number,
+.fc a.fc-col-header-cell-cushion {
+  cursor: pointer;
+}
+
+/* Stack the toolbar on small screens so the title and button groups don't overlap. */
+@media (max-width: 640px) {
+  .fc .fc-toolbar.fc-header-toolbar {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+  }
+  .fc .fc-toolbar-title {
+    font-size: 1.1rem;
+  }
+  .fc .fc-toolbar-chunk {
+    display: flex;
+    justify-content: center;
+  }
+  /* Slightly tighten day cells so the month grid fits narrow viewports. */
+  .fc .fc-daygrid-day-number,
+  .fc .fc-col-header-cell-cushion {
+    font-size: 0.75rem;
+  }
+}

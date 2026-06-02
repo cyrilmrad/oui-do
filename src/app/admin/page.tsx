@@ -11,10 +11,11 @@ import InvitationPreview, {
 } from '@/components/InvitationPreview';
 import { InvitationBlogEditor } from '@/components/blog/InvitationBlogEditor';
 import { wrapMarkdownBoldSegment, wrapMarkdownSegment } from '@/lib/rsvpClosedMessageBold';
-import { LogOut, Users, Plus, LayoutDashboard, ChevronRight, ChevronDown, Copy, Link, QrCode, Download, Share, Lock, Trash2, Shield, Loader2 } from 'lucide-react';
+import { LogOut, Users, Plus, LayoutDashboard, ChevronRight, ChevronDown, Copy, Link, QrCode, Download, Share, Lock, Trash2, Shield, Loader2, CalendarDays, Menu, X } from 'lucide-react';
 import BudgetTracker from '@/components/BudgetTracker';
 import TableSeating from '@/components/TableSeating';
 import ClientEntitlementsPanel from '@/components/admin/ClientEntitlementsPanel';
+import PlannerView from '@/components/admin/planner/PlannerView';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import { getExpensesBySlug, SelectExpense } from '@/app/actions/budget';
 import { getSeatingData } from '@/app/actions/seating';
@@ -320,7 +321,9 @@ export default function AdminDashboard() {
     };
 
     // Budget State
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'clients-list' | 'builder' | 'budget' | 'seating' | 'entitlements' | 'schedule' | 'client-overview'>('dashboard');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'clients-list' | 'builder' | 'budget' | 'seating' | 'entitlements' | 'schedule' | 'client-overview' | 'planner'>('dashboard');
+    const [userRole, setUserRole] = useState<'admin' | 'assistant'>('admin');
+    const [mobileNavOpen, setMobileNavOpen] = useState(false);
     /** True when the selected client already has an invitation row in the DB. */
     const [hasInvitation, setHasInvitation] = useState(true);
     const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
@@ -394,13 +397,21 @@ export default function AdminDashboard() {
                 router.push('/login');
                 return;
             }
-            if (session.user.app_metadata?.role !== 'admin') {
-                router.push('/login'); // Not authorized as admin
+            const role = session.user.app_metadata?.role as string | undefined;
+            if (role !== 'admin' && role !== 'assistant') {
+                router.push('/login');
                 return;
             }
+            const resolvedRole = role === 'assistant' ? 'assistant' : 'admin';
+            setUserRole(resolvedRole);
             setAccessToken(session.access_token ?? null);
-            fetchClients();
-            void loadDashboardData();
+            if (resolvedRole === 'admin') {
+                fetchClients();
+                void loadDashboardData();
+            } else {
+                // Assistants land directly on the Planner tab
+                setActiveTab('planner');
+            }
             setLoadingAuth(false);
         };
         checkAdminAuth();
@@ -409,6 +420,28 @@ export default function AdminDashboard() {
     const handleSignOut = async () => {
         await supabase.auth.signOut();
         router.push('/login');
+    };
+
+    /** Clears builder media/preview state — mirrors the inline reset blocks in the sidebar nav. */
+    const resetBuilderMedia = () => {
+        setHeroImageFile(null); setHeroImagePreview(null);
+        setMetadataImageFile(null); setMetadataImagePreview(null);
+        setHeroVideoFile(null); setHeroVideoPreview(null);
+        setHeroLogoFile(null); setHeroLogoPreview(null);
+        setAudioFile(null); setAudioPreview(null);
+        setFormalImageFile(null); setFormalImagePreview(null);
+        setDetailsBgFile(null); setDetailsBgPreview(null);
+        setCustomFiles({});
+        setSelectedLifecycle(null);
+    };
+
+    /** Navigate to a global tab (used by the mobile nav drawer). */
+    const navigateToTab = (tab: 'dashboard' | 'clients-list' | 'entitlements' | 'planner') => {
+        setLiveData(defaultData);
+        setActiveTab(tab);
+        resetBuilderMedia();
+        setMobileNavOpen(false);
+        if (tab === 'dashboard') void loadDashboardData();
     };
 
     const handleCreateClient = async (e: React.FormEvent) => {
@@ -795,6 +828,7 @@ export default function AdminDashboard() {
                     <p className="text-[0.65rem] font-label uppercase tracking-wider text-secondary mt-1">Editorial Workspace</p>
                 </div>
 
+                {userRole === 'admin' && (
                 <div className="px-2 mb-3">
                     <button
                         onClick={() => {
@@ -816,9 +850,11 @@ export default function AdminDashboard() {
                         New Client Instance
                     </button>
                 </div>
+                )}
 
                 <div className="flex-1 px-0 flex flex-col pt-4">
                     <nav className="flex-1 space-y-1">
+                        {userRole === 'admin' && (<>
                         <button
                             className={`w-full flex items-center gap-2 py-2.5 px-3 rounded-r-full transition-all duration-200 ${activeTab === 'dashboard' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm scale-[0.99]' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
                             onClick={() => {
@@ -877,6 +913,26 @@ export default function AdminDashboard() {
                             <Shield className="w-4 h-4 shrink-0" />
                             <span className="font-label uppercase tracking-[0.05em] text-[0.65rem] font-bold text-left leading-snug">Entitlements</span>
                         </button>
+                        </>)}
+                        <button
+                            className={`w-full flex items-center gap-2 py-2.5 px-3 rounded-r-full transition-all duration-200 ${activeTab === 'planner' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm scale-[0.99]' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
+                            onClick={() => {
+                                setLiveData(defaultData);
+                                setActiveTab('planner');
+                                setHeroImageFile(null); setHeroImagePreview(null);
+                                setMetadataImageFile(null); setMetadataImagePreview(null);
+                                setHeroVideoFile(null); setHeroVideoPreview(null);
+                                setHeroLogoFile(null); setHeroLogoPreview(null);
+                                setAudioFile(null); setAudioPreview(null);
+                                setFormalImageFile(null); setFormalImagePreview(null);
+                                setDetailsBgFile(null); setDetailsBgPreview(null);
+                                setCustomFiles({});
+                                setSelectedLifecycle(null);
+                            }}
+                        >
+                            <CalendarDays className="w-4 h-4 shrink-0" />
+                            <span className={`font-label uppercase tracking-[0.05em] text-[0.65rem] text-left leading-snug ${activeTab === 'planner' ? 'font-bold' : 'font-medium'}`}>Planner</span>
+                        </button>
                     </nav>
 
                     <div className="mt-auto px-2 mb-3">
@@ -902,11 +958,83 @@ export default function AdminDashboard() {
                 </div>
             </aside>
 
+            {/* Mobile Navigation Drawer */}
+            {mobileNavOpen && (
+                <div className="md:hidden fixed inset-0 z-[90] flex">
+                    <div
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        onClick={() => setMobileNavOpen(false)}
+                    />
+                    <aside className="relative flex flex-col h-full py-6 px-3 bg-surface-container-low text-primary w-64 max-w-[80%] shadow-2xl z-10">
+                        <div className="flex items-center justify-between mb-6 px-2">
+                            <div>
+                                <h1 className="text-base font-headline text-primary leading-tight">Oui-Do Admin</h1>
+                                <p className="text-[0.6rem] font-label uppercase tracking-wider text-secondary mt-1">Editorial Workspace</p>
+                            </div>
+                            <button onClick={() => setMobileNavOpen(false)} className="text-secondary hover:text-primary transition-colors">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <nav className="flex-1 space-y-1">
+                            {userRole === 'admin' && (<>
+                                <button
+                                    className={`w-full flex items-center gap-3 py-3 px-3 rounded-xl transition-all ${activeTab === 'dashboard' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
+                                    onClick={() => navigateToTab('dashboard')}
+                                >
+                                    <LayoutDashboard className="w-4 h-4 shrink-0" />
+                                    <span className="font-label uppercase tracking-[0.05em] text-[0.7rem]">Dashboard</span>
+                                </button>
+                                <button
+                                    className={`w-full flex items-center gap-3 py-3 px-3 rounded-xl transition-all ${activeTab === 'clients-list' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
+                                    onClick={() => navigateToTab('clients-list')}
+                                >
+                                    <Users className="w-4 h-4 shrink-0" />
+                                    <span className="font-label uppercase tracking-[0.05em] text-[0.7rem]">Active Clients</span>
+                                </button>
+                                <button
+                                    className={`w-full flex items-center gap-3 py-3 px-3 rounded-xl transition-all ${activeTab === 'entitlements' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
+                                    onClick={() => navigateToTab('entitlements')}
+                                >
+                                    <Shield className="w-4 h-4 shrink-0" />
+                                    <span className="font-label uppercase tracking-[0.05em] text-[0.7rem]">Entitlements</span>
+                                </button>
+                            </>)}
+                            <button
+                                className={`w-full flex items-center gap-3 py-3 px-3 rounded-xl transition-all ${activeTab === 'planner' ? 'text-primary font-bold bg-surface-container-lowest shadow-sm' : 'text-secondary hover:bg-surface-container-lowest hover:text-primary'}`}
+                                onClick={() => navigateToTab('planner')}
+                            >
+                                <CalendarDays className="w-4 h-4 shrink-0" />
+                                <span className="font-label uppercase tracking-[0.05em] text-[0.7rem]">Planner</span>
+                            </button>
+                        </nav>
+
+                        <div className="px-1 py-3 border-t border-outline-variant/10">
+                            <button
+                                onClick={handleSignOut}
+                                className="w-full flex items-center gap-3 px-2 py-2 text-xs text-secondary hover:text-primary transition-colors font-label uppercase tracking-widest font-bold"
+                            >
+                                <LogOut className="w-4 h-4 shrink-0" /> Sign Out
+                            </button>
+                        </div>
+                    </aside>
+                </div>
+            )}
+
             {/* Main Content Area */}
             <main className="flex-1 min-w-0 flex flex-col h-full relative bg-surface">
 
+                {/* Mobile Top Bar */}
+                <div className="md:hidden flex items-center justify-between h-14 px-4 border-b border-surface-container-highest bg-surface-container-low/50 shrink-0">
+                    <button onClick={() => setMobileNavOpen(true)} className="text-primary p-1 -ml-1" aria-label="Open navigation">
+                        <Menu className="w-5 h-5" />
+                    </button>
+                    <h1 className="text-sm font-headline font-semibold text-primary">Oui-Do Admin</h1>
+                    <span className="w-7" />
+                </div>
+
                 {/* Top Nav Tabs */}
-                {liveData.slug && activeTab !== 'clients-list' && activeTab !== 'entitlements' && activeTab !== 'dashboard' && (
+                {liveData.slug && activeTab !== 'clients-list' && activeTab !== 'entitlements' && activeTab !== 'dashboard' && activeTab !== 'planner' && (
                     <div className="h-14 border-b border-surface-container-highest flex items-center px-8 gap-0 shrink-0 bg-surface-container-low/50">
                         {/* Back Button + Client Name */}
                         <button
@@ -977,6 +1105,12 @@ export default function AdminDashboard() {
                     {activeTab === 'entitlements' && !isCreatingClient && (
                         <div className="w-full h-full overflow-y-auto">
                             <ClientEntitlementsPanel />
+                        </div>
+                    )}
+
+                    {activeTab === 'planner' && !isCreatingClient && (
+                        <div className="w-full h-full overflow-y-auto">
+                            <PlannerView userRole={userRole} />
                         </div>
                     )}
 
