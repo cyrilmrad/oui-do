@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import { toast } from 'sonner';
 import { Loader2, KeyRound, Shield, Copy, Check, X, AlertTriangle } from 'lucide-react';
 
@@ -13,12 +13,6 @@ type Props = {
 
 type View = 'options' | 'link' | 'set-password';
 
-async function authHeader(): Promise<HeadersInit> {
-    const { data: { session } } = await supabase.auth.getSession();
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
-    return headers;
-}
 
 export default function PasswordManagerModal({ slug, email, onClose }: Props) {
     const [view, setView] = useState<View>('options');
@@ -34,13 +28,17 @@ export default function PasswordManagerModal({ slug, email, onClose }: Props) {
         setView('link');
         setLoading(true);
         try {
-            const res = await fetch('/api/admin/reset-password', { method: 'POST', headers: await authHeader(), body: JSON.stringify({ slug }) });
+            const res = await fetchWithAuth('/api/admin/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug })
+            });
             const json = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(json.error || 'Failed to generate link');
             setLink(json.link);
             if (json.email) setResolvedEmail(json.email);
-        } catch (e: any) {
-            toast.error('Failed to generate reset link', { description: e.message });
+        } catch (e) {
+            toast.error('Failed to generate reset link', { description: e instanceof Error ? e.message : String(e) });
             onClose();
         } finally {
             setLoading(false);
@@ -50,14 +48,18 @@ export default function PasswordManagerModal({ slug, email, onClose }: Props) {
     const handleSetPassword = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/admin/update-password', { method: 'POST', headers: await authHeader(), body: JSON.stringify({ slug, password: newPassword }) });
+            const res = await fetchWithAuth('/api/admin/update-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug, password: newPassword })
+            });
             const json = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(json.error || 'Failed to update password');
             setDone(true);
             setNewPassword('');
             setConfirmingSet(false);
-        } catch (e: any) {
-            toast.error('Failed to update password', { description: e.message });
+        } catch (e) {
+            toast.error('Failed to update password', { description: e instanceof Error ? e.message : String(e) });
         } finally {
             setLoading(false);
         }
@@ -127,7 +129,7 @@ export default function PasswordManagerModal({ slug, email, onClose }: Props) {
                                 </div>
                                 <p className="text-xs text-secondary">Single-use link, expires in 24 hours. Share directly with the client.</p>
                                 <div className="flex gap-3">
-                                    <button type="button" onClick={() => setView('options')} className="flex-1 py-2.5 rounded-full text-xs font-label uppercase tracking-widest font-bold border border-outline-variant/30 text-secondary hover:text-primary">Back</button>
+                                    <button type="button" onClick={() => { setView('options'); setLink(null); }} className="flex-1 py-2.5 rounded-full text-xs font-label uppercase tracking-widest font-bold border border-outline-variant/30 text-secondary hover:text-primary">Back</button>
                                     <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-full text-xs font-label uppercase tracking-widest font-bold bg-primary text-on-primary">Done</button>
                                 </div>
                             </>
@@ -166,8 +168,9 @@ export default function PasswordManagerModal({ slug, email, onClose }: Props) {
                         ) : (
                             <>
                                 <div className="space-y-2">
-                                    <label className="text-[0.65rem] font-label uppercase tracking-widest text-secondary font-bold block">New password</label>
+                                    <label htmlFor="new-password-input" className="text-[0.65rem] font-label uppercase tracking-widest text-secondary font-bold block">New password</label>
                                     <input
+                                        id="new-password-input"
                                         type="password"
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
