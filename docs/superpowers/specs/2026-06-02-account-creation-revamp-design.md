@@ -18,7 +18,8 @@ The goal: reshape the mental model so **one wedding (slug + invitation) can own 
 - **Multiple logins per wedding.** A wedding may have several client accounts (e.g. bride + groom), all sharing one invitation. The Clients list shows **one card per wedding**, with linked accounts shown inline.
 - **Assistant stays global** (as shipped): `role: 'assistant'`, no slug, Planner-only.
 - **Add-login lives in the creation modal** (Approach A): a single "New" entry point with an account-type selector.
-- **Show linked accounts inline** on each wedding card, with a remove action.
+- **Show linked accounts inline** on each wedding card (read-only glance).
+- **Account management (delete) lives in the wedding overview** — a small Accounts section listing the linked users with a delete button next to each. Keeps the card glanceable and management where you're focused on one wedding.
 - **Assistant management** (a list/removal surface for assistants) is **out of scope** for this spec.
 
 ## Data model — no DB migration
@@ -92,13 +93,18 @@ The heading/description adapt per selected type. On success when adding to an ex
 
 ### Clients list — `ClientList.tsx`
 
-Each wedding card renders its linked **accounts inline**: a count badge plus the list of account emails. Each account row has a lightweight **remove** action (confirm → `DELETE …/account`), **disabled when it is the only account**. Password reset remains in the entitlements panel, targeting the representative account.
+Each wedding card renders its linked **accounts inline, read-only**: a count badge plus the list of account emails. No actions on the card — it stays a glance. Password reset remains in the entitlements panel, targeting the representative account.
+
+### Wedding overview — `ClientOverview.tsx`
+
+A small **Accounts** section lists the wedding's linked client accounts (email + created date), each with a **delete** button next to it (via `ConfirmDialog`, already imported here). Delete calls `DELETE …/account`; the **last remaining account cannot be deleted** (button disabled + backend guard). Accounts are passed in as a prop (`accounts: { id: string; email: string }[]`) sourced from the admin page's already-loaded clients list; on a successful delete the overview invokes an `onAccountsChanged` callback so the parent refetches `/api/admin/clients` and the prop updates. No new GET endpoint required.
 
 ### Admin page — `src/app/admin/page.tsx`
 
 - Form state extended for account type + mode (`role`, `expectExisting`).
 - `handleCreateClient` wires the type/mode into the POST body and handles the new error codes (409 slug-in-use, 400 no-such-wedding) with `toast.error`.
 - Sidebar button label "New Client Instance" → "New Account".
+- Passes the selected wedding's `accounts` (from `realClients`) into `ClientOverview`, plus an `onAccountsChanged` handler that calls `fetchClients()`.
 
 ## Edge cases
 
@@ -119,7 +125,7 @@ Each wedding card renders its linked **accounts inline**: a count badge plus the
 3. **Create assistant** → user created with `role: 'assistant'`; logging in routes to `/admin` showing only the Planner.
 4. **New-wedding with a taken slug** → 409, inline error, nothing created.
 5. **Add-login with an unknown slug** → 400, inline error, nothing created.
-6. **Remove an account** → email disappears from the card; removing the last one is blocked.
+6. **Remove an account** (from the wedding overview's Accounts section) → email disappears from the overview and the card; removing the last one is blocked (button disabled + backend guard).
 7. **Regression:** entitlements panel still loads its client picker and password-reset works (representative email present).
 8. `node_modules/.bin/tsc --noEmit` and `npm run lint` show no new errors.
 
@@ -131,5 +137,6 @@ Each wedding card renders its linked **accounts inline**: a count badge plus the
 | Modify | `src/app/api/admin/clients/route.ts` |
 | Create | `src/app/api/admin/clients/[slug]/account/route.ts` |
 | Modify | `src/components/admin/NewClientForm.tsx` |
-| Modify | `src/components/admin/ClientList.tsx` |
+| Modify | `src/components/admin/ClientList.tsx` (inline accounts, read-only) |
+| Modify | `src/components/admin/ClientOverview.tsx` (Accounts management section) |
 | Modify | `src/app/admin/page.tsx` |
