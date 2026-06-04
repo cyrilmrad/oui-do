@@ -51,24 +51,18 @@ export function FormalInvitationSection({
         !!formalImageFile?.type.startsWith('video/');
 
     return (
-        <section>
-            <div className="flex justify-between items-center mb-8">
-                <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-headline text-primary">Formal Invitation</h2>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                            type="checkbox"
-                            name="showFormalInvitation"
-                            className="sr-only peer"
-                            checked={showFormalInvitation || false}
-                            onChange={(e) => onToggleFormalInvitation(e.target.checked)}
-                        />
-                        <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                        <span className="ms-3 text-[0.75rem] font-label uppercase text-primary tracking-widest font-bold">Formal Image Override</span>
-                    </label>
-                </div>
-                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 03</span>
-            </div>
+        <div className="space-y-4">
+            <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                    type="checkbox"
+                    name="showFormalInvitation"
+                    className="sr-only peer"
+                    checked={showFormalInvitation || false}
+                    onChange={(e) => onToggleFormalInvitation(e.target.checked)}
+                />
+                <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                <span className="ms-3 text-[0.75rem] font-label uppercase text-primary tracking-widest font-bold">Formal Image Override</span>
+            </label>
             <div className="bg-surface-container-low p-8 rounded-xl space-y-6">
                 {showFormalInvitation && (
                     <div className="space-y-1.5">
@@ -114,6 +108,6 @@ export function FormalInvitationSection({
                     <input type="file" accept="audio/*" onChange={onAudioChange} className="w-full bg-surface-container-lowest border-outline-variant/30 rounded-md p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface font-body file:bg-primary file:text-white file:border-0 file:px-4 file:py-2 file:rounded-full file:text-sm file:font-semibold file:cursor-pointer hover:file:opacity-90" />
                 </div>
             </div>
-        </section>
+        </div>
     );
 }
