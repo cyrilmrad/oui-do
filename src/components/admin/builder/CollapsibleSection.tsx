@@ -24,9 +24,7 @@ export function CollapsibleSection({
 
     return (
         <section
-            className={`border-b border-outline-variant/20 last:border-0 border-l-[3px] transition-[border-left-color] duration-200 ${
-                isOpen ? 'border-l-primary/50' : 'border-l-transparent hover:border-l-primary/20'
-            }`}
+            className="border-b border-outline-variant/20 last:border-0"
             aria-labelledby={headingId}
         >
             <button
