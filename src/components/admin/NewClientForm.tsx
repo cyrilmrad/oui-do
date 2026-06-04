@@ -1,6 +1,7 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
+import { X, Heart, Users, Briefcase, Check, Loader2, ArrowLeft } from 'lucide-react';
 
 export type AccountType = 'client-new' | 'client-existing' | 'assistant';
 
@@ -25,16 +26,37 @@ interface NewClientFormProps {
     onCancel: () => void;
 }
 
-const TYPE_OPTIONS: { value: AccountType; label: string; hint: string }[] = [
-    { value: 'client-new', label: 'New Wedding', hint: 'Create a client account with a fresh URL slug and its own invitation.' },
-    { value: 'client-existing', label: 'Add Login to Wedding', hint: 'Add another login to an existing wedding — shares its invitation, guests, and budget.' },
-    { value: 'assistant', label: 'Assistant', hint: 'A workspace helper with Planner access only. Not tied to a wedding.' },
+const TYPE_OPTIONS: {
+    value: AccountType;
+    label: string;
+    description: string;
+    Icon: React.ComponentType<{ className?: string }>;
+}[] = [
+    {
+        value: 'client-new',
+        label: 'New Wedding',
+        description: 'Create a client account with a fresh URL slug and its own invitation.',
+        Icon: Heart,
+    },
+    {
+        value: 'client-existing',
+        label: 'Add Login',
+        description: 'Add another login to an existing wedding — shares its invitation, guests, and budget.',
+        Icon: Users,
+    },
+    {
+        value: 'assistant',
+        label: 'Assistant',
+        description: 'A workspace helper with Planner access only. Not tied to a wedding.',
+        Icon: Briefcase,
+    },
 ];
 
 /**
- * Full-screen overlay shown when isCreatingClient is true. Lets an admin create one of three
- * account types: a brand-new wedding client, an additional login for an existing wedding, or a
- * global assistant. The selected type drives which fields show and how the parent validates the slug.
+ * Two-step modal wizard for creating admin accounts.
+ * Step 1 — account type selection.
+ * Step 2 — credentials (email, optional slug, password).
+ * Step state is internal: the parent only needs to know about form values and submission.
  */
 export function NewClientForm({
     form,
@@ -45,111 +67,241 @@ export function NewClientForm({
     setShowSlugDropdown,
     clients,
     onSubmit,
-    onCancel
+    onCancel,
 }: NewClientFormProps) {
+    const [step, setStep] = useState<1 | 2>(1);
+
     const isClient = form.accountType !== 'assistant';
     const isExisting = form.accountType === 'client-existing';
-    const activeHint = TYPE_OPTIONS.find(o => o.value === form.accountType)?.hint ?? '';
+    const activeOption = TYPE_OPTIONS.find(o => o.value === form.accountType)!;
     const slugMatches = clients.filter(c => c.slug.includes(form.slug.toLowerCase()));
 
     return (
-        <div className="absolute inset-0 z-50 flex flex-col overflow-y-auto bg-surface backdrop-blur-sm px-6 py-12 md:py-24 animate-in fade-in duration-300">
-            <div className="max-w-4xl mx-auto w-full space-y-12">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-lg bg-surface rounded-2xl shadow-2xl">
 
-                <div className="flex justify-between items-start">
-                    <div className="space-y-4">
-                        <h2 className="text-5xl font-headline text-primary tracking-tight">New Account</h2>
-                        <p className="text-lg text-secondary max-w-xl leading-relaxed">{activeHint}</p>
+                {/* Header */}
+                <div className="flex items-start justify-between px-7 pt-6 pb-5">
+                    <div>
+                        <p className="text-[0.65rem] font-label font-bold uppercase tracking-[0.15em] text-secondary mb-1.5">
+                            Admin &rsaquo; Accounts
+                        </p>
+                        <h2 className="text-2xl font-headline text-primary tracking-tight">New Account</h2>
                     </div>
-                    <button onClick={onCancel} className="text-secondary hover:text-primary font-bold uppercase tracking-widest text-sm p-4">✕ Close</button>
-                </div>
-
-                {/* Account-type selector */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {TYPE_OPTIONS.map(opt => (
+                    <div className="flex items-center gap-3 mt-1">
+                        <div className="flex items-center gap-1.5" aria-label={`Step ${step} of 2`}>
+                            <div className={`w-2 h-2 rounded-full transition-all duration-300 ${step >= 1 ? 'bg-primary' : 'bg-outline-variant/50'}`} />
+                            <div className={`w-2 h-2 rounded-full transition-all duration-300 ${step >= 2 ? 'bg-primary' : 'bg-outline-variant/40'}`} />
+                        </div>
                         <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setForm({ ...form, accountType: opt.value, slug: '' })}
-                            className={`text-left p-5 rounded-xl border transition-all ${form.accountType === opt.value ? 'border-primary bg-primary-fixed/20 shadow-sm' : 'border-outline-variant/30 hover:border-outline-variant/60 bg-surface-container-lowest'}`}
+                            onClick={onCancel}
+                            aria-label="Close"
+                            className="p-1.5 rounded-full text-secondary hover:text-primary hover:bg-surface-container-low transition-colors cursor-pointer"
                         >
-                            <span className={`block text-sm font-label font-bold uppercase tracking-wider ${form.accountType === opt.value ? 'text-primary' : 'text-secondary'}`}>{opt.label}</span>
-                            <span className="block text-xs text-secondary/80 mt-2 leading-snug">{opt.hint}</span>
+                            <X className="w-4 h-4" />
                         </button>
-                    ))}
+                    </div>
                 </div>
 
-                {message && (
-                    <div className={`p-4 text-sm rounded-xl border ${message.type === 'error' ? 'bg-error-container/20 text-error border-error/30' : 'bg-primary-fixed/30 text-primary border-primary/20'}`}>
-                        {message.text}
-                    </div>
-                )}
+                <div className="h-px bg-surface-container-high mx-7" />
 
-                <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                    <div className="space-y-3">
-                        <label className="text-[0.75rem] font-label font-bold uppercase tracking-[0.1em] text-secondary ml-1">{form.accountType === 'assistant' ? 'Assistant Email' : 'Client Email'}</label>
-                        <input type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-6 py-5 text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-lg font-body" placeholder="name@example.com" />
-                    </div>
+                {/* Step content — keyed so entering animation replays on step change */}
+                <div key={step} className="px-7 py-6 animate-in fade-in slide-in-from-right-2 duration-200">
 
-                    {isClient && (
-                        <div className="space-y-3 relative">
-                            <label className="text-[0.75rem] font-label font-bold uppercase tracking-[0.1em] text-secondary ml-1">{isExisting ? 'Existing Wedding Slug' : 'New Wedding Slug'}</label>
-                            <div className="relative">
-                                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-outline-variant text-lg font-body">oui-do.com/</span>
-                                <input
-                                    type="text"
-                                    required
-                                    value={form.slug}
-                                    onChange={e => {
-                                        setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') });
-                                        if (isExisting) setShowSlugDropdown(true);
-                                    }}
-                                    onFocus={() => { if (isExisting) setShowSlugDropdown(true); }}
-                                    onBlur={() => setTimeout(() => setShowSlugDropdown(false), 200)}
-                                    className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg pl-[8.5rem] pr-6 py-5 text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-lg font-body"
-                                    placeholder="maya-and-john"
-                                />
+                    {/* ── Step 1: Account type ── */}
+                    {step === 1 && (
+                        <div className="space-y-5">
+                            <p className="text-sm text-secondary leading-relaxed">
+                                What kind of account are you setting up?
+                            </p>
+
+                            <div className="space-y-2">
+                                {TYPE_OPTIONS.map(({ value, label, description, Icon }) => {
+                                    const isActive = form.accountType === value;
+                                    return (
+                                        <button
+                                            key={value}
+                                            type="button"
+                                            onClick={() => setForm({ ...form, accountType: value, slug: '' })}
+                                            className={`w-full text-left flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                                                isActive
+                                                    ? 'border-primary bg-primary'
+                                                    : 'border-outline-variant/40 bg-surface-container-lowest hover:border-outline-variant/70 hover:bg-surface-container-low'
+                                            }`}
+                                        >
+                                            <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
+                                                isActive ? 'bg-on-primary/10' : 'bg-surface-container-low'
+                                            }`}>
+                                                <Icon className={`w-5 h-5 ${isActive ? 'text-on-primary' : 'text-primary'}`} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className={`text-sm font-label font-bold uppercase tracking-wider ${isActive ? 'text-on-primary' : 'text-primary'}`}>
+                                                    {label}
+                                                </p>
+                                                <p className={`text-xs mt-0.5 leading-snug ${isActive ? 'text-on-primary/70' : 'text-secondary/80'}`}>
+                                                    {description}
+                                                </p>
+                                            </div>
+                                            {isActive && <Check className="flex-shrink-0 w-4 h-4 text-on-primary" />}
+                                        </button>
+                                    );
+                                })}
                             </div>
 
-                            {isExisting && showSlugDropdown && (
-                                <div className="absolute top-[100%] left-0 mt-2 w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-[60] font-body">
-                                    {slugMatches.map(c => (
-                                        <button
-                                            key={c.id}
-                                            type="button"
-                                            onClick={() => { setForm({ ...form, slug: c.slug }); setShowSlugDropdown(false); }}
-                                            className="w-full text-left px-6 py-3 text-sm hover:bg-surface-container-low flex justify-between items-center border-b border-surface-variant/50 last:border-0 transition-colors"
-                                        >
-                                            <span className="font-medium text-primary text-base">{c.slug}</span>
-                                            <span className="text-secondary">{c.bride} &amp; {c.groom}</span>
-                                        </button>
-                                    ))}
-                                    {slugMatches.length === 0 && (
-                                        <div className="px-6 py-4 text-sm text-secondary italic">No matching weddings.</div>
-                                    )}
-                                </div>
-                            )}
-                            {!isExisting && (
-                                <p className="text-xs text-secondary/70 mt-2 px-1">Must be unique — letters, numbers, and dashes only.</p>
-                            )}
+                            <button
+                                type="button"
+                                onClick={() => setStep(2)}
+                                style={{ background: 'linear-gradient(135deg, #00150F 0%, #062C22 100%)' }}
+                                className="w-full py-3.5 text-on-primary rounded-xl text-sm font-label font-bold uppercase tracking-widest shadow-md shadow-primary/15 hover:opacity-90 transition-opacity cursor-pointer"
+                            >
+                                Continue
+                            </button>
                         </div>
                     )}
 
-                    <div className={`space-y-3 ${isClient ? 'md:col-span-2' : ''}`}>
-                        <label className="text-[0.75rem] font-label font-bold uppercase tracking-[0.1em] text-secondary ml-1">Temporary Password</label>
-                        <input type="password" required value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-6 py-5 text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-lg font-body" placeholder="••••••••••••" minLength={6} />
-                        <p className="text-xs text-secondary/70 mt-3 px-1">We recommend a secure, auto-generated string for the first login.</p>
-                    </div>
+                    {/* ── Step 2: Credentials ── */}
+                    {step === 2 && (
+                        <form onSubmit={onSubmit} className="space-y-5">
 
-                    <div className="md:col-span-2 flex flex-col md:flex-row items-center gap-8 pt-10 border-t border-surface-container-high">
-                        <button type="submit" disabled={loading} style={{ background: 'linear-gradient(135deg, #00150F 0%, #062C22 100%)' }} className="w-full md:w-auto px-12 py-5 text-on-primary rounded-full text-sm font-label font-bold uppercase tracking-widest shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity disabled:opacity-50">
-                            {loading ? 'Provisioning...' : 'Create Account'}
-                        </button>
-                        <button type="button" onClick={onCancel} className="text-sm font-label font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors">
-                            Cancel &amp; Return
-                        </button>
-                    </div>
-                </form>
+                            {/* Selected type chip + change link */}
+                            <div className="flex items-center gap-2">
+                                <activeOption.Icon className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                                <span className="text-xs font-label font-bold uppercase tracking-wider text-primary">
+                                    {activeOption.label}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setStep(1)}
+                                    className="ml-auto text-[0.65rem] font-label font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors cursor-pointer"
+                                >
+                                    Change
+                                </button>
+                            </div>
+
+                            {message && (
+                                <div className={`p-3.5 text-sm rounded-xl border leading-relaxed ${
+                                    message.type === 'error'
+                                        ? 'bg-rose-50 text-rose-900 border-rose-200'
+                                        : 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                                }`}>
+                                    {message.text}
+                                </div>
+                            )}
+
+                            {/* Email */}
+                            <div className="space-y-2">
+                                <label htmlFor="nc-email" className="block text-[0.65rem] font-label font-bold uppercase tracking-[0.12em] text-secondary">
+                                    {form.accountType === 'assistant' ? 'Assistant Email' : 'Client Email'}
+                                </label>
+                                <input
+                                    id="nc-email"
+                                    type="email"
+                                    required
+                                    autoFocus
+                                    value={form.email}
+                                    onChange={e => setForm({ ...form, email: e.target.value })}
+                                    className="w-full bg-surface-container-lowest border border-outline-variant/40 rounded-xl px-4 py-3.5 text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all text-sm font-body"
+                                    placeholder="name@example.com"
+                                />
+                            </div>
+
+                            {/* Slug — client accounts only */}
+                            {isClient && (
+                                <div className="space-y-2 relative">
+                                    <label htmlFor="nc-slug" className="block text-[0.65rem] font-label font-bold uppercase tracking-[0.12em] text-secondary">
+                                        {isExisting ? 'Existing Wedding Slug' : 'Wedding Slug'}
+                                    </label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant text-sm font-body select-none pointer-events-none">
+                                            oui-do.com/
+                                        </span>
+                                        <input
+                                            id="nc-slug"
+                                            type="text"
+                                            required
+                                            value={form.slug}
+                                            onChange={e => {
+                                                setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') });
+                                                if (isExisting) setShowSlugDropdown(true);
+                                            }}
+                                            onFocus={() => { if (isExisting) setShowSlugDropdown(true); }}
+                                            onBlur={() => setTimeout(() => setShowSlugDropdown(false), 200)}
+                                            className="w-full bg-surface-container-lowest border border-outline-variant/40 rounded-xl pl-[7.5rem] pr-4 py-3.5 text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all text-sm font-body"
+                                            placeholder="maya-and-john"
+                                        />
+                                    </div>
+                                    {isExisting && showSlugDropdown && (
+                                        <div className="absolute top-[100%] left-0 mt-1.5 w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-xl max-h-48 overflow-y-auto z-[60] font-body">
+                                            {slugMatches.map(c => (
+                                                <button
+                                                    key={c.id}
+                                                    type="button"
+                                                    onClick={() => { setForm({ ...form, slug: c.slug }); setShowSlugDropdown(false); }}
+                                                    className="w-full text-left px-4 py-3 text-sm hover:bg-surface-container-low flex justify-between items-center border-b border-outline-variant/20 last:border-0 transition-colors cursor-pointer"
+                                                >
+                                                    <span className="font-medium text-primary text-sm">{c.slug}</span>
+                                                    <span className="text-secondary text-xs">{c.bride} &amp; {c.groom}</span>
+                                                </button>
+                                            ))}
+                                            {slugMatches.length === 0 && (
+                                                <div className="px-4 py-4 text-sm text-secondary italic">No matching weddings.</div>
+                                            )}
+                                        </div>
+                                    )}
+                                    {!isExisting && (
+                                        <p className="text-xs text-secondary/70 pl-1">Letters, numbers, and dashes only &mdash; must be unique.</p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Password */}
+                            <div className="space-y-2">
+                                <label htmlFor="nc-password" className="block text-[0.65rem] font-label font-bold uppercase tracking-[0.12em] text-secondary">
+                                    Temporary Password
+                                </label>
+                                <input
+                                    id="nc-password"
+                                    type="password"
+                                    required
+                                    value={form.password}
+                                    onChange={e => setForm({ ...form, password: e.target.value })}
+                                    className="w-full bg-surface-container-lowest border border-outline-variant/40 rounded-xl px-4 py-3.5 text-on-surface placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all text-sm font-body"
+                                    placeholder="••••••••••••"
+                                    minLength={6}
+                                />
+                                <p className="text-xs text-secondary/70 pl-1">Use a secure string &mdash; the client will set their own password on first login.</p>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-3 pt-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setStep(1)}
+                                    aria-label="Back to account type"
+                                    className="p-3 rounded-xl border border-outline-variant/40 text-secondary hover:text-primary hover:border-outline-variant/70 transition-colors cursor-pointer"
+                                >
+                                    <ArrowLeft className="w-4 h-4" />
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    style={{ background: 'linear-gradient(135deg, #00150F 0%, #062C22 100%)' }}
+                                    className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 text-on-primary rounded-xl text-sm font-label font-bold uppercase tracking-widest shadow-md shadow-primary/15 hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Provisioning&hellip;
+                                        </>
+                                    ) : (
+                                        'Create Account'
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+
+                </div>
             </div>
         </div>
     );
