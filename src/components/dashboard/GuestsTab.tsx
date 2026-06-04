@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
-import { Search, Filter, Plus, Copy, Edit2, Trash2, Loader2, Download } from 'lucide-react';
+import { Search, Filter, Plus, Copy, Edit2, Trash2, Loader2, Download, Upload } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import {
     parseGuestImportCsv,
@@ -40,6 +40,8 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
     const [csvImportPreview, setCsvImportPreview] = useState<CsvImportPreview | null>(null);
     const [isGuestCsvImporting, setIsGuestCsvImporting] = useState(false);
     const [deletingGuestId, setDeletingGuestId] = useState<string | null>(null);
+    const [isSavingGuest, setIsSavingGuest] = useState(false);
+    const [deleteConfirmGuestId, setDeleteConfirmGuestId] = useState<string | null>(null);
 
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [exportFilter, setExportFilter] = useState<'all' | 'attending'>('all');
@@ -55,6 +57,7 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
     };
 
     const handleSaveEditGuest = async () => {
+        setIsSavingGuest(true);
         try {
             const res = await fetchWithAuth('/api/guests', {
                 method: 'PUT',
@@ -74,11 +77,12 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
         } catch (error) {
             console.error(error);
             toast.error("Failed to update guest");
+        } finally {
+            setIsSavingGuest(false);
         }
     };
 
     const handleDeleteGuest = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this guest?")) return;
         setDeletingGuestId(id);
         try {
             const res = await fetchWithAuth(`/api/guests?id=${id}`, {
@@ -255,7 +259,7 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
                 <button type="button" onClick={() => handleEditGuest(row.guest)} className="text-stone-400 hover:text-stone-700 transition-colors" title="Edit Guest">
                     <Edit2 className="w-4 h-4" />
                 </button>
-                <button type="button" onClick={() => void handleDeleteGuest(row.guest.id)} className="text-stone-400 hover:text-rose-600 transition-colors" title="Delete Guest">
+                <button type="button" onClick={() => setDeleteConfirmGuestId(row.guest.id)} className="text-stone-400 hover:text-rose-600 transition-colors cursor-pointer" title="Delete Guest">
                     <Trash2 className="w-4 h-4" />
                 </button>
             </div>
@@ -271,6 +275,34 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
 
     return (
         <>
+            {/* ── Delete confirm modal ──────────────────────────────────────── */}
+            {deleteConfirmGuestId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-7 w-full max-w-sm mx-4 space-y-5">
+                        <div>
+                            <h3 className="text-xl font-serif text-stone-900">Delete Guest</h3>
+                            <p className="text-sm text-stone-500 mt-1.5">This will permanently remove the guest and their RSVP. This cannot be undone.</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setDeleteConfirmGuestId(null)}
+                                className="flex-1 border border-stone-200 text-stone-700 hover:bg-stone-50 font-semibold py-2.5 rounded-lg text-sm transition-colors cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void handleDeleteGuest(deleteConfirmGuestId)}
+                                className="flex-1 bg-rose-600 text-white hover:bg-rose-700 font-semibold py-2.5 rounded-lg text-sm transition-colors cursor-pointer"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ── Export modal ──────────────────────────────────────────────── */}
             {isExportModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-sm">
@@ -358,13 +390,14 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
                         <Download className="w-3.5 h-3.5" aria-hidden />
                         Template
                     </a>
-                    <label className="cursor-pointer bg-stone-100 text-stone-600 hover:bg-stone-200 uppercase tracking-widest text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center">
+                    <label className="cursor-pointer bg-stone-100 text-stone-600 hover:bg-stone-200 uppercase tracking-widest text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center gap-2">
                         <input
                             type="file"
                             accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                             className="hidden"
                             onChange={(ev) => void handleGuestImportFileSelected(ev)}
                         />
+                        <Upload className="w-3.5 h-3.5" aria-hidden />
                         Import
                     </label>
                     <button
@@ -375,7 +408,7 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
                         <Download className="w-3.5 h-3.5" aria-hidden />
                         Export
                     </button>
-                    <button onClick={() => setIsAddingGuest(!isAddingGuest)} className="bg-stone-900 text-white hover:bg-stone-800 uppercase tracking-widest text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center gap-2">
+                    <button onClick={() => setIsAddingGuest(!isAddingGuest)} className="cursor-pointer bg-stone-900 text-white hover:bg-stone-800 uppercase tracking-widest text-xs font-semibold py-2.5 px-4 rounded-md transition-colors flex items-center gap-2">
                         <Plus className="w-4 h-4" /> Add Guest
                     </button>
                 </div>
@@ -462,8 +495,16 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right">
                                                 <div className="flex items-center gap-3 justify-end">
-                                                    <button onClick={handleSaveEditGuest} className="text-emerald-600 hover:text-emerald-700 font-medium text-sm transition-colors">Save</button>
-                                                    <button onClick={() => setEditingGuestId(null)} className="text-stone-500 hover:text-stone-700 font-medium text-sm transition-colors">Cancel</button>
+                                                    <button
+                                                        onClick={() => void handleSaveEditGuest()}
+                                                        disabled={isSavingGuest}
+                                                        className="text-emerald-600 hover:text-emerald-700 font-medium text-sm transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                                                    >
+                                                        {isSavingGuest
+                                                            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Saving&hellip;</>
+                                                            : 'Save'}
+                                                    </button>
+                                                    <button onClick={() => setEditingGuestId(null)} className="text-stone-500 hover:text-stone-700 font-medium text-sm transition-colors cursor-pointer">Cancel</button>
                                                 </div>
                                             </td>
                                         </tr>
