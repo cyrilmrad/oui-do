@@ -37,8 +37,8 @@ export default function FeatureToggle({ featureKey, enabled, onToggle, disabled 
                 }`}
             >
                 <span
-                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        enabled ? 'translate-x-[1.375rem]' : 'translate-x-0.5'
+                    className={`absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                        enabled ? 'translate-x-5' : 'translate-x-0'
                     }`}
                 />
             </button>
