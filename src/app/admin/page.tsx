@@ -1207,9 +1207,9 @@ export default function AdminDashboard() {
                             <div className="flex flex-1 overflow-hidden h-full w-full">
                                 {/* Left Column: Editor & Controls */}
                                 <div className={`w-full min-w-0 flex-1 h-full overflow-y-auto bg-surface p-8 md:p-12 lg:p-16 transition-opacity ${isCreatingClient ? 'opacity-20 pointer-events-none' : ''}`}>
-                                    <div className="max-w-3xl mx-auto space-y-16 pb-24">
+                                    <div className="max-w-3xl mx-auto space-y-8 pb-24">
                                         {/* Page Header Actions */}
-                                        <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-6 mb-16">
+                                        <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-6">
                                             <div className="space-y-2">
                                                 <h1 className="text-5xl font-headline text-primary">Invitation Builder</h1>
                                                 <p className="text-secondary font-body">Crafting the narrative for {liveData.slug ? `/${liveData.slug}` : 'a new invitation'}</p>
@@ -1252,6 +1252,7 @@ export default function AdminDashboard() {
                                             </div>
                                         </div>
 
+                                        <div>
                                         <CollapsibleSection title="The Couple" sectionNumber="01">
                                             <CoupleSection bride={liveData.bride} groom={liveData.groom} onChange={handleInputChange} />
                                         </CollapsibleSection>
@@ -1466,6 +1467,7 @@ export default function AdminDashboard() {
                                         <CollapsibleSection title="Footnote" sectionNumber="11">
                                             <FootnoteSection footnote={liveData.footnote || ''} onChange={handleInputChange} />
                                         </CollapsibleSection>
+                                        </div>
                                     </div>
                                 </div>
                                 {/* Right Column - Live Preview */}

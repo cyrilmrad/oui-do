@@ -23,11 +23,16 @@ export function CollapsibleSection({
     const panelId = `${uid}-panel`;
 
     return (
-        <section className="border-b border-outline-variant/20 last:border-0" aria-labelledby={headingId}>
+        <section
+            className={`border-b border-outline-variant/20 last:border-0 border-l-[3px] transition-[border-left-color] duration-200 ${
+                isOpen ? 'border-l-primary/50' : 'border-l-transparent hover:border-l-primary/20'
+            }`}
+            aria-labelledby={headingId}
+        >
             <button
                 type="button"
                 onClick={() => setIsOpen(prev => !prev)}
-                className="w-full flex items-center justify-between py-6 cursor-pointer hover:bg-surface-container-low transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                className="w-full flex items-center justify-between py-4 cursor-pointer hover:bg-surface-container-low transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                 aria-expanded={isOpen}
                 aria-controls={panelId}
             >
