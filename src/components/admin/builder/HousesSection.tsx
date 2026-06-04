@@ -11,22 +11,17 @@ interface HousesSectionProps {
 /** Section 04.5 of the admin invitation builder — bride and groom house cards with enable toggle. */
 export function HousesSection({ showHouses, housesData, onToggle, onFieldChange }: HousesSectionProps) {
     return (
-        <section>
-            <div className="flex justify-between items-center mb-8">
-                <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-headline text-primary">The Houses</h2>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={showHouses || false}
-                            onChange={(e) => onToggle(e.target.checked)}
-                            className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                        <span className="ms-3 text-[0.75rem] font-label uppercase text-primary tracking-widest font-bold">Enable Section</span>
-                    </label>
-                </div>
-            </div>
+        <div className="space-y-4">
+            <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                    type="checkbox"
+                    checked={showHouses || false}
+                    onChange={(e) => onToggle(e.target.checked)}
+                    className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                <span className="ms-3 text-[0.75rem] font-label uppercase text-primary tracking-widest font-bold">Enable Section</span>
+            </label>
 
             {showHouses && (
                 <div className="space-y-12">
@@ -89,6 +84,6 @@ export function HousesSection({ showHouses, housesData, onToggle, onFieldChange 
                     </div>
                 </div>
             )}
-        </section>
+        </div>
     );
 }
