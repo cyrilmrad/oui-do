@@ -54,7 +54,7 @@ export function CollapsibleSection({
                 }`}
             >
                 <div className="overflow-hidden min-h-0">
-                    <div className="pb-8">
+                    <div className="pt-4 pb-8">
                         {children}
                     </div>
                 </div>
