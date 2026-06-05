@@ -36,6 +36,7 @@ import { FormalInvitationSection } from '@/components/admin/builder/FormalInvita
 import { HeroSection } from '@/components/admin/builder/HeroSection';
 import { GiftOptionsSection } from '@/components/admin/builder/GiftOptionsSection';
 import { NavigationEditorSection } from '@/components/admin/builder/NavigationEditorSection';
+import { CollapsibleSection } from '@/components/admin/builder/CollapsibleSection';
 import { DashboardOverview } from '@/components/admin/DashboardOverview';
 import { ScheduleBuilder } from '@/components/admin/ScheduleBuilder';
 import { ClientOverview } from '@/components/admin/ClientOverview';
@@ -1206,9 +1207,9 @@ export default function AdminDashboard() {
                             <div className="flex flex-1 overflow-hidden h-full w-full">
                                 {/* Left Column: Editor & Controls */}
                                 <div className={`w-full min-w-0 flex-1 h-full overflow-y-auto bg-surface p-8 md:p-12 lg:p-16 transition-opacity ${isCreatingClient ? 'opacity-20 pointer-events-none' : ''}`}>
-                                    <div className="max-w-3xl mx-auto space-y-16 pb-24">
+                                    <div className="max-w-3xl mx-auto space-y-8 pb-24">
                                         {/* Page Header Actions */}
-                                        <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-6 mb-16">
+                                        <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-6">
                                             <div className="space-y-2">
                                                 <h1 className="text-5xl font-headline text-primary">Invitation Builder</h1>
                                                 <p className="text-secondary font-body">Crafting the narrative for {liveData.slug ? `/${liveData.slug}` : 'a new invitation'}</p>
@@ -1251,206 +1252,222 @@ export default function AdminDashboard() {
                                             </div>
                                         </div>
 
-                                        <CoupleSection bride={liveData.bride} groom={liveData.groom} onChange={handleInputChange} />
+                                        <div>
+                                        <CollapsibleSection title="The Couple" sectionNumber="01">
+                                            <CoupleSection bride={liveData.bride} groom={liveData.groom} onChange={handleInputChange} />
+                                        </CollapsibleSection>
 
-                                        <HeroSection
-                                            heroImageUrl={liveData.heroImage || ''}
-                                            heroImagePreview={heroImagePreview}
-                                            onHeroImageChange={(e) => handleFileChange(e, setHeroImageFile, setHeroImagePreview, heroImagePreview)}
-                                            onRemoveHeroImage={() => removeMedia('heroImage', liveData.heroImage, setHeroImageFile, setHeroImagePreview, heroImagePreview)}
-                                            heroVideoUrl={liveData.heroVideo || ''}
-                                            heroVideoPreview={heroVideoPreview}
-                                            heroVideoFile={heroVideoFile}
-                                            onHeroVideoChange={(e) => handleFileChange(e, setHeroVideoFile, setHeroVideoPreview, heroVideoPreview)}
-                                            onRemoveHeroVideo={() => removeMedia('heroVideo', liveData.heroVideo, setHeroVideoFile, setHeroVideoPreview, heroVideoPreview)}
-                                            metadataImageUrl={liveData.metadataImageUrl || ''}
-                                            metadataImagePreview={metadataImagePreview}
-                                            onMetadataImageChange={(e) => handleFileChange(e, setMetadataImageFile, setMetadataImagePreview, metadataImagePreview)}
-                                            onRemoveMetadataImage={() => removeMedia('metadataImageUrl', liveData.metadataImageUrl, setMetadataImageFile, setMetadataImagePreview, metadataImagePreview)}
-                                            showHeroLogo={liveData.showHeroLogo || false}
-                                            onToggleHeroLogo={(checked) => setLiveData(prev => ({ ...prev, showHeroLogo: checked }))}
-                                            heroLogoUrl={liveData.heroLogoUrl || ''}
-                                            heroLogoPreview={heroLogoPreview}
-                                            onHeroLogoChange={(e) => handleFileChange(e, setHeroLogoFile, setHeroLogoPreview, heroLogoPreview)}
-                                            onRemoveHeroLogo={() => removeMedia('heroLogoUrl', liveData.heroLogoUrl, setHeroLogoFile, setHeroLogoPreview, heroLogoPreview)}
-                                            showHeroDate={liveData.showHeroDate !== false}
-                                            onToggleHeroDate={(checked) => setLiveData(prev => ({ ...prev, showHeroDate: checked }))}
-                                            themeSelection={themeSelection}
-                                            onThemeChange={handleThemeChange}
-                                            rawPrimary={(liveData.theme as any)?.rawPrimary || '#1a1a1a'}
-                                            rawAccent={(liveData.theme as any)?.rawAccent || '#9ca3af'}
-                                            rawBackground={(liveData.theme as any)?.rawBackground || '#ffffff'}
-                                            onCustomColorChange={handleCustomThemeColorChange}
-                                        />
+                                        <CollapsibleSection title="Hero" sectionNumber="02">
+                                            <HeroSection
+                                                heroImageUrl={liveData.heroImage || ''}
+                                                heroImagePreview={heroImagePreview}
+                                                onHeroImageChange={(e) => handleFileChange(e, setHeroImageFile, setHeroImagePreview, heroImagePreview)}
+                                                onRemoveHeroImage={() => removeMedia('heroImage', liveData.heroImage, setHeroImageFile, setHeroImagePreview, heroImagePreview)}
+                                                heroVideoUrl={liveData.heroVideo || ''}
+                                                heroVideoPreview={heroVideoPreview}
+                                                heroVideoFile={heroVideoFile}
+                                                onHeroVideoChange={(e) => handleFileChange(e, setHeroVideoFile, setHeroVideoPreview, heroVideoPreview)}
+                                                onRemoveHeroVideo={() => removeMedia('heroVideo', liveData.heroVideo, setHeroVideoFile, setHeroVideoPreview, heroVideoPreview)}
+                                                metadataImageUrl={liveData.metadataImageUrl || ''}
+                                                metadataImagePreview={metadataImagePreview}
+                                                onMetadataImageChange={(e) => handleFileChange(e, setMetadataImageFile, setMetadataImagePreview, metadataImagePreview)}
+                                                onRemoveMetadataImage={() => removeMedia('metadataImageUrl', liveData.metadataImageUrl, setMetadataImageFile, setMetadataImagePreview, metadataImagePreview)}
+                                                showHeroLogo={liveData.showHeroLogo || false}
+                                                onToggleHeroLogo={(checked) => setLiveData(prev => ({ ...prev, showHeroLogo: checked }))}
+                                                heroLogoUrl={liveData.heroLogoUrl || ''}
+                                                heroLogoPreview={heroLogoPreview}
+                                                onHeroLogoChange={(e) => handleFileChange(e, setHeroLogoFile, setHeroLogoPreview, heroLogoPreview)}
+                                                onRemoveHeroLogo={() => removeMedia('heroLogoUrl', liveData.heroLogoUrl, setHeroLogoFile, setHeroLogoPreview, heroLogoPreview)}
+                                                showHeroDate={liveData.showHeroDate !== false}
+                                                onToggleHeroDate={(checked) => setLiveData(prev => ({ ...prev, showHeroDate: checked }))}
+                                                themeSelection={themeSelection}
+                                                onThemeChange={handleThemeChange}
+                                                rawPrimary={(liveData.theme as any)?.rawPrimary || '#1a1a1a'}
+                                                rawAccent={(liveData.theme as any)?.rawAccent || '#9ca3af'}
+                                                rawBackground={(liveData.theme as any)?.rawBackground || '#ffffff'}
+                                                onCustomColorChange={handleCustomThemeColorChange}
+                                            />
+                                        </CollapsibleSection>
 
-                                        <FormalInvitationSection
-                                            showFormalInvitation={liveData.showFormalInvitation || false}
-                                            onToggleFormalInvitation={(checked) => setLiveData(prev => ({ ...prev, showFormalInvitation: checked }))}
-                                            formalImageUrl={liveData.formalInvitationImage || ''}
-                                            formalImagePreview={formalImagePreview}
-                                            formalImageFile={formalImageFile}
-                                            onFormalImageChange={(e) => handleFileChange(e, setFormalImageFile, setFormalImagePreview, formalImagePreview)}
-                                            onRemoveFormalImage={() => removeMedia('formalInvitationImage', liveData.formalInvitationImage, setFormalImageFile, setFormalImagePreview, formalImagePreview)}
-                                            detailsBgUrl={liveData.detailsBackgroundUrl || ''}
-                                            detailsBgPreview={detailsBgPreview}
-                                            onDetailsBgChange={(e) => handleFileChange(e, setDetailsBgFile, setDetailsBgPreview, detailsBgPreview)}
-                                            onRemoveDetailsBg={() => removeMedia('detailsBackgroundUrl', liveData.detailsBackgroundUrl, setDetailsBgFile, setDetailsBgPreview, detailsBgPreview)}
-                                            audioUrl={liveData.audioUrl || ''}
-                                            audioPreview={audioPreview}
-                                            audioFile={audioFile}
-                                            onAudioChange={(e) => handleFileChange(e, setAudioFile, setAudioPreview, audioPreview)}
-                                            onRemoveAudio={() => removeMedia('audioUrl', liveData.audioUrl, setAudioFile, setAudioPreview, audioPreview)}
-                                        />
+                                        <CollapsibleSection title="Formal Invitation" sectionNumber="03">
+                                            <FormalInvitationSection
+                                                showFormalInvitation={liveData.showFormalInvitation || false}
+                                                onToggleFormalInvitation={(checked) => setLiveData(prev => ({ ...prev, showFormalInvitation: checked }))}
+                                                formalImageUrl={liveData.formalInvitationImage || ''}
+                                                formalImagePreview={formalImagePreview}
+                                                formalImageFile={formalImageFile}
+                                                onFormalImageChange={(e) => handleFileChange(e, setFormalImageFile, setFormalImagePreview, formalImagePreview)}
+                                                onRemoveFormalImage={() => removeMedia('formalInvitationImage', liveData.formalInvitationImage, setFormalImageFile, setFormalImagePreview, formalImagePreview)}
+                                                detailsBgUrl={liveData.detailsBackgroundUrl || ''}
+                                                detailsBgPreview={detailsBgPreview}
+                                                onDetailsBgChange={(e) => handleFileChange(e, setDetailsBgFile, setDetailsBgPreview, detailsBgPreview)}
+                                                onRemoveDetailsBg={() => removeMedia('detailsBackgroundUrl', liveData.detailsBackgroundUrl, setDetailsBgFile, setDetailsBgPreview, detailsBgPreview)}
+                                                audioUrl={liveData.audioUrl || ''}
+                                                audioPreview={audioPreview}
+                                                audioFile={audioFile}
+                                                onAudioChange={(e) => handleFileChange(e, setAudioFile, setAudioPreview, audioPreview)}
+                                                onRemoveAudio={() => removeMedia('audioUrl', liveData.audioUrl, setAudioFile, setAudioPreview, audioPreview)}
+                                            />
+                                        </CollapsibleSection>
 
-                                        <PreCeremonySection
-                                            mediaUrl={liveData.preCeremonyMedia || ''}
-                                            mediaPreview={preCeremonyMediaPreview}
-                                            file={preCeremonyMediaFile}
-                                            onFileChange={(e) => handleFileChange(e, setPreCeremonyMediaFile, setPreCeremonyMediaPreview, preCeremonyMediaPreview)}
-                                            onRemove={() => removeMedia('preCeremonyMedia', liveData.preCeremonyMedia, setPreCeremonyMediaFile, setPreCeremonyMediaPreview, preCeremonyMediaPreview)}
-                                        />
+                                        <CollapsibleSection title="Pre-Ceremony" sectionNumber="04">
+                                            <PreCeremonySection
+                                                mediaUrl={liveData.preCeremonyMedia || ''}
+                                                mediaPreview={preCeremonyMediaPreview}
+                                                file={preCeremonyMediaFile}
+                                                onFileChange={(e) => handleFileChange(e, setPreCeremonyMediaFile, setPreCeremonyMediaPreview, preCeremonyMediaPreview)}
+                                                onRemove={() => removeMedia('preCeremonyMedia', liveData.preCeremonyMedia, setPreCeremonyMediaFile, setPreCeremonyMediaPreview, preCeremonyMediaPreview)}
+                                            />
+                                        </CollapsibleSection>
 
-                                        <HousesSection
-                                            showHouses={liveData.showHouses || false}
-                                            housesData={liveData.housesData}
-                                            onToggle={(checked) => setLiveData(prev => ({ ...prev, showHouses: checked }))}
-                                            onFieldChange={(field, value) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, [field]: value } }))}
-                                        />
+                                        <CollapsibleSection title="The Houses" sectionNumber="05">
+                                            <HousesSection
+                                                showHouses={liveData.showHouses || false}
+                                                housesData={liveData.housesData}
+                                                onToggle={(checked) => setLiveData(prev => ({ ...prev, showHouses: checked }))}
+                                                onFieldChange={(field, value) => setLiveData(prev => ({ ...prev, housesData: { ...prev.housesData, [field]: value } }))}
+                                            />
+                                        </CollapsibleSection>
 
-                                        <CeremonyDetailsSection
-                                            date={liveData.date}
-                                            time={liveData.time}
-                                            venue={liveData.venue}
-                                            location={liveData.location}
-                                            mapLink={liveData.mapLink || ''}
-                                            onChange={handleInputChange}
-                                        />
+                                        <CollapsibleSection title="Ceremony Details" sectionNumber="06">
+                                            <CeremonyDetailsSection
+                                                date={liveData.date}
+                                                time={liveData.time}
+                                                venue={liveData.venue}
+                                                location={liveData.location}
+                                                mapLink={liveData.mapLink || ''}
+                                                onChange={handleInputChange}
+                                            />
+                                        </CollapsibleSection>
 
-                                        <FormalReceptionSection
-                                            receptionTime={liveData.receptionTime || ''}
-                                            receptionVenue={liveData.receptionVenue || ''}
-                                            receptionAddress={liveData.receptionAddress || ''}
-                                            receptionLocation={liveData.receptionLocation || ''}
-                                            message={liveData.message}
-                                            onChange={handleInputChange}
-                                        />
+                                        <CollapsibleSection title="Reception" sectionNumber="07">
+                                            <FormalReceptionSection
+                                                receptionTime={liveData.receptionTime || ''}
+                                                receptionVenue={liveData.receptionVenue || ''}
+                                                receptionAddress={liveData.receptionAddress || ''}
+                                                receptionLocation={liveData.receptionLocation || ''}
+                                                message={liveData.message}
+                                                onChange={handleInputChange}
+                                            />
+                                        </CollapsibleSection>
 
-                                        {/* Section 06: Custom Editor */}
-                                        <section>
-                                            <div className="flex justify-between items-center mb-8">
-                                                <h2 className="text-2xl font-headline text-primary">Custom Blocks</h2>
-                                                <div className="flex items-center gap-4">
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleAddSection}
-                                                        className="text-xs font-label uppercase font-bold text-primary hover:text-on-primary-container bg-surface-container-high px-4 py-2 rounded-full transition-colors flex items-center gap-1 tracking-widest"
-                                                    >
-                                                        <Plus className="w-3 h-3" /> Append Block
-                                                    </button>
-                                                    <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest ml-4">Section 07</span>
-                                                </div>
+                                        <CollapsibleSection title="Custom Blocks" sectionNumber="08">
+                                            <div className="space-y-6">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleAddSection}
+                                                    className="text-xs font-label uppercase font-bold text-primary hover:text-on-primary-container bg-surface-container-high px-4 py-2 rounded-full transition-colors flex items-center gap-1 tracking-widest"
+                                                >
+                                                    <Plus className="w-3 h-3" /> Append Block
+                                                </button>
+                                                {liveData.customSections?.length === 0 ? (
+                                                    <p className="text-[0.875rem] font-body text-secondary italic text-center py-8 bg-surface-container-lowest border border-outline-variant/20 rounded-xl">No custom editorial narrative blocks appended yet.</p>
+                                                ) : (
+                                                    <div className="space-y-8">
+                                                        {liveData.customSections?.map((section, idx) => (
+                                                            <CustomSectionBlock
+                                                                key={section.id}
+                                                                section={section}
+                                                                idx={idx}
+                                                                files={customFiles[section.id]}
+                                                                onSectionChange={handleSectionChange}
+                                                                onRemove={handleRemoveSection}
+                                                                onSlideshowToggle={handleSlideshowToggle}
+                                                                onSlideshowFilesAdd={handleSlideshowFilesAdd}
+                                                                onSlideshowRemoveSlide={handleSlideshowRemoveSlide}
+                                                                onCustomFileChange={handleCustomFileChange}
+                                                                onRemoveCustomMedia={removeCustomSectionMedia}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
+                                        </CollapsibleSection>
 
-                                            {liveData.customSections?.length === 0 ? (
-                                                <p className="text-[0.875rem] font-body text-secondary italic text-center py-8 bg-surface-container-lowest border border-outline-variant/20 rounded-xl">No custom editorial narrative blocks appended yet.</p>
-                                            ) : (
-                                                <div className="space-y-8">
-                                                    {liveData.customSections?.map((section, idx) => (
-                                                        <CustomSectionBlock
-                                                            key={section.id}
-                                                            section={section}
-                                                            idx={idx}
-                                                            files={customFiles[section.id]}
-                                                            onSectionChange={handleSectionChange}
-                                                            onRemove={handleRemoveSection}
-                                                            onSlideshowToggle={handleSlideshowToggle}
-                                                            onSlideshowFilesAdd={handleSlideshowFilesAdd}
-                                                            onSlideshowRemoveSlide={handleSlideshowRemoveSlide}
-                                                            onCustomFileChange={handleCustomFileChange}
-                                                            onRemoveCustomMedia={removeCustomSectionMedia}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </section>
+                                        <CollapsibleSection title="Registry Details" sectionNumber="09">
+                                            <GiftOptionsSection
+                                                giftMessage={liveData.giftMessage || ''}
+                                                giftOptions={liveData.giftOptions || []}
+                                                onInputChange={handleInputChange}
+                                                onAddGiftOption={handleAddGiftOption}
+                                                onRemoveGiftOption={handleRemoveGiftOption}
+                                                onGiftOptionChange={handleGiftOptionChange}
+                                                onAddCustomField={handleAddCustomField}
+                                                onRemoveCustomField={handleRemoveCustomField}
+                                                onCustomFieldChange={handleCustomFieldChange}
+                                                showRsvp={liveData.showRsvp !== false}
+                                                onToggleRsvp={(checked) => setLiveData(prev => ({ ...prev, showRsvp: checked }))}
+                                                multiGuestNameCollectionEnabled={liveData.multiGuestNameCollectionEnabled === true}
+                                                onToggleMultiGuestNameCollection={(checked) => setLiveData(prev => ({ ...prev, multiGuestNameCollectionEnabled: checked }))}
+                                                rsvpClosedMessage={liveData.rsvpClosedMessage || ''}
+                                                rsvpClosedMessageRef={rsvpClosedMessageRef}
+                                                onBoldRsvpMessage={() => {
+                                                    const el = rsvpClosedMessageRef.current;
+                                                    if (!el) return;
+                                                    const cur = liveData.rsvpClosedMessage ?? '';
+                                                    const { value, caret } = wrapMarkdownBoldSegment(cur, el.selectionStart, el.selectionEnd);
+                                                    setLiveData((p) => ({ ...p, rsvpClosedMessage: value }));
+                                                    queueMicrotask(() => {
+                                                        el.focus();
+                                                        el.setSelectionRange(caret, caret);
+                                                    });
+                                                }}
+                                            />
+                                        </CollapsibleSection>
 
-                                        <GiftOptionsSection
-                                            giftMessage={liveData.giftMessage || ''}
-                                            giftOptions={liveData.giftOptions || []}
-                                            onInputChange={handleInputChange}
-                                            onAddGiftOption={handleAddGiftOption}
-                                            onRemoveGiftOption={handleRemoveGiftOption}
-                                            onGiftOptionChange={handleGiftOptionChange}
-                                            onAddCustomField={handleAddCustomField}
-                                            onRemoveCustomField={handleRemoveCustomField}
-                                            onCustomFieldChange={handleCustomFieldChange}
-                                            showRsvp={liveData.showRsvp !== false}
-                                            onToggleRsvp={(checked) => setLiveData(prev => ({ ...prev, showRsvp: checked }))}
-                                            multiGuestNameCollectionEnabled={liveData.multiGuestNameCollectionEnabled === true}
-                                            onToggleMultiGuestNameCollection={(checked) => setLiveData(prev => ({ ...prev, multiGuestNameCollectionEnabled: checked }))}
-                                            rsvpClosedMessage={liveData.rsvpClosedMessage || ''}
-                                            rsvpClosedMessageRef={rsvpClosedMessageRef}
-                                            onBoldRsvpMessage={() => {
-                                                const el = rsvpClosedMessageRef.current;
-                                                if (!el) return;
-                                                const cur = liveData.rsvpClosedMessage ?? '';
-                                                const { value, caret } = wrapMarkdownBoldSegment(cur, el.selectionStart, el.selectionEnd);
-                                                setLiveData((p) => ({ ...p, rsvpClosedMessage: value }));
-                                                queueMicrotask(() => {
-                                                    el.focus();
-                                                    el.setSelectionRange(caret, caret);
-                                                });
-                                            }}
-                                        />
+                                        <CollapsibleSection title="Multi-Page Navigation" sectionNumber="10">
+                                            <NavigationEditorSection
+                                                showNavigation={liveData.showNavigation || false}
+                                                onToggleShowNavigation={(checked) => setLiveData(prev => ({ ...prev, showNavigation: checked }))}
+                                                isOpen={navigationEditorOpen}
+                                                onToggleOpen={() => setNavigationEditorOpen((open) => !open)}
+                                                np={np}
+                                                slug={liveData.slug || ''}
+                                                updateNavigationPages={updateNavigationPages}
+                                                addLodgingHotel={addLodgingHotel}
+                                                removeLodgingHotel={removeLodgingHotel}
+                                                updateLodgingHotel={updateLodgingHotel}
+                                                onFormatHotelDescription={(idx, marker) => {
+                                                    const el = document.getElementById(`lodging-hotel-desc-${idx}`) as HTMLTextAreaElement | null;
+                                                    if (!el) return;
+                                                    const { value, caret } = wrapMarkdownSegment(el.value, el.selectionStart, el.selectionEnd, marker);
+                                                    updateLodgingHotel(idx, 'description', value);
+                                                    queueMicrotask(() => {
+                                                        el.focus();
+                                                        el.setSelectionRange(caret, caret);
+                                                    });
+                                                }}
+                                                onHotelImageUpload={async (idx, file) => {
+                                                    const slug = liveData.slug;
+                                                    if (!slug) return;
+                                                    const ext = file.name.split('.').pop() ?? 'jpg';
+                                                    const path = `${slug}/lodging/hotel-${idx}-${Date.now()}.${ext.replace(/[^a-zA-Z0-9]/g, '')}`;
+                                                    const { error } = await supabase.storage.from('assets').upload(path, file, { cacheControl: '3600', upsert: false });
+                                                    if (error) { toast.error('Failed to upload hotel image', { description: error.message }); return; }
+                                                    const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(path);
+                                                    updateLodgingHotel(idx, 'imageUrl', publicUrl);
+                                                }}
+                                                onHotelImageRemove={async (idx, currentUrl) => {
+                                                    if (currentUrl?.includes('/assets/')) {
+                                                        const cleanPath = currentUrl.split('/assets/')[1]?.split('?')[0];
+                                                        if (cleanPath) await supabase.storage.from('assets').remove([cleanPath]);
+                                                    }
+                                                    updateLodgingHotel(idx, 'imageUrl', '');
+                                                }}
+                                                addExploringSpot={addExploringSpot}
+                                                removeExploringSpot={removeExploringSpot}
+                                                updateExploringSpot={updateExploringSpot}
+                                                addDynamicPage={addDynamicPage}
+                                                removeDynamicPage={removeDynamicPage}
+                                                updateDynamicPage={updateDynamicPage}
+                                                updateDynamicPageBody={updateDynamicPageBody}
+                                            />
+                                        </CollapsibleSection>
 
-                                        <NavigationEditorSection
-                                            showNavigation={liveData.showNavigation || false}
-                                            onToggleShowNavigation={(checked) => setLiveData(prev => ({ ...prev, showNavigation: checked }))}
-                                            isOpen={navigationEditorOpen}
-                                            onToggleOpen={() => setNavigationEditorOpen((open) => !open)}
-                                            np={np}
-                                            slug={liveData.slug || ''}
-                                            updateNavigationPages={updateNavigationPages}
-                                            addLodgingHotel={addLodgingHotel}
-                                            removeLodgingHotel={removeLodgingHotel}
-                                            updateLodgingHotel={updateLodgingHotel}
-                                            onFormatHotelDescription={(idx, marker) => {
-                                                const el = document.getElementById(`lodging-hotel-desc-${idx}`) as HTMLTextAreaElement | null;
-                                                if (!el) return;
-                                                const { value, caret } = wrapMarkdownSegment(el.value, el.selectionStart, el.selectionEnd, marker);
-                                                updateLodgingHotel(idx, 'description', value);
-                                                queueMicrotask(() => {
-                                                    el.focus();
-                                                    el.setSelectionRange(caret, caret);
-                                                });
-                                            }}
-                                            onHotelImageUpload={async (idx, file) => {
-                                                const slug = liveData.slug;
-                                                if (!slug) return;
-                                                const ext = file.name.split('.').pop() ?? 'jpg';
-                                                const path = `${slug}/lodging/hotel-${idx}-${Date.now()}.${ext.replace(/[^a-zA-Z0-9]/g, '')}`;
-                                                const { error } = await supabase.storage.from('assets').upload(path, file, { cacheControl: '3600', upsert: false });
-                                                if (error) { toast.error('Failed to upload hotel image', { description: error.message }); return; }
-                                                const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(path);
-                                                updateLodgingHotel(idx, 'imageUrl', publicUrl);
-                                            }}
-                                            onHotelImageRemove={async (idx, currentUrl) => {
-                                                if (currentUrl?.includes('/assets/')) {
-                                                    const cleanPath = currentUrl.split('/assets/')[1]?.split('?')[0];
-                                                    if (cleanPath) await supabase.storage.from('assets').remove([cleanPath]);
-                                                }
-                                                updateLodgingHotel(idx, 'imageUrl', '');
-                                            }}
-                                            addExploringSpot={addExploringSpot}
-                                            removeExploringSpot={removeExploringSpot}
-                                            updateExploringSpot={updateExploringSpot}
-                                            addDynamicPage={addDynamicPage}
-                                            removeDynamicPage={removeDynamicPage}
-                                            updateDynamicPage={updateDynamicPage}
-                                            updateDynamicPageBody={updateDynamicPageBody}
-                                        />
-
-                                        <FootnoteSection footnote={liveData.footnote || ''} onChange={handleInputChange} />
+                                        <CollapsibleSection title="Footnote" sectionNumber="11">
+                                            <FootnoteSection footnote={liveData.footnote || ''} onChange={handleInputChange} />
+                                        </CollapsibleSection>
+                                        </div>
                                     </div>
                                 </div>
                                 {/* Right Column - Live Preview */}

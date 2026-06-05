@@ -47,17 +47,14 @@ export function GiftOptionsSection({
     onBoldRsvpMessage
 }: GiftOptionsSectionProps) {
     return (
-        <section>
-            <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-headline text-primary">Registry Details</h2>
-                <div className="flex gap-2">
-                    <button type="button" onClick={() => onAddGiftOption('bank')} className="text-[0.75rem] bg-surface-container font-label uppercase text-primary hover:bg-surface-container-high px-3 py-1.5 rounded transition-colors flex items-center gap-1">
-                        <Plus className="w-3 h-3" /> Bank
-                    </button>
-                    <button type="button" onClick={() => onAddGiftOption('mobile')} className="text-[0.75rem] bg-surface-container font-label uppercase text-primary hover:bg-surface-container-high px-3 py-1.5 rounded transition-colors flex items-center gap-1">
-                        <Plus className="w-3 h-3" /> Mobile
-                    </button>
-                </div>
+        <div className="space-y-4">
+            <div className="flex gap-2">
+                <button type="button" onClick={() => onAddGiftOption('bank')} className="text-[0.75rem] bg-surface-container font-label uppercase text-primary hover:bg-surface-container-high px-3 py-1.5 rounded transition-colors flex items-center gap-1">
+                    <Plus className="w-3 h-3" /> Bank
+                </button>
+                <button type="button" onClick={() => onAddGiftOption('mobile')} className="text-[0.75rem] bg-surface-container font-label uppercase text-primary hover:bg-surface-container-high px-3 py-1.5 rounded transition-colors flex items-center gap-1">
+                    <Plus className="w-3 h-3" /> Mobile
+                </button>
             </div>
             <div className="bg-surface-container-latest p-8 space-y-6">
                 <div className="space-y-1.5">
@@ -132,6 +129,6 @@ export function GiftOptionsSection({
                     )}
                 </div>
             </div>
-        </section>
+        </div>
     );
 }

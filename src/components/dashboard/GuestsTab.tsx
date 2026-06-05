@@ -18,6 +18,19 @@ import { toast } from 'sonner';
 
 type RsvpStatus = 'all' | 'attending' | 'declined' | 'pending';
 
+function formatRespondedDate(dateStr: string | Date | null | undefined): string {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr as string);
+    if (isNaN(d.getTime())) return '—';
+    const now = new Date();
+    const sameYear = d.getFullYear() === now.getFullYear();
+    return d.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        ...(sameYear ? {} : { year: 'numeric' }),
+    });
+}
+
 const GUEST_IMPORT_FORMAT_HINT =
     'Use a header row, then columns: firstName, lastName, pax (CSV or first sheet of an .xlsx file).';
 
@@ -461,6 +474,7 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
                             <tr className="bg-stone-50/50 border-b border-stone-100">
                                 <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider">Guest Name</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider">Responded</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider text-center">Party Size</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider">Message</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider text-right">Link</th>
@@ -487,6 +501,7 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
                                                     <option value="declined">Declined</option>
                                                 </select>
                                             </td>
+                                            <td className="px-6 py-4 whitespace-nowrap" />
                                             <td className="px-6 py-4 whitespace-nowrap text-center">
                                                 <input type="number" min="1" value={editGuestData.pax || 1} onChange={e => setEditGuestData({...editGuestData, pax: parseInt(e.target.value) || 1})} className="w-16 border border-stone-200 p-1.5 rounded text-sm outline-none mx-auto block text-center" />
                                             </td>
@@ -533,6 +548,13 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(rsvp.status ?? 'pending')}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="text-sm text-stone-500">
+                                                    {rsvp.status && rsvp.status !== 'pending'
+                                                        ? formatRespondedDate(rsvp.updatedAt)
+                                                        : '—'}
+                                                </span>
+                                            </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-center">
                                                 <div className="text-sm text-stone-600 font-serif">{rsvp.pax}</div>
                                             </td>

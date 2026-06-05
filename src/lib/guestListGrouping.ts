@@ -8,6 +8,7 @@ export interface GuestListGuest {
     status?: string | null;
     message?: string | null;
     parentGuestId?: string | null;
+    updatedAt?: string | Date | null;
 }
 
 export interface GuestDisplayRow<TGuest extends GuestListGuest = GuestListGuest> {

@@ -50,12 +50,7 @@ export function HeroSection({
     rawPrimary, rawAccent, rawBackground, onCustomColorChange
 }: HeroSectionProps) {
     return (
-        <section>
-            <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-headline text-primary">HERO Section</h2>
-                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 02</span>
-            </div>
-            <div className="bg-surface-container-low p-8 rounded-xl space-y-6">
+        <div className="bg-surface-container-low p-8 rounded-xl space-y-6">
                 <div className="space-y-1.5">
                     <label className="text-[0.75rem] font-label uppercase text-secondary tracking-[0.05em]">Event Hero Image</label>
                     {heroImagePreview || heroImageUrl ? (
@@ -154,7 +149,6 @@ export function HeroSection({
                         </div>
                     )}
                 </div>
-            </div>
-        </section>
+        </div>
     );
 }

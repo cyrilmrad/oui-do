@@ -56,23 +56,17 @@ export function NavigationEditorSection({
     updateDynamicPageBody
 }: NavigationEditorSectionProps) {
     return (
-        <section>
-            <div className="flex justify-between items-center mb-8">
-                <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-headline text-primary">Multi-Page Navigation (Beta)</h2>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={showNavigation || false}
-                            onChange={(e) => onToggleShowNavigation(e.target.checked)}
-                            className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                        <span className="ms-3 text-[0.75rem] font-label uppercase text-primary tracking-widest font-bold">Enable Navigation</span>
-                    </label>
-                </div>
-                <span className="text-[0.75rem] font-label uppercase text-secondary tracking-widest">Section 08</span>
-            </div>
+        <div className="space-y-4">
+            <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                    type="checkbox"
+                    checked={showNavigation || false}
+                    onChange={(e) => onToggleShowNavigation(e.target.checked)}
+                    className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                <span className="ms-3 text-[0.75rem] font-label uppercase text-primary tracking-widest font-bold">Enable Navigation</span>
+            </label>
             <div className="rounded-xl border border-outline-variant/20 bg-surface-container-latest overflow-hidden">
                 <button
                     type="button"
@@ -339,6 +333,6 @@ export function NavigationEditorSection({
                 </div>
                 )}
             </div>
-        </section>
+        </div>
     );
 }
