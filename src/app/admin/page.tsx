@@ -14,6 +14,7 @@ import { wrapMarkdownBoldSegment, wrapMarkdownSegment } from '@/lib/rsvpClosedMe
 import { LogOut, Users, Plus, LayoutDashboard, ChevronRight, ChevronDown, Copy, Link, QrCode, Download, Share, Lock, Trash2, Shield, Loader2, CalendarDays, Menu, X } from 'lucide-react';
 import BudgetTracker from '@/components/BudgetTracker';
 import TableSeating from '@/components/TableSeating';
+import SeatFinderQr from '@/components/admin/SeatFinderQr';
 import ClientEntitlementsPanel from '@/components/admin/ClientEntitlementsPanel';
 import PlannerView from '@/components/admin/planner/PlannerView';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
@@ -322,7 +323,7 @@ export default function AdminDashboard() {
     };
 
     // Budget State
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'clients-list' | 'builder' | 'budget' | 'seating' | 'entitlements' | 'schedule' | 'client-overview' | 'planner'>('dashboard');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'clients-list' | 'builder' | 'budget' | 'seating' | 'seat-qr' | 'entitlements' | 'schedule' | 'client-overview' | 'planner'>('dashboard');
     const [userRole, setUserRole] = useState<'admin' | 'assistant'>('admin');
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
     /** True when the selected client already has an invitation row in the DB. */
@@ -1094,6 +1095,12 @@ export default function AdminDashboard() {
                                 Table Seating
                             </button>
                             <button
+                                onClick={() => setActiveTab('seat-qr')}
+                                className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'seat-qr' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-primary'}`}
+                            >
+                                Seat Finder QR
+                            </button>
+                            <button
                                 onClick={() => setActiveTab('schedule')}
                                 className={`h-full flex items-center text-sm font-medium border-b-2 transition-colors ${activeTab === 'schedule' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-primary'}`}
                             >
@@ -1553,6 +1560,10 @@ export default function AdminDashboard() {
                         <div className="w-full h-full overflow-y-auto p-8 bg-surface-container-low">
                             <TableSeating slug={liveData.slug} initialTables={seatingTables} initialGuests={seatingGuests} accessToken={accessToken} />
                         </div>
+                    )}
+
+                    {activeTab === 'seat-qr' && !isCreatingClient && liveData.slug && (
+                        <SeatFinderQr slug={liveData.slug} brideGroom={`${liveData.bride} & ${liveData.groom}`} />
                     )}
 
                     {activeTab === 'schedule' && !isCreatingClient && liveData.slug && (
