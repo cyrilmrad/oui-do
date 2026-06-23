@@ -5,6 +5,8 @@ import { eq } from 'drizzle-orm';
 import { requireFeatureForSlug } from '@/lib/entitlements/guard';
 import type { SeatFinderSettings } from '@/lib/seatFinder';
 
+const ALLOWED_IMAGE_MODES = ['none', 'logo', 'hero', 'custom'] as const;
+
 export async function PUT(request: Request) {
     try {
         const body = await request.json() as { slug?: string; seatFinderSettings?: SeatFinderSettings };
@@ -15,6 +17,13 @@ export async function PUT(request: Request) {
         }
         if (!seatFinderSettings) {
             return NextResponse.json({ error: 'Missing seatFinderSettings' }, { status: 400 });
+        }
+
+        if (!ALLOWED_IMAGE_MODES.includes(seatFinderSettings.imageMode as typeof ALLOWED_IMAGE_MODES[number])) {
+            return NextResponse.json({ error: 'Invalid imageMode' }, { status: 400 });
+        }
+        if ((seatFinderSettings.welcomeMessage?.length ?? 0) > 160) {
+            return NextResponse.json({ error: 'Welcome message too long (max 160 characters)' }, { status: 400 });
         }
 
         const guard = await requireFeatureForSlug(request, slug, 'seating');
