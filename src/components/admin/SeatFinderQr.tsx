@@ -3,12 +3,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type QRCodeStyling from 'qr-code-styling';
 import type { Options, FileExtension, DotType, CornerSquareType, CornerDotType } from 'qr-code-styling';
-import { Download, Link as LinkIcon, ExternalLink, Upload, X, QrCode, Check } from 'lucide-react';
+import { Download, Link as LinkIcon, ExternalLink, Upload, X, QrCode, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import type { SeatFinderSettings } from '@/lib/seatFinder';
+import { DEFAULT_SEAT_FINDER_SETTINGS } from '@/lib/seatFinder';
+import { uploadInvitationAsset } from '@/lib/uploadInvitationAsset';
 
 interface SeatFinderQrProps {
     slug: string;
     brideGroom: string;
+    accessToken: string | null;
 }
 
 const DOT_TYPES: { value: DotType; label: string }[] = [
@@ -150,11 +154,15 @@ function buildOptions(style: QrStyleState, data: string): Options {
     };
 }
 
-export default function SeatFinderQr({ slug, brideGroom }: SeatFinderQrProps) {
+export default function SeatFinderQr({ slug, brideGroom, accessToken }: SeatFinderQrProps) {
     const [origin, setOrigin] = useState('');
     const [style, setStyle] = useState<QrStyleState>(DEFAULT_STYLE);
     const [fileExt, setFileExt] = useState<FileExtension>('png');
     const [copied, setCopied] = useState(false);
+    const [sfSettings, setSfSettings] = useState<SeatFinderSettings>(DEFAULT_SEAT_FINDER_SETTINGS);
+    const [sfHeroLogoUrl, setSfHeroLogoUrl] = useState('');
+    const [sfHeroImage, setSfHeroImage] = useState('');
+    const [sfSaving, setSfSaving] = useState(false);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const qrRef = useRef<QRCodeStyling | null>(null);
@@ -164,6 +172,19 @@ export default function SeatFinderQr({ slug, brideGroom }: SeatFinderQrProps) {
     useEffect(() => {
         setOrigin(window.location.origin);
     }, []);
+
+    useEffect(() => {
+        if (!slug) return;
+        fetch(`/api/invitation?slug=${slug}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+                if (!data) return;
+                if (data.seatFinderSettings) setSfSettings(data.seatFinderSettings as SeatFinderSettings);
+                if (data.heroLogoUrl) setSfHeroLogoUrl(data.heroLogoUrl as string);
+                if (data.heroImage) setSfHeroImage(data.heroImage as string);
+            })
+            .catch(() => {});
+    }, [slug]);
 
     // Instantiate the QR instance once (dynamic import avoids SSR `window` access).
     useEffect(() => {
@@ -198,6 +219,46 @@ export default function SeatFinderQr({ slug, brideGroom }: SeatFinderQrProps) {
         reader.onload = () => set('image', reader.result as string);
         reader.readAsDataURL(file);
         e.target.value = '';
+    };
+
+    const setSf = <K extends keyof SeatFinderSettings>(key: K, value: SeatFinderSettings[K]) => {
+        setSfSettings((prev) => ({ ...prev, [key]: value }));
+    };
+
+    const handleCustomImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        e.target.value = '';
+        try {
+            const url = await uploadInvitationAsset(slug, file, 'seat-finder');
+            setSf('customImageUrl', url);
+        } catch {
+            toast.error('Image upload failed');
+        }
+    };
+
+    const handleSavePersonalization = async () => {
+        if (!accessToken) return;
+        setSfSaving(true);
+        try {
+            const res = await fetch('/api/admin/seat-finder-settings', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({ slug, seatFinderSettings: sfSettings }),
+            });
+            if (!res.ok) {
+                const data = await res.json() as { error?: string };
+                throw new Error(data.error || 'Failed to save');
+            }
+            toast.success('Personalization saved');
+        } catch (err) {
+            toast.error('Save failed', { description: err instanceof Error ? err.message : undefined });
+        } finally {
+            setSfSaving(false);
+        }
     };
 
     const handleDownload = () => {
@@ -374,6 +435,73 @@ export default function SeatFinderQr({ slug, brideGroom }: SeatFinderQrProps) {
                                     </label>
                                 </>
                             )}
+                        </section>
+
+                        {/* Guest page personalization */}
+                        <section className="bg-surface-container-lowest rounded-2xl border border-outline-variant/15 p-5 space-y-4">
+                            <h3 className="text-sm font-headline text-primary">Guest page</h3>
+
+                            <Field label="Image">
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                    {(['none', 'logo', 'hero', 'custom'] as const).map((mode) => (
+                                        <button
+                                            key={mode}
+                                            type="button"
+                                            onClick={() => setSf('imageMode', mode)}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${sfSettings.imageMode === mode ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface hover:opacity-80'}`}
+                                        >
+                                            {mode === 'none' ? 'None' : mode === 'logo' ? 'Logo' : mode === 'hero' ? 'Hero photo' : 'Custom'}
+                                        </button>
+                                    ))}
+                                </div>
+                                {sfSettings.imageMode === 'logo' && sfHeroLogoUrl && (
+                                    <img src={sfHeroLogoUrl} alt="Logo preview" className="h-10 object-contain rounded" />
+                                )}
+                                {sfSettings.imageMode === 'hero' && sfHeroImage && (
+                                    <img src={sfHeroImage} alt="Hero preview" className="h-16 w-full object-cover rounded-xl" />
+                                )}
+                                {sfSettings.imageMode === 'custom' && (
+                                    <div className="flex items-center gap-3">
+                                        <label className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-high text-on-surface text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity">
+                                            <Upload className="w-3.5 h-3.5" /> Upload image
+                                            <input type="file" accept="image/*" onChange={handleCustomImageUpload} className="hidden" />
+                                        </label>
+                                        {sfSettings.customImageUrl && (
+                                            <>
+                                                <img src={sfSettings.customImageUrl} alt="Custom preview" className="h-10 object-contain rounded" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSf('customImageUrl', undefined)}
+                                                    className="text-xs text-rose-600 hover:underline"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </Field>
+
+                            <Field label="Welcome message">
+                                <textarea
+                                    value={sfSettings.welcomeMessage}
+                                    onChange={(e) => setSf('welcomeMessage', e.target.value)}
+                                    placeholder="e.g. We&apos;re so happy you&apos;re with us tonight."
+                                    rows={2}
+                                    maxLength={160}
+                                    className="w-full bg-surface-container-high text-on-surface text-sm rounded-lg px-3 py-2 outline-none border border-outline-variant/20 focus:ring-2 focus:ring-primary/30 resize-none"
+                                />
+                                <span className="text-[0.65rem] text-secondary">{sfSettings.welcomeMessage.length}/160</span>
+                            </Field>
+
+                            <button
+                                type="button"
+                                onClick={handleSavePersonalization}
+                                disabled={sfSaving || !accessToken}
+                                className="w-full flex items-center justify-center gap-2 bg-primary text-on-primary px-6 py-2.5 rounded-full font-medium shadow-md hover:bg-primary/90 transition-all text-sm disabled:opacity-50"
+                            >
+                                {sfSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save personalization'}
+                            </button>
                         </section>
                     </div>
 

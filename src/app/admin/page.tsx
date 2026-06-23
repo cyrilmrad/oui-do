@@ -1563,7 +1563,7 @@ export default function AdminDashboard() {
                     )}
 
                     {activeTab === 'seat-qr' && !isCreatingClient && liveData.slug && (
-                        <SeatFinderQr slug={liveData.slug} brideGroom={`${liveData.bride} & ${liveData.groom}`} />
+                        <SeatFinderQr slug={liveData.slug} brideGroom={`${liveData.bride} & ${liveData.groom}`} accessToken={accessToken} />
                     )}
 
                     {activeTab === 'schedule' && !isCreatingClient && liveData.slug && (
