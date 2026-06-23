@@ -486,7 +486,7 @@ export default function SeatFinderQr({ slug, brideGroom, accessToken }: SeatFind
                                 <textarea
                                     value={sfSettings.welcomeMessage}
                                     onChange={(e) => setSf('welcomeMessage', e.target.value)}
-                                    placeholder="e.g. We&apos;re so happy you&apos;re with us tonight."
+                                    placeholder="e.g. We're so happy you're with us tonight."
                                     rows={2}
                                     maxLength={160}
                                     className="w-full bg-surface-container-high text-on-surface text-sm rounded-lg px-3 py-2 outline-none border border-outline-variant/20 focus:ring-2 focus:ring-primary/30 resize-none"
