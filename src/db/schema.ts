@@ -38,6 +38,7 @@ export const invitations = pgTable('invitations', {
     showNavigation: boolean('show_navigation').default(false),
     navigationPages: jsonb('navigation_pages'),
     customSections: jsonb('custom_sections').default([]),
+    seatFinderSettings: jsonb('seat_finder_settings').default(null),
     footnote: text('footnote'),
     showRsvp: boolean('show_rsvp').default(true),
     /** Shown on the invite when `show_rsvp` is false; use `**text**` for bold. */
