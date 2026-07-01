@@ -4,6 +4,11 @@ import { invitations, guests as guestsTable } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { clampPax, splitFullNameOnFirstSpace, type NormalizedRsvpCompanion } from '@/lib/multiGuestRsvp';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { reqString, optString, isValidationError } from '@/lib/validation';
+
+// Guard against absurd companion payloads on the personalized-link branch.
+const MAX_COMPANIONS = 50;
+const MAX_NAME_LEN = 120;
 
 export async function POST(request: Request) {
     // Public, unauthenticated endpoint — throttle per IP to curb RSVP spam and
@@ -20,6 +25,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required RSVP fields' }, { status: 400 });
         }
 
+        // Validate/​bound the untrusted, public input before it touches the DB.
+        const safeSlug = reqString(slug, 'slug', 255);
+        const safeFirstName = reqString(firstName, 'firstName', MAX_NAME_LEN);
+        const safeLastName = reqString(lastName, 'lastName', MAX_NAME_LEN);
+        const safeMessage = optString(message, 'message', 2000);
+
         const invitationResult = await db
             .select({
                 id: invitations.id,
@@ -28,7 +39,7 @@ export async function POST(request: Request) {
                 multiGuestNameCollectionEnabled: invitations.multiGuestNameCollectionEnabled
             })
             .from(invitations)
-            .where(eq(invitations.slug, slug));
+            .where(eq(invitations.slug, safeSlug));
 
         if (invitationResult.length === 0) {
             return NextResponse.json({ error: 'Invalid invitation slug' }, { status: 404 });
@@ -59,7 +70,7 @@ export async function POST(request: Request) {
             }
 
             const multiGuestNameCollectionEnabled = invitationResult[0].multiGuestNameCollectionEnabled === true;
-            const submittedCompanions = Array.isArray(companions) ? companions : [];
+            const submittedCompanions = (Array.isArray(companions) ? companions : []).slice(0, MAX_COMPANIONS);
             const originalPax = Math.max(1, guestCheck.pax || 1);
 
             if (status === 'attending' && paxCount > originalPax) {
@@ -74,7 +85,7 @@ export async function POST(request: Request) {
                     if (companionsToInsert.length >= companionSlots) break;
 
                     const fullName = typeof companion?.fullName === 'string'
-                        ? companion.fullName.trim().replace(/\s+/g, ' ')
+                        ? companion.fullName.trim().replace(/\s+/g, ' ').slice(0, MAX_NAME_LEN)
                         : '';
 
                     if (!fullName) continue;
@@ -87,7 +98,7 @@ export async function POST(request: Request) {
 
                 await db.transaction(async (tx) => {
                     await tx.update(guestsTable)
-                        .set({ status, pax: primaryPax, message: message || '', updatedAt: new Date() })
+                        .set({ status, pax: primaryPax, message: safeMessage, updatedAt: new Date() })
                         .where(eq(guestsTable.id, guestId));
 
                     if (companionsToInsert.length > 0) {
@@ -106,11 +117,11 @@ export async function POST(request: Request) {
             // headcount should be retained so total invitee stats remain accurate.
             } else if (status === 'attending') {
                 await db.update(guestsTable)
-                    .set({ status, pax: paxCount, message: message || '', updatedAt: new Date() })
+                    .set({ status, pax: paxCount, message: safeMessage, updatedAt: new Date() })
                     .where(eq(guestsTable.id, guestId));
             } else {
                 await db.update(guestsTable)
-                    .set({ status, message: message || '', updatedAt: new Date() })
+                    .set({ status, message: safeMessage, updatedAt: new Date() })
                     .where(eq(guestsTable.id, guestId));
             }
         } else {
@@ -118,17 +129,20 @@ export async function POST(request: Request) {
             // who declined still counts as 1 invitee for accurate totals).
             await db.insert(guestsTable).values({
                 invitationId,
-                firstName,
-                lastName,
+                firstName: safeFirstName,
+                lastName: safeLastName,
                 status,
                 pax: status === 'attending' ? paxCount : 1,
-                message: message || ''
+                message: safeMessage
             });
         }
 
         return NextResponse.json({ message: 'RSVP submitted successfully' });
 
     } catch (error) {
+        if (isValidationError(error)) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         console.error("Failed saving RSVP:", error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }

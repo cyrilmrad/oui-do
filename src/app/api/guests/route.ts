@@ -3,6 +3,9 @@ import { db } from '@/db';
 import { guests, invitations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { requireFeatureForSlug } from '@/lib/entitlements/guard';
+import { reqString, optString, intInRange, enumValue, isValidationError } from '@/lib/validation';
+
+const GUEST_STATUSES = ['pending', 'attending', 'declined'] as const;
 
 export async function GET(request: Request) {
     try {
@@ -53,18 +56,21 @@ export async function POST(request: Request) {
         const invitationId = invitation[0].id;
 
         const guestsToInsert = Array.isArray(newGuests) ? newGuests : [newGuests];
-        const insertData = guestsToInsert.map((g: any) => ({
+        const insertData = guestsToInsert.map((g: Record<string, unknown>) => ({
             invitationId,
-            firstName: g.firstName,
-            lastName: g.lastName,
-            pax: g.pax || 1,
-            status: g.status || 'pending',
-            message: g.message || ''
+            firstName: reqString(g.firstName, 'firstName', 200),
+            lastName: optString(g.lastName, 'lastName', 200),
+            pax: g.pax ? intInRange(g.pax, 'pax', 1, 100) : 1,
+            status: g.status ? enumValue(g.status, 'status', GUEST_STATUSES) : 'pending',
+            message: optString(g.message, 'message', 2000)
         }));
 
         await db.insert(guests).values(insertData);
         return NextResponse.json({ message: 'Guests added successfully' }, { status: 201 });
-    } catch (error: any) {
+    } catch (error) {
+        if (isValidationError(error)) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         console.error("Failed adding guests:", error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
@@ -94,12 +100,23 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: guard.message }, { status: guard.status });
         }
 
-        await db.update(guests)
-            .set({ firstName, lastName, pax, status, message })
-            .where(eq(guests.id, id));
+        // Validate only the fields actually present so partial updates keep working.
+        const updates: Record<string, unknown> = {};
+        if (firstName !== undefined) updates.firstName = reqString(firstName, 'firstName', 200);
+        if (lastName !== undefined) updates.lastName = optString(lastName, 'lastName', 200);
+        if (pax !== undefined) updates.pax = intInRange(pax, 'pax', 1, 100);
+        if (status !== undefined) updates.status = enumValue(status, 'status', GUEST_STATUSES);
+        if (message !== undefined) updates.message = optString(message, 'message', 2000);
+
+        if (Object.keys(updates).length > 0) {
+            await db.update(guests).set(updates).where(eq(guests.id, id));
+        }
 
         return NextResponse.json({ message: 'Guest updated successfully' }, { status: 200 });
-    } catch (error: any) {
+    } catch (error) {
+        if (isValidationError(error)) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         console.error("Failed updating guest:", error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
