@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireAdmin } from '@/lib/entitlements/guard';
+import { listAllAuthUsers } from '@/lib/auth/supabaseAdmin';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -28,12 +29,9 @@ export async function GET(request: Request) {
     }
 
     try {
-        const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
-        if (error) {
-            return NextResponse.json({ error: error.message }, { status: 400 });
-        }
+        const users = await listAllAuthUsers(supabaseAdmin);
         const allInvitations = await db.select().from(invitations);
-        const userList = users ?? [];
+        const userList = users;
 
         // Group client users by slug → one entry per wedding (multiple logins allowed).
         const bySlug = new Map<string, { id: string; email: string; createdAt: string }[]>();

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireAdmin } from '@/lib/entitlements/guard';
+import { listAllAuthUsers } from '@/lib/auth/supabaseAdmin';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -38,12 +39,14 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ s
         return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
     }
 
-    const { data, error: listErr } = await supabaseAdmin.auth.admin.listUsers();
-    if (listErr) {
-        return NextResponse.json({ error: listErr.message }, { status: 400 });
+    let allUsers;
+    try {
+        allUsers = await listAllAuthUsers(supabaseAdmin);
+    } catch {
+        return NextResponse.json({ error: 'Failed to list accounts' }, { status: 500 });
     }
 
-    const slugAccounts = (data?.users ?? []).filter(
+    const slugAccounts = allUsers.filter(
         u => u.app_metadata?.role === 'client' && u.app_metadata?.slug === decoded
     );
     const target = slugAccounts.find(u => u.id === userId);

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/auth/supabaseAdmin';
+import { supabaseAdmin, listAllAuthUsers } from '@/lib/auth/supabaseAdmin';
 import { requireAdmin } from '@/lib/entitlements/guard';
 
 export async function POST(request: Request) {
@@ -21,10 +21,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
         }
 
-        const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-        if (listError) {
-            return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-        }
+        const users = await listAllAuthUsers(supabaseAdmin);
 
         const user = users.find(u => u.app_metadata?.slug === slug && u.app_metadata?.role === 'client');
         if (!user) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireAdmin } from '@/lib/entitlements/guard';
+import { listAllAuthUsers } from '@/lib/auth/supabaseAdmin';
 import { db } from '@/db';
 import { invitations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -27,8 +28,7 @@ async function slugExists(slug: string): Promise<boolean> {
         .limit(1);
     if (inv.length > 0) return true;
 
-    const { data } = await supabaseAdmin!.auth.admin.listUsers();
-    const users = data?.users ?? [];
+    const users = await listAllAuthUsers(supabaseAdmin!);
     return users.some(u => u.app_metadata?.role === 'client' && u.app_metadata?.slug === slug);
 }
 
