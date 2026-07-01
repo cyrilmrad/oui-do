@@ -3,8 +3,14 @@ import { db } from '@/db';
 import { invitations, guests as guestsTable } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { clampPax, splitFullNameOnFirstSpace, type NormalizedRsvpCompanion } from '@/lib/multiGuestRsvp';
+import { enforceRateLimit } from '@/lib/rateLimit';
 
 export async function POST(request: Request) {
+    // Public, unauthenticated endpoint — throttle per IP to curb RSVP spam and
+    // slug enumeration (differing 404/403/200 responses would otherwise be an oracle).
+    const limited = enforceRateLimit(request, { bucket: 'rsvp', limit: 15, windowMs: 60_000 });
+    if (limited) return limited;
+
     try {
         const body = await request.json();
         // guestId is only present if they use personalized link
