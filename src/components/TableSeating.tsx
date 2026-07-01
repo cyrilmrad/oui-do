@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Users, UserPlus, GripVertical, Armchair, Circle, RectangleHorizontal, Square, Spline, Plus, Trash2, Loader2, X, Printer } from 'lucide-react';
 import { assignGuestToTable, createTable, deleteTable, updateTable } from '@/app/actions/seating';
 import type { SelectSeatingTable, SelectGuest } from '@/app/actions/seating';
+import SeatingFloorPlan from '@/components/SeatingFloorPlan';
 
 // ─── Types ──────────────────────────────────────────────────────────
 type TableShape = 'round' | 'rectangular' | 'square' | 'curve';
@@ -27,6 +28,8 @@ interface LocalTable {
     name: string;
     capacity: number;
     shape: TableShape;
+    posX: number | null;
+    posY: number | null;
 }
 
 interface LocalGuest {
@@ -61,6 +64,8 @@ function toLocalTables(dbTables: SelectSeatingTable[]): LocalTable[] {
         name: t.name,
         capacity: t.capacity ?? 8,
         shape: (t.shape as TableShape) || 'round',
+        posX: t.posX ?? null,
+        posY: t.posY ?? null,
     }));
 }
 
@@ -420,6 +425,9 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
     const [newTableName, setNewTableName] = useState('');
     const [newTableCapacity, setNewTableCapacity] = useState(8);
 
+    // List (assign guests) vs floor-plan (arrange tables in 2D) view.
+    const [view, setView] = useState<'list' | 'floor'>('list');
+
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
     );
@@ -471,6 +479,20 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
         });
     };
 
+    // Persist a floor-plan position. Optimistic; on persist failure we keep the new
+    // position in-session rather than snapping back (e.g. before the pos_x/pos_y
+    // migration is applied) — the arrangement is still usable, just not saved.
+    const handleMoveTable = (tableId: string, posX: number, posY: number) => {
+        setLocalTables(prev => prev.map(t => t.id === tableId ? { ...t, posX, posY } : t));
+        startTransition(async () => {
+            try {
+                await updateTable(tableId, { posX, posY }, accessToken ?? undefined);
+            } catch (error) {
+                console.error('Failed to save table position:', error);
+            }
+        });
+    };
+
     const handleCreateTable = () => {
         if (!newTableName.trim()) return;
         startTransition(async () => {
@@ -484,6 +506,8 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
                     name: newTable.name,
                     capacity: newTable.capacity ?? 8,
                     shape: (newTable.shape as TableShape) || 'round',
+                    posX: newTable.posX ?? null,
+                    posY: newTable.posY ?? null,
                 }]);
                 setNewTableName('');
                 setNewTableCapacity(8);
@@ -550,6 +574,26 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
                                     <span>Saving…</span>
                                 </div>
                             )}
+                            <div className="flex items-center rounded-lg border border-stone-200 bg-white p-0.5 text-xs font-semibold" role="tablist" aria-label="Seating view">
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={view === 'list'}
+                                    onClick={() => setView('list')}
+                                    className={`px-3 py-1.5 rounded-md transition-colors ${view === 'list' ? 'bg-stone-900 text-white' : 'text-stone-500 hover:text-stone-800'}`}
+                                >
+                                    List
+                                </button>
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={view === 'floor'}
+                                    onClick={() => setView('floor')}
+                                    className={`px-3 py-1.5 rounded-md transition-colors ${view === 'floor' ? 'bg-stone-900 text-white' : 'text-stone-500 hover:text-stone-800'}`}
+                                >
+                                    Floor plan
+                                </button>
+                            </div>
                             <div className="flex items-center gap-2 text-xs font-mono text-stone-400 bg-stone-50 px-3 py-2 rounded-lg border border-stone-100">
                                 <Users className="w-3.5 h-3.5" />
                                 <span className="font-semibold text-stone-600">{seatedPax}</span>
@@ -614,6 +658,12 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
                 </div>
 
                 {/* Main Layout */}
+                {view === 'floor' ? (
+                    <div className="animate-in fade-in duration-300">
+                        <p className="text-xs text-stone-400 mb-3">Drag tables to arrange them the way the room is laid out. Positions save automatically.</p>
+                        <SeatingFloorPlan tables={localTables} guests={localGuests} onMove={handleMoveTable} />
+                    </div>
+                ) : (
                 <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -690,6 +740,7 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
                         {activeGuest ? <GuestOverlay guest={activeGuest} /> : null}
                     </DragOverlay>
                 </DndContext>
+                )}
 
                 {/* Tap / keyboard assignment sheet (mobile + a11y fallback for drag) */}
                 {assignTarget && (

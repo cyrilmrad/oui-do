@@ -62,6 +62,10 @@ export const seatingTables = pgTable('seating_tables', {
     name: varchar('name', { length: 255 }).notNull(),
     capacity: integer('capacity').default(8),
     shape: varchar('shape', { length: 50 }).default('round'),
+    // Optional 2D floor-plan coordinates (px from the canvas top-left). Null until
+    // the table is first positioned in the floor-plan view.
+    posX: integer('pos_x'),
+    posY: integer('pos_y'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
 }, (t) => [
