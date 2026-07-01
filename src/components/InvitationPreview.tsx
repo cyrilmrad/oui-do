@@ -785,7 +785,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                             {isVideo ? (
                                 <video src={data.heroVideo} autoPlay muted playsInline className="w-full h-full object-cover blur-sm scale-110 pointer-events-none" />
                             ) : (
-                                <img src={data.heroImage || defaultImage} className="w-full h-full object-cover blur-sm scale-110 pointer-events-none" />
+                                <img src={data.heroImage || defaultImage} alt="" className="w-full h-full object-cover blur-sm scale-110 pointer-events-none" />
                             )}
                         </div>
 
@@ -972,7 +972,9 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     ) : (
                                         <img 
                                             src={data.formalInvitationImage} 
-                                            alt="Formal Invitation" 
+                                            alt="Formal Invitation"
+                                            loading="lazy"
+                                            decoding="async"
                                             className="w-full h-full object-cover" 
                                         />
                                     )}
@@ -1048,7 +1050,9 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                     ) : (
                                         <img 
                                             src={data.preCeremonyMedia} 
-                                            alt="Pre-Ceremony Feature" 
+                                            alt="Pre-Ceremony Feature"
+                                            loading="lazy"
+                                            decoding="async"
                                             className="w-full h-full object-cover" 
                                         />
                                     )}
@@ -1328,6 +1332,8 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                 <img
                                                     src={section.overlayImageUrl}
                                                     alt="Custom Section Overlay"
+                                                    loading="lazy"
+                                                    decoding="async"
                                                     className="w-full max-w-xs @md:max-w-md @lg:max-w-lg object-contain drop-shadow-xl"
                                                 />
                                             )}
@@ -1409,6 +1415,8 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                                 <img
                                                     src={section.overlayImageUrl}
                                                     alt="Custom Section Overlay"
+                                                    loading="lazy"
+                                                    decoding="async"
                                                     className="w-full max-w-xs @md:max-w-md @lg:max-w-lg object-contain drop-shadow-xl"
                                                 />
                                             )}
@@ -1771,6 +1779,8 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                             <img
                                                 src={hotel.imageUrl}
                                                 alt={hotel.title}
+                                                loading="lazy"
+                                                decoding="async"
                                                 className="w-full h-44 object-cover"
                                             />
                                         ) : null}
@@ -1815,7 +1825,7 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                 {nav.exploringSpots.map((spot, idx) => (
                                     <div key={idx} className="bg-white rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] group hover:-translate-y-2 transition-all duration-300 border border-stone-50">
                                         <div className="h-48 overflow-hidden bg-stone-100">
-                                            <img src={spot.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                            <img src={spot.imageUrl} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                         </div>
                                         <div className="p-8">
                                             <h3 className="text-xl font-serif text-stone-800 mb-2">{spot.title}</h3>
