@@ -145,6 +145,19 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
         if (!file) return;
 
         const input = e.target;
+
+        // Guard against oversized files: parsing happens in-browser and a huge file
+        // would freeze/OOM the tab. 5 MB comfortably fits any realistic guest list.
+        const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
+        const MAX_IMPORT_ROWS = 5000;
+        if (file.size > MAX_IMPORT_BYTES) {
+            toast.error("File is too large", {
+                description: "Guest imports are limited to 5 MB. Split a very large list into smaller files.",
+            });
+            input.value = '';
+            return;
+        }
+
         const lower = file.name.toLowerCase();
         const isExcel =
             lower.endsWith('.xlsx') ||
@@ -153,6 +166,10 @@ export function GuestsTab({ userSlug, rsvps, setRsvps }: GuestsTabProps) {
         const openPreview = (guests: GuestImportRow[], skippedLineCount: number) => {
             if (guests.length === 0) {
                 toast.error("No valid guests found", { description: GUEST_IMPORT_FORMAT_HINT });
+            } else if (guests.length > MAX_IMPORT_ROWS) {
+                toast.error("Too many rows", {
+                    description: `Imports are limited to ${MAX_IMPORT_ROWS.toLocaleString()} guests per file.`,
+                });
             } else {
                 setCsvImportPreview({ fileName: file.name, guests, skippedLineCount });
             }
