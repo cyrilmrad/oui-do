@@ -4,6 +4,7 @@ import React, { useState, useEffect, useTransition } from 'react';
 import { X, Plus, Trash2, Wallet, Loader2, Calendar, Banknote, Landmark } from 'lucide-react';
 import { getPaymentsByExpense, addPayment, deletePayment } from '@/app/actions/payments';
 import type { SelectPayment } from '@/app/actions/payments';
+import { getFreshAccessToken } from '@/lib/freshAccessToken';
 
 interface PaymentModalProps {
     isOpen: boolean;
@@ -39,7 +40,8 @@ export default function PaymentModal({
     useEffect(() => {
         if (isOpen && expenseId) {
             setIsLoading(true);
-            getPaymentsByExpense(expenseId, accessToken ?? undefined)
+            getFreshAccessToken(accessToken)
+                .then(token => getPaymentsByExpense(expenseId, token))
                 .then(data => setPayments(data))
                 .catch(err => console.error(err))
                 .finally(() => setIsLoading(false));
@@ -71,7 +73,7 @@ export default function PaymentModal({
                     paymentDate: new Date(paymentDate),
                     receivedBy: receivedBy.trim(),
                     notes: notes.trim(),
-                }, accessToken ?? undefined);
+                }, await getFreshAccessToken(accessToken));
                 setPayments(prev => [...prev, newPayment]);
                 setAmount('');
                 setReceivedBy('');
@@ -87,7 +89,7 @@ export default function PaymentModal({
         setPayments(prev => prev.filter(p => p.id !== paymentId));
         startTransition(async () => {
             try {
-                await deletePayment(paymentId, accessToken ?? undefined);
+                await deletePayment(paymentId, await getFreshAccessToken(accessToken));
             } catch (error) {
                 console.error('Failed to delete payment:', error);
             }

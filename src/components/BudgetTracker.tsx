@@ -5,6 +5,7 @@ import { SelectExpense } from '@/app/actions/budget';
 import { Trash2, Plus, DollarSign, Calculator, LineChart, Wallet } from 'lucide-react';
 import { addExpense, updateExpense, deleteExpense } from '@/app/actions/budget';
 import PaymentModal from '@/components/PaymentModal';
+import { getFreshAccessToken } from '@/lib/freshAccessToken';
 
 interface BudgetTrackerProps {
     slug: string;
@@ -66,7 +67,7 @@ export default function BudgetTracker({ slug, initialExpenses, isAdmin = false, 
     const handleBlur = async (id: string, field: keyof SelectExpense, value: any) => {
         setIsSaving(true);
         try {
-            await updateExpense(id, { [field]: value }, accessToken ?? undefined);
+            await updateExpense(id, { [field]: value }, await getFreshAccessToken(accessToken));
         } catch (error) {
             console.error("Failed to update expense", error);
         } finally {
@@ -80,7 +81,7 @@ export default function BudgetTracker({ slug, initialExpenses, isAdmin = false, 
         handleChange(id, 'isIncluded', newValue);
         setIsSaving(true);
         try {
-            await updateExpense(id, { isIncluded: newValue }, accessToken ?? undefined);
+            await updateExpense(id, { isIncluded: newValue }, await getFreshAccessToken(accessToken));
         } catch (error) {
             console.error("Failed to toggle inclusion", error);
             // Revert on fail
@@ -102,7 +103,7 @@ export default function BudgetTracker({ slug, initialExpenses, isAdmin = false, 
                 actualCost: 0,
                 notes: '',
                 isIncluded: true,
-            }, accessToken ?? undefined);
+            }, await getFreshAccessToken(accessToken));
             setExpenses(prev => [...prev, newExpense]);
         } catch (error) {
             console.error("Failed to add expense", error);
@@ -121,7 +122,7 @@ export default function BudgetTracker({ slug, initialExpenses, isAdmin = false, 
         setExpenses(prev => prev.filter(e => e.id !== id));
 
         try {
-            await deleteExpense(id, accessToken ?? undefined);
+            await deleteExpense(id, await getFreshAccessToken(accessToken));
         } catch (error) {
             console.error("Failed to delete expense", error);
             // Revert on fail

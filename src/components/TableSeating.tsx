@@ -19,7 +19,7 @@ import { Users, UserPlus, GripVertical, Armchair, Circle, RectangleHorizontal, S
 import { assignGuestToTable, createTable, deleteTable, updateTable } from '@/app/actions/seating';
 import type { SelectSeatingTable, SelectGuest } from '@/app/actions/seating';
 import SeatingFloorPlan from '@/components/SeatingFloorPlan';
-import { supabase } from '@/lib/supabaseClient';
+import { getFreshAccessToken } from '@/lib/freshAccessToken';
 
 // ─── Types ──────────────────────────────────────────────────────────
 type TableShape = 'round' | 'rectangular' | 'square' | 'curve';
@@ -440,14 +440,7 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
     // The `accessToken` prop is captured once at page mount and goes stale when the
     // Supabase access token expires (~1h), which made server actions fail with
     // "Unauthorized". Read the current (auto-refreshed) session token at call time.
-    const freshToken = async (): Promise<string | undefined> => {
-        try {
-            const { data } = await supabase.auth.getSession();
-            return data.session?.access_token ?? accessToken ?? undefined;
-        } catch {
-            return accessToken ?? undefined;
-        }
-    };
+    const freshToken = () => getFreshAccessToken(accessToken);
 
     // ─── Move guest (optimistic + server) ───────────────────────
     const moveGuest = (guestId: string, fromId: string, toId: string) => {
