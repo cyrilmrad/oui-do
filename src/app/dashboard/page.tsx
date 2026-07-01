@@ -48,6 +48,7 @@ import { FeatureLockedMessage } from '@/components/dashboard/FeatureLockedMessag
 import { getStatusBadge } from '@/components/dashboard/GuestStatusBadge';
 import { GuestsTab } from '@/components/dashboard/GuestsTab';
 import DashboardLockedScreen from '@/components/dashboard/DashboardLockedScreen';
+import RsvpAnalytics from '@/components/dashboard/RsvpAnalytics';
 import { toast } from 'sonner';
 type DashboardTab = 'overview' | 'guests' | 'messages' | 'budget' | 'seating' | 'settings';
 
@@ -449,7 +450,7 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-
+            {rsvps.length > 0 && <RsvpAnalytics rsvps={rsvps} />}
         </>
     );
 
