@@ -3,6 +3,7 @@ import { requireAdminOrAssistant } from '@/lib/entitlements/guard';
 import { db } from '@/db';
 import { plannerTodos } from '@/db/schema';
 import { asc, max } from 'drizzle-orm';
+import { reqString, optString, isValidationError } from '@/lib/validation';
 
 export async function GET(request: Request) {
     const auth = await requireAdminOrAssistant(request);
@@ -22,13 +23,16 @@ export async function POST(request: Request) {
         const sortOrder = (maxOrder ?? 0) + 1;
 
         const [row] = await db.insert(plannerTodos).values({
-            title: body.title,
-            description: body.description ?? null,
+            title: reqString(body.title, 'title', 300),
+            description: optString(body.description, 'description', 5000) || null,
             isCompleted: false,
             sortOrder,
         }).returning();
         return NextResponse.json(row, { status: 201 });
-    } catch {
+    } catch (error) {
+        if (isValidationError(error)) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         return NextResponse.json({ error: 'Failed to create todo' }, { status: 500 });
     }
 }

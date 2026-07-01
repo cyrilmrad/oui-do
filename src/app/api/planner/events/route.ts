@@ -3,6 +3,7 @@ import { requireAdminOrAssistant } from '@/lib/entitlements/guard';
 import { db } from '@/db';
 import { plannerEvents } from '@/db/schema';
 import { asc } from 'drizzle-orm';
+import { reqString, optString, optHexColor, isValidationError } from '@/lib/validation';
 
 export async function GET(request: Request) {
     const auth = await requireAdminOrAssistant(request);
@@ -19,15 +20,18 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
         const [row] = await db.insert(plannerEvents).values({
-            title: body.title,
-            description: body.description ?? null,
-            startAt: body.startAt,
-            endAt: body.endAt ?? null,
-            allDay: body.allDay ?? false,
-            color: body.color ?? null,
+            title: reqString(body.title, 'title', 300),
+            description: optString(body.description, 'description', 5000) || null,
+            startAt: reqString(body.startAt, 'startAt', 40),
+            endAt: body.endAt ? optString(body.endAt, 'endAt', 40) : null,
+            allDay: body.allDay === true,
+            color: optHexColor(body.color, 'color'),
         }).returning();
         return NextResponse.json(row, { status: 201 });
-    } catch {
+    } catch (error) {
+        if (isValidationError(error)) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         return NextResponse.json({ error: 'Failed to create event' }, { status: 500 });
     }
 }
