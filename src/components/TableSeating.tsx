@@ -19,6 +19,7 @@ import { Users, UserPlus, GripVertical, Armchair, Circle, RectangleHorizontal, S
 import { assignGuestToTable, createTable, deleteTable, updateTable } from '@/app/actions/seating';
 import type { SelectSeatingTable, SelectGuest } from '@/app/actions/seating';
 import SeatingFloorPlan from '@/components/SeatingFloorPlan';
+import { supabase } from '@/lib/supabaseClient';
 
 // ─── Types ──────────────────────────────────────────────────────────
 type TableShape = 'round' | 'rectangular' | 'square' | 'curve';
@@ -436,6 +437,18 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
     const totalPax = localGuests.reduce((s, g) => s + g.pax, 0);
     const seatedPax = localGuests.filter(g => g.tableId).reduce((s, g) => s + g.pax, 0);
 
+    // The `accessToken` prop is captured once at page mount and goes stale when the
+    // Supabase access token expires (~1h), which made server actions fail with
+    // "Unauthorized". Read the current (auto-refreshed) session token at call time.
+    const freshToken = async (): Promise<string | undefined> => {
+        try {
+            const { data } = await supabase.auth.getSession();
+            return data.session?.access_token ?? accessToken ?? undefined;
+        } catch {
+            return accessToken ?? undefined;
+        }
+    };
+
     // ─── Move guest (optimistic + server) ───────────────────────
     const moveGuest = (guestId: string, fromId: string, toId: string) => {
         if (fromId === toId) return;
@@ -459,7 +472,7 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
         // Server persistence
         startTransition(async () => {
             try {
-                await assignGuestToTable(guestId, newTableId, accessToken ?? undefined);
+                await assignGuestToTable(guestId, newTableId, await freshToken());
             } catch (error) {
                 console.error('Failed to assign guest:', error);
                 // Revert
@@ -472,7 +485,7 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
         setLocalTables(prev => prev.map(t => t.id === tableId ? { ...t, shape } : t));
         startTransition(async () => {
             try {
-                await updateTable(tableId, { shape }, accessToken ?? undefined);
+                await updateTable(tableId, { shape }, await freshToken());
             } catch (error) {
                 console.error('Failed to update table shape:', error);
             }
@@ -486,7 +499,7 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
         setLocalTables(prev => prev.map(t => t.id === tableId ? { ...t, posX, posY } : t));
         startTransition(async () => {
             try {
-                await updateTable(tableId, { posX, posY }, accessToken ?? undefined);
+                await updateTable(tableId, { posX, posY }, await freshToken());
             } catch (error) {
                 console.error('Failed to save table position:', error);
             }
@@ -500,7 +513,7 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
                 const newTable = await createTable(slug, {
                     name: newTableName.trim(),
                     capacity: newTableCapacity,
-                }, accessToken ?? undefined);
+                }, await freshToken());
                 setLocalTables(prev => [...prev, {
                     id: newTable.id,
                     name: newTable.name,
@@ -525,7 +538,7 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
 
         startTransition(async () => {
             try {
-                await deleteTable(tableId, accessToken ?? undefined);
+                await deleteTable(tableId, await freshToken());
             } catch (error) {
                 console.error('Failed to delete table:', error);
             }
