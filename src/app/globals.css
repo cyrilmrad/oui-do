@@ -129,3 +129,24 @@ body {
     font-size: 0.75rem;
   }
 }
+
+/*
+ * Print isolation for the seating chart. The chart is portaled to <body> as
+ * `.seating-print-root` so it escapes the dashboard/admin app shell (fixed
+ * heights + overflow-y-auto that would otherwise clip printed output). On
+ * screen it is hidden; when printing we hide the rest of the app and let the
+ * chart flow (and paginate) normally.
+ */
+.seating-print-root {
+  display: none;
+}
+@media print {
+  body > *:not(.seating-print-root) {
+    display: none !important;
+  }
+  .seating-print-root {
+    display: block !important;
+    padding: 16px;
+    color: #000;
+  }
+}

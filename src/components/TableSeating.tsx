@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useTransition } from 'react';
+import { createPortal } from 'react-dom';
 import {
     DndContext,
     DragOverlay,
@@ -408,6 +409,11 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
     const [activeGuest, setActiveGuest] = useState<LocalGuest | null>(null);
     const [assignTarget, setAssignTarget] = useState<LocalGuest | null>(null);
     const [isPending, startTransition] = useTransition();
+    // Portals need the DOM; only render the print view after mount to avoid an
+    // SSR/hydration mismatch. setState-in-effect is intentional for this pattern.
+    const [mounted, setMounted] = useState(false);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    useEffect(() => setMounted(true), []);
 
     // Create table form state
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -529,7 +535,7 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
 
     return (
         <div className="w-full flex justify-center animate-in slide-in-from-bottom-4 duration-500 fade-in">
-            <div className="w-full max-w-7xl print:hidden">
+            <div className="w-full max-w-7xl">
                 {/* Header */}
                 <div className="mb-8">
                     <div className="flex justify-between items-end mb-6">
@@ -700,40 +706,44 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
                 )}
             </div>
 
-            {/* ─── Print-only seating chart (hidden on screen) ─── */}
-            <div className="hidden print:block w-full text-black">
-                <h1 className="text-2xl font-serif mb-1">Seating Chart</h1>
-                <p className="text-sm mb-6">{seatedPax}/{totalPax} guests seated across {localTables.length} table{localTables.length === 1 ? '' : 's'}</p>
-                <div className="grid grid-cols-2 gap-4">
-                    {localTables.map((t) => {
-                        const gs = localGuests.filter((g) => g.tableId === t.id);
-                        const pax = gs.reduce((s, g) => s + g.pax, 0);
-                        return (
-                            <div key={t.id} className="border border-black/20 rounded-lg p-4 break-inside-avoid">
-                                <div className="flex justify-between border-b border-black/10 pb-2 mb-2">
-                                    <span className="font-semibold">{t.name}</span>
-                                    <span className="text-sm">{pax}/{t.capacity}</span>
+            {/* ─── Print-only seating chart, portaled to <body> so it escapes the
+                   app shell's overflow/height clipping when printing ─── */}
+            {mounted && createPortal(
+                <div className="seating-print-root">
+                    <h1 className="text-2xl font-serif mb-1">Seating Chart</h1>
+                    <p className="text-sm mb-6">{seatedPax}/{totalPax} guests seated across {localTables.length} table{localTables.length === 1 ? '' : 's'}</p>
+                    <div className="grid grid-cols-2 gap-4">
+                        {localTables.map((t) => {
+                            const gs = localGuests.filter((g) => g.tableId === t.id);
+                            const pax = gs.reduce((s, g) => s + g.pax, 0);
+                            return (
+                                <div key={t.id} className="border border-black/20 rounded-lg p-4 break-inside-avoid">
+                                    <div className="flex justify-between border-b border-black/10 pb-2 mb-2">
+                                        <span className="font-semibold">{t.name}</span>
+                                        <span className="text-sm">{pax}/{t.capacity}</span>
+                                    </div>
+                                    <ul className="text-sm space-y-0.5">
+                                        {gs.length === 0 ? (
+                                            <li className="text-black/40 italic">No guests</li>
+                                        ) : (
+                                            gs.map((g) => <li key={g.id}>{g.name}{g.pax > 1 ? ` (${g.pax})` : ''}</li>)
+                                        )}
+                                    </ul>
                                 </div>
-                                <ul className="text-sm space-y-0.5">
-                                    {gs.length === 0 ? (
-                                        <li className="text-black/40 italic">No guests</li>
-                                    ) : (
-                                        gs.map((g) => <li key={g.id}>{g.name}{g.pax > 1 ? ` (${g.pax})` : ''}</li>)
-                                    )}
-                                </ul>
-                            </div>
-                        );
-                    })}
-                </div>
-                {unseatedGuests.length > 0 && (
-                    <div className="mt-6 break-inside-avoid">
-                        <h2 className="font-semibold border-b border-black/10 pb-1 mb-2">Unseated ({unseatedGuests.length})</h2>
-                        <ul className="text-sm columns-2">
-                            {unseatedGuests.map((g) => <li key={g.id}>{g.name}{g.pax > 1 ? ` (${g.pax})` : ''}</li>)}
-                        </ul>
+                            );
+                        })}
                     </div>
-                )}
-            </div>
+                    {unseatedGuests.length > 0 && (
+                        <div className="mt-6 break-inside-avoid">
+                            <h2 className="font-semibold border-b border-black/10 pb-1 mb-2">Unseated ({unseatedGuests.length})</h2>
+                            <ul className="text-sm columns-2">
+                                {unseatedGuests.map((g) => <li key={g.id}>{g.name}{g.pax > 1 ? ` (${g.pax})` : ''}</li>)}
+                            </ul>
+                        </div>
+                    )}
+                </div>,
+                document.body
+            )}
         </div>
     );
 }
