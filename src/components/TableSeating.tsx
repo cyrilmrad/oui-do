@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import {
     DndContext,
     DragOverlay,
@@ -14,7 +14,7 @@ import {
     useDraggable,
 } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, UserPlus, GripVertical, Armchair, Circle, RectangleHorizontal, Square, Spline, Plus, Trash2, Loader2 } from 'lucide-react';
+import { Users, UserPlus, GripVertical, Armchair, Circle, RectangleHorizontal, Square, Spline, Plus, Trash2, Loader2, X, Printer } from 'lucide-react';
 import { assignGuestToTable, createTable, deleteTable, updateTable } from '@/app/actions/seating';
 import type { SelectSeatingTable, SelectGuest } from '@/app/actions/seating';
 
@@ -73,11 +73,27 @@ function toLocalGuests(dbGuests: SelectGuest[]): LocalGuest[] {
 }
 
 // ─── Draggable Guest Pill ───────────────────────────────────────────
-function DraggableGuest({ guest, containerId, compact }: { guest: LocalGuest; containerId: string; compact?: boolean }) {
+// Besides drag-and-drop, each pill is a button: click / Enter / Space opens the
+// assignment menu. This gives touch and keyboard users a way to seat guests that
+// dragging alone doesn't (dnd on touch is unreliable, and there's no keyboard drag).
+function DraggableGuest({ guest, containerId, compact, onSelect }: { guest: LocalGuest; containerId: string; compact?: boolean; onSelect?: (guest: LocalGuest) => void }) {
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
         id: `${containerId}::${guest.id}`,
         data: { guest, containerId },
     });
+
+    const interactiveProps = {
+        role: 'button' as const,
+        tabIndex: 0,
+        'aria-label': `Assign ${guest.name} to a table`,
+        onClick: () => onSelect?.(guest),
+        onKeyDown: (e: React.KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelect?.(guest);
+            }
+        },
+    };
 
     if (compact) {
         return (
@@ -92,10 +108,12 @@ function DraggableGuest({ guest, containerId, compact }: { guest: LocalGuest; co
                     flex items-center gap-2 px-3 py-2 rounded-lg cursor-grab active:cursor-grabbing
                     bg-stone-50/80 border border-stone-100 select-none
                     hover:bg-stone-100 hover:border-stone-200 transition-colors group/item
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400
                     ${isDragging ? 'z-50 ring-2 ring-emerald-400/40' : ''}
                 `}
                 {...attributes}
                 {...listeners}
+                {...interactiveProps}
             >
                 <GripVertical className="w-3 h-3 text-stone-300 group-hover/item:text-stone-500 transition-colors shrink-0" />
                 <span className="flex-1 text-sm text-stone-700 truncate">{guest.name}</span>
@@ -119,10 +137,12 @@ function DraggableGuest({ guest, containerId, compact }: { guest: LocalGuest; co
                 bg-white border border-stone-200/60 shadow-[0_1px_3px_rgb(0,0,0,0.04)]
                 hover:shadow-[0_4px_12px_rgb(0,0,0,0.08)] hover:border-stone-300
                 transition-shadow group select-none
+                focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400
                 ${isDragging ? 'z-50 ring-2 ring-emerald-400/40' : ''}
             `}
             {...attributes}
             {...listeners}
+            {...interactiveProps}
         >
             <div className="w-5 h-5 flex items-center justify-center text-stone-300 group-hover:text-stone-500 transition-colors shrink-0">
                 <GripVertical className="w-4 h-4" />
@@ -172,11 +192,13 @@ function TableCard({
     guests,
     onChangeShape,
     onDeleteTable,
+    onSelectGuest,
 }: {
     table: LocalTable;
     guests: LocalGuest[];
     onChangeShape: (tableId: string, shape: TableShape) => void;
     onDeleteTable: (tableId: string) => void;
+    onSelectGuest: (guest: LocalGuest) => void;
 }) {
     const { setNodeRef, isOver } = useDroppable({ id: table.id });
     const seatedPax = guests.reduce((sum, g) => sum + g.pax, 0);
@@ -282,6 +304,7 @@ function TableCard({
                                 guest={guest}
                                 containerId={table.id}
                                 compact
+                                onSelect={onSelectGuest}
                             />
                         ))
                     )}
@@ -291,11 +314,99 @@ function TableCard({
     );
 }
 
+// ─── Assignment Sheet (tap / keyboard fallback for drag-and-drop) ───
+function AssignSheet({
+    guest,
+    tables,
+    localGuests,
+    onAssign,
+    onClose,
+}: {
+    guest: LocalGuest;
+    tables: LocalTable[];
+    localGuests: LocalGuest[];
+    onAssign: (tableId: string | null) => void;
+    onClose: () => void;
+}) {
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [onClose]);
+
+    return (
+        <div
+            className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-stone-900/40 backdrop-blur-[1px] sm:p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Seat ${guest.name}`}
+            onClick={onClose}
+        >
+            <div
+                className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[80vh] flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between shrink-0">
+                    <div>
+                        <p className="text-xs uppercase tracking-wider text-stone-400">Seat</p>
+                        <h3 className="text-lg font-serif text-stone-900">{guest.name}</h3>
+                    </div>
+                    <button onClick={onClose} className="p-2 rounded-lg text-stone-400 hover:bg-stone-100 transition-colors" aria-label="Close">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+                <div className="overflow-y-auto p-3 space-y-1.5">
+                    {guest.tableId && (
+                        <button
+                            autoFocus
+                            onClick={() => onAssign(null)}
+                            className="w-full text-left px-4 py-3 rounded-xl border border-stone-200 hover:bg-stone-50 flex items-center gap-3 text-rose-600 font-medium transition-colors"
+                        >
+                            <UserPlus className="w-4 h-4" /> Remove from table
+                        </button>
+                    )}
+                    {tables.length === 0 && (
+                        <p className="text-sm text-stone-400 px-2 py-6 text-center">No tables yet — add a table first.</p>
+                    )}
+                    {tables.map((t) => {
+                        const seated = localGuests.filter((g) => g.tableId === t.id).reduce((s, g) => s + g.pax, 0);
+                        const isHere = guest.tableId === t.id;
+                        const wouldExceed = !isHere && seated + guest.pax > t.capacity;
+                        return (
+                            <button
+                                key={t.id}
+                                disabled={wouldExceed || isHere}
+                                onClick={() => onAssign(t.id)}
+                                className={`w-full text-left px-4 py-3 rounded-xl border flex items-center justify-between gap-3 transition-colors
+                                    ${isHere
+                                        ? 'border-emerald-300 bg-emerald-50'
+                                        : wouldExceed
+                                            ? 'border-stone-100 opacity-50 cursor-not-allowed'
+                                            : 'border-stone-200 hover:bg-stone-50'
+                                    }`}
+                            >
+                                <span className="flex items-center gap-3">
+                                    <Armchair className="w-4 h-4 text-stone-400" />
+                                    <span className="font-medium text-stone-800">{t.name}</span>
+                                </span>
+                                <span className="text-xs font-mono text-stone-500">
+                                    {isHere ? 'Seated here' : wouldExceed ? 'Full' : `${seated}/${t.capacity}`}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── Main Component ─────────────────────────────────────────────────
 export default function TableSeating({ slug, initialTables, initialGuests, accessToken }: TableSeatingProps) {
     const [localTables, setLocalTables] = useState<LocalTable[]>(() => toLocalTables(initialTables));
     const [localGuests, setLocalGuests] = useState<LocalGuest[]>(() => toLocalGuests(initialGuests));
     const [activeGuest, setActiveGuest] = useState<LocalGuest | null>(null);
+    const [assignTarget, setAssignTarget] = useState<LocalGuest | null>(null);
     const [isPending, startTransition] = useTransition();
 
     // Create table form state
@@ -418,13 +529,13 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
 
     return (
         <div className="w-full flex justify-center animate-in slide-in-from-bottom-4 duration-500 fade-in">
-            <div className="w-full max-w-7xl">
+            <div className="w-full max-w-7xl print:hidden">
                 {/* Header */}
                 <div className="mb-8">
                     <div className="flex justify-between items-end mb-6">
                         <div>
                             <h2 className="text-3xl font-serif text-stone-900 mb-2">Table Seating</h2>
-                            <p className="text-sm text-stone-500 font-light">Drag and drop guests to assign their seats.</p>
+                            <p className="text-sm text-stone-500 font-light">Drag and drop guests to assign their seats — or tap a guest to pick a table.</p>
                         </div>
                         <div className="flex items-center gap-3">
                             {isPending && (
@@ -439,6 +550,14 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
                                 <span>/</span>
                                 <span>{totalPax} seated</span>
                             </div>
+                            <button
+                                onClick={() => window.print()}
+                                className="flex items-center gap-1.5 px-3 py-2 bg-white border border-stone-200 hover:bg-stone-50 text-stone-600 text-xs font-semibold rounded-lg transition-colors"
+                                title="Print seating chart"
+                            >
+                                <Printer className="w-3.5 h-3.5" />
+                                Print
+                            </button>
                             <button
                                 onClick={() => setShowCreateForm(!showCreateForm)}
                                 className="flex items-center gap-1.5 px-3 py-2 bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold rounded-lg transition-colors"
@@ -526,7 +645,7 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
                                                 </motion.div>
                                             ) : (
                                                 unseatedGuests.map(guest => (
-                                                    <DraggableGuest key={guest.id} guest={guest} containerId="unseated" />
+                                                    <DraggableGuest key={guest.id} guest={guest} containerId="unseated" onSelect={setAssignTarget} />
                                                 ))
                                             )}
                                         </AnimatePresence>
@@ -552,6 +671,7 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
                                             guests={localGuests.filter(g => g.tableId === table.id)}
                                             onChangeShape={handleChangeShape}
                                             onDeleteTable={handleDeleteTable}
+                                            onSelectGuest={setAssignTarget}
                                         />
                                     ))}
                                 </div>
@@ -564,6 +684,55 @@ export default function TableSeating({ slug, initialTables, initialGuests, acces
                         {activeGuest ? <GuestOverlay guest={activeGuest} /> : null}
                     </DragOverlay>
                 </DndContext>
+
+                {/* Tap / keyboard assignment sheet (mobile + a11y fallback for drag) */}
+                {assignTarget && (
+                    <AssignSheet
+                        guest={assignTarget}
+                        tables={localTables}
+                        localGuests={localGuests}
+                        onAssign={(tableId) => {
+                            moveGuest(assignTarget.id, assignTarget.tableId ?? 'unseated', tableId ?? 'unseated');
+                            setAssignTarget(null);
+                        }}
+                        onClose={() => setAssignTarget(null)}
+                    />
+                )}
+            </div>
+
+            {/* ─── Print-only seating chart (hidden on screen) ─── */}
+            <div className="hidden print:block w-full text-black">
+                <h1 className="text-2xl font-serif mb-1">Seating Chart</h1>
+                <p className="text-sm mb-6">{seatedPax}/{totalPax} guests seated across {localTables.length} table{localTables.length === 1 ? '' : 's'}</p>
+                <div className="grid grid-cols-2 gap-4">
+                    {localTables.map((t) => {
+                        const gs = localGuests.filter((g) => g.tableId === t.id);
+                        const pax = gs.reduce((s, g) => s + g.pax, 0);
+                        return (
+                            <div key={t.id} className="border border-black/20 rounded-lg p-4 break-inside-avoid">
+                                <div className="flex justify-between border-b border-black/10 pb-2 mb-2">
+                                    <span className="font-semibold">{t.name}</span>
+                                    <span className="text-sm">{pax}/{t.capacity}</span>
+                                </div>
+                                <ul className="text-sm space-y-0.5">
+                                    {gs.length === 0 ? (
+                                        <li className="text-black/40 italic">No guests</li>
+                                    ) : (
+                                        gs.map((g) => <li key={g.id}>{g.name}{g.pax > 1 ? ` (${g.pax})` : ''}</li>)
+                                    )}
+                                </ul>
+                            </div>
+                        );
+                    })}
+                </div>
+                {unseatedGuests.length > 0 && (
+                    <div className="mt-6 break-inside-avoid">
+                        <h2 className="font-semibold border-b border-black/10 pb-1 mb-2">Unseated ({unseatedGuests.length})</h2>
+                        <ul className="text-sm columns-2">
+                            {unseatedGuests.map((g) => <li key={g.id}>{g.name}{g.pax > 1 ? ` (${g.pax})` : ''}</li>)}
+                        </ul>
+                    </div>
+                )}
             </div>
         </div>
     );
