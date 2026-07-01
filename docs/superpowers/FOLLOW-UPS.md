@@ -5,7 +5,7 @@ Account-Creation-Revamp work but intentionally left out of scope. Keep this list
 current — add items as they come up, check them off (or move to a dated "Done"
 section) when shipped.
 
-_Last updated: 2026-06-02_
+_Last updated: 2026-07-01_
 
 ---
 
@@ -71,3 +71,38 @@ _Last updated: 2026-06-02_
   login / create assistant / slug-collision errors / remove account) was **not** run
   by the agent because it would create real users in production Supabase. Run these
   in a safe environment before relying on the feature in production.
+
+## Deferred from the 2026-07-01 hardening + enhancements pass
+
+Context: `docs/audits/2026-07-01-security-audit-and-monetization.md`. Branch
+`feat/security-hardening-and-enhancements`. The items below were in scope but
+intentionally deferred (production risk / needs a decision or migration):
+
+- [ ] **Dashboard auto-save + unsaved-changes guard** — a `beforeunload` guard
+  needs reliable dirty-state tracking in `app/dashboard/page.tsx`. A naive snapshot
+  compare risks false-positive "unsaved changes" prompts on every close if the
+  serialized `weddingDetails` diverges from the saved snapshot (merged defaults,
+  key order). Best done alongside the planned dashboard decomposition, or with an
+  explicit `settingsDirty` flag wired through the settings onChange handlers.
+- [ ] **Broad accessibility sweep** — the seating planner is now keyboard/screen-
+  reader operable (tap/keyboard assignment sheet), confetti respects reduced motion,
+  the dashboard loader is `aria-busy`, and the hero backdrop got a decorative alt.
+  Still to do: focus-trap on all modals (CsvImportModal, PasswordManagerModal,
+  ConfirmDialog), explicit `<label htmlFor>` across the settings form, and a
+  contrast pass on `text-stone-400` over light backgrounds.
+- [ ] **Spatial seating floor-plan** — a drag-to-position 2D room layout needs
+  persisted table x/y coordinates → a `seating_tables` migration (nullable `posX`,
+  `posY`) + `db:push`. The print chart + capacity enforcement + tap/keyboard
+  assignment shipped without a migration; the spatial canvas is the remaining piece.
+- [ ] **`next/image` for invitation media** — couples can point hero/gallery images
+  at arbitrary hosts, so `next/image` optimization isn't viable without either a
+  permissive `remotePatterns` (defeats the point) or `unoptimized`. Shipped native
+  `loading="lazy"` on below-the-fold `<img>` instead. Revisit if media moves to the
+  Supabase bucket exclusively (then allowlist that one host and convert).
+- [ ] **Rate limiting → shared store** — `src/lib/rateLimit.ts` is per-instance
+  in-memory (documented). Back it with Upstash/Redis for multi-instance production.
+- [ ] **Report-only CSP → enforced** — `next.config.ts` ships CSP report-only. Add a
+  report endpoint, confirm no violations, then switch to `Content-Security-Policy`.
+- [ ] **Planner [id] update/toggle routes** — `/api/planner/events/[id]` and
+  `/api/planner/todos/[id]` (and `/api/admin/reset-password`) were not given the new
+  validation pass (trusted admin/assistant roles). Add for consistency.
