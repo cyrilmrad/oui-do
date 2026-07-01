@@ -8,6 +8,7 @@ import { mergeNavigationPages } from '@/lib/navigationPages';
 import { clampPax, getVisibleCompanionRows, normalizeRsvpParty, splitFullNameOnFirstSpace, type RsvpCompanionNameInput } from '@/lib/multiGuestRsvp';
 import { InvitationBlogReadonly } from '@/components/blog/InvitationBlogReadonly';
 import InvitationGifts from '@/components/InvitationGifts';
+import ConfettiBurst from '@/components/ConfettiBurst';
 // Add-to-calendar (custom ICS + Google); re-enable when ready to show on the live invite.
 // import { InvitationAddToCalendar } from '@/components/InvitationAddToCalendar';
 
@@ -1439,8 +1440,9 @@ export default function InvitationPreview({ data, guestData, isPreview = false }
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                                        className="text-center py-12 @md:py-16"
+                                        className="relative text-center py-12 @md:py-16"
                                     >
+                                        {formData.attending === 'yes' && <ConfettiBurst />}
                                         <div className={`relative w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8 overflow-hidden ${cleanTheme.accent}`}>
                                             <div className="absolute inset-0 bg-current opacity-10" 
                                                  style={data.theme?.name === 'custom' ? { backgroundColor: 'var(--theme-accent)' } : {}} />
