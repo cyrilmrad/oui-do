@@ -356,7 +356,30 @@ export default function DashboardPage() {
     };
 
     if (loadingAuth) {
-        return <div className="min-h-screen w-full flex items-center justify-center bg-stone-50"><p className="text-stone-500 animate-pulse">Loading Dashboard...</p></div>;
+        return (
+            <div className="min-h-screen w-full bg-stone-50 p-6 md:p-10" aria-busy="true" aria-label="Loading dashboard">
+                <div className="max-w-6xl mx-auto animate-pulse">
+                    <div className="h-8 w-64 bg-stone-200 rounded-lg mb-3" />
+                    <div className="h-4 w-80 max-w-full bg-stone-200/70 rounded mb-10" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                        {[0, 1, 2, 3].map((i) => (
+                            <div key={i} className="bg-white rounded-xl p-6 shadow-sm border border-stone-100 flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-stone-200 shrink-0" />
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-3 w-20 bg-stone-200 rounded" />
+                                    <div className="h-6 w-12 bg-stone-200 rounded" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {[0, 1, 2].map((i) => (
+                            <div key={i} className="h-48 bg-white rounded-xl border border-stone-100 shadow-sm" />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     // ── Hotel image upload helpers ────────────────────────────────────────────
