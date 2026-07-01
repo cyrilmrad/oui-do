@@ -90,10 +90,16 @@ intentionally deferred (production risk / needs a decision or migration):
   Still to do: focus-trap on all modals (CsvImportModal, PasswordManagerModal,
   ConfirmDialog), explicit `<label htmlFor>` across the settings form, and a
   contrast pass on `text-stone-400` over light backgrounds.
-- [ ] **Spatial seating floor-plan** — a drag-to-position 2D room layout needs
-  persisted table x/y coordinates → a `seating_tables` migration (nullable `posX`,
-  `posY`) + `db:push`. The print chart + capacity enforcement + tap/keyboard
-  assignment shipped without a migration; the spatial canvas is the remaining piece.
+- [x] **Spatial seating floor-plan** — DONE. `SeatingFloorPlan` drag-to-position
+  canvas + List/Floor-plan toggle; persists `seating_tables.pos_x/pos_y`.
+  **Requires `npm run db:push`** before the seating tab works (getSeatingData
+  selects the new columns). Remaining seating sub-items from the original plan:
+  - [ ] **Printable place cards** — the print view is a per-table *chart*; add a
+    per-guest place-card sheet (one card per guest: name + table number/name).
+  - [ ] **QR seat cards** — per-guest printable QR linking to `/seat/<slug>` (reuse
+    the existing seat-finder); lets a guest scan to find their table.
+  - [ ] Positioned tables could open their guest list on click in floor-plan view
+    (currently arrange-only; assignment stays in list view).
 - [ ] **`next/image` for invitation media** — couples can point hero/gallery images
   at arbitrary hosts, so `next/image` optimization isn't viable without either a
   permissive `remotePatterns` (defeats the point) or `unoptimized`. Shipped native
